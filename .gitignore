@@ -40,3 +40,6 @@ migrate/*.json
 # docs
 docs/milkdown
 docs/milkdown-src
+
+# ignore for devcontainer
+.pnpm-store
