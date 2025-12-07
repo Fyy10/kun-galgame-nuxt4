@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
 export const getUserRankingSchema = z.object({
-  page: z.coerce.number().min(1).max(9999999),
-  limit: z.coerce.number().min(1).max(100),
+  page: z.coerce.number<number>().min(1).max(9999999),
+  limit: z.coerce.number<number>().min(1).max(100),
   sortField: z.enum([
     'moemoepoint',
     'follower_relation',
@@ -16,15 +16,15 @@ export const getUserRankingSchema = z.object({
 })
 
 export const getTopicRankingSchema = z.object({
-  page: z.coerce.number().min(1).max(9999999),
-  limit: z.coerce.number().min(1).max(100),
+  page: z.coerce.number<number>().min(1).max(9999999),
+  limit: z.coerce.number<number>().min(1).max(100),
   sortField: z.enum(['view', 'upvote', 'like', 'favorite', 'reply', 'comment']),
   sortOrder: z.enum(['asc', 'desc'])
 })
 
 export const getGalgameRankingSchema = z.object({
-  page: z.coerce.number().min(1).max(9999999),
-  limit: z.coerce.number().min(1).max(100),
+  page: z.coerce.number<number>().min(1).max(9999999),
+  limit: z.coerce.number<number>().min(1).max(100),
   sortField: z.enum(['view', 'like', 'favorite', 'resource']),
   sortOrder: z.enum(['asc', 'desc'])
 })

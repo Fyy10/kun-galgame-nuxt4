@@ -1,13 +1,13 @@
 import { z } from 'zod'
 
 export const getGalgameByEngineSchema = z.object({
-  engineId: z.coerce.number().min(1).max(9999999),
-  page: z.coerce.number().min(1).max(9999999),
-  limit: z.coerce.number().min(1).max(24)
+  engineId: z.coerce.number<number>().min(1).max(9999999),
+  page: z.coerce.number<number>().min(1).max(9999999),
+  limit: z.coerce.number<number>().min(1).max(24)
 })
 
 export const updateGalgameEngineSchema = z.object({
-  engineId: z.coerce.number().min(1).max(9999999),
+  engineId: z.coerce.number<number>().min(1).max(9999999),
   name: z.string().min(1).max(100, '引擎名最多 100 个字符'),
   description: z
     .string()

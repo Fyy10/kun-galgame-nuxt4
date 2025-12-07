@@ -12,8 +12,8 @@ if (!fs.existsSync(envPath)) {
 config({ path: envPath })
 
 export const envSchema = z.object({
-  KUN_GALGAME_URL: z.string().url(),
-  KUN_GALGAME_API: z.string().url(),
+  KUN_GALGAME_URL: z.url(),
+  KUN_GALGAME_API: z.url(),
   REDIS_HOST: z.string(),
   REDIS_PORT: z.string(),
   JWT_ISS: z.string(),
@@ -52,6 +52,6 @@ export const env = envSchema.safeParse(process.env)
 if (!env.success) {
   throw new Error(
     '❌ Invalid environment variables: ' +
-      JSON.stringify(env.error.format(), null, 4)
+      JSON.stringify(z.treeifyError(env.error), null, 4)
   )
 }

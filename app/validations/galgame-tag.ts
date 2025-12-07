@@ -7,14 +7,14 @@ import {
 } from '~/constants/galgame'
 
 export const getGalgameTagSchema = z.object({
-  page: z.coerce.number().min(1).max(9999999),
-  limit: z.coerce.number().min(1).max(100)
+  page: z.coerce.number<number>().min(1).max(9999999),
+  limit: z.coerce.number<number>().min(1).max(100)
 })
 
 export const getGalgameByTagSchema = getGalgameTagSchema.merge(
   z.object({
-    tagId: z.coerce.number().min(1).max(9999999),
-    limit: z.coerce.number().min(1).max(24),
+    tagId: z.coerce.number<number>().min(1).max(9999999),
+    limit: z.coerce.number<number>().min(1).max(24),
     type: z.enum([...KUN_RESOURCE_TYPE_CONST, 'all']),
     language: z.enum([...KUN_RESOURCE_LANGUAGE_CONST, 'all']),
     platform: z.enum([...KUN_RESOURCE_PLATFORM_CONST, 'all']),
@@ -32,7 +32,7 @@ export const getGalgameTagBySearchSchema = z.object({
 })
 
 export const updateGalgameTagSchema = z.object({
-  tagId: z.coerce.number().min(1).max(9999999),
+  tagId: z.coerce.number<number>().min(1).max(9999999),
   name: z.string().min(1).max(100, '标签名最多 100 个字符'),
   description: z
     .string()
@@ -64,7 +64,7 @@ const numberArrayFromQuery = z.preprocess(
 )
 
 export const getGalgameByTagsSchema = z.object({
-  page: z.coerce.number().min(1).max(9999999),
-  limit: z.coerce.number().min(1).max(24),
+  page: z.coerce.number<number>().min(1).max(9999999),
+  limit: z.coerce.number<number>().min(1).max(24),
   tagIds: numberArrayFromQuery
 })

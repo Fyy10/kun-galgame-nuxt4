@@ -2,8 +2,8 @@ import { z } from 'zod'
 import { KUN_UPDATE_LOG } from '~/constants/update'
 
 export const getUpdateLogSchema = z.object({
-  page: z.coerce.number().min(1).max(9999999),
-  limit: z.coerce.number().min(1).max(30)
+  page: z.coerce.number<number>().min(1).max(9999999),
+  limit: z.coerce.number<number>().min(1).max(30)
 })
 
 export const createUpdateLogSchema = z.object({
@@ -21,8 +21,6 @@ export const createUpdateLogSchema = z.object({
   type: z.enum(KUN_UPDATE_LOG)
 })
 
-export const updateUpdateLogSchema = createUpdateLogSchema.merge(
-  z.object({
-    updateLogId: z.coerce.number().min(1).max(9999999)
-  })
-)
+export const updateUpdateLogSchema = createUpdateLogSchema.extend({
+  updateLogId: z.coerce.number<number>().min(1).max(9999999)
+})

@@ -8,52 +8,52 @@ import {
 } from '~/constants/user'
 
 export const getUserInfoSchema = z.object({
-  userId: z.coerce.number().min(1).max(9999999)
+  userId: z.coerce.number<number>().min(1).max(9999999)
 })
 
 export const getUserFloatingCardSchema = z.object({
-  userId: z.coerce.number().min(1).max(9999999)
+  userId: z.coerce.number<number>().min(1).max(9999999)
 })
 
 export const getUserTopicSchema = z.object({
-  userId: z.coerce.number().min(1).max(9999999),
-  page: z.coerce.number().min(1).max(9999999),
-  limit: z.coerce.number().min(1).max(50),
+  userId: z.coerce.number<number>().min(1).max(9999999),
+  page: z.coerce.number<number>().min(1).max(9999999),
+  limit: z.coerce.number<number>().min(1).max(50),
   type: z.enum(KUN_USER_PAGE_TOPIC_TYPE)
 })
 
 export const getUserReplySchema = z.object({
-  userId: z.coerce.number().min(1).max(9999999),
-  page: z.coerce.number().min(1).max(9999999),
-  limit: z.coerce.number().min(1).max(50),
+  userId: z.coerce.number<number>().min(1).max(9999999),
+  page: z.coerce.number<number>().min(1).max(9999999),
+  limit: z.coerce.number<number>().min(1).max(50),
   type: z.enum(KUN_USER_PAGE_REPLY_TYPE)
 })
 
 export const getUserCommentSchema = z.object({
-  userId: z.coerce.number().min(1).max(9999999),
-  page: z.coerce.number().min(1).max(9999999),
-  limit: z.coerce.number().min(1).max(50),
+  userId: z.coerce.number<number>().min(1).max(9999999),
+  page: z.coerce.number<number>().min(1).max(9999999),
+  limit: z.coerce.number<number>().min(1).max(50),
   type: z.enum(KUN_USER_PAGE_COMMENT_TYPE)
 })
 
 export const getUserGalgameSchema = z.object({
-  userId: z.coerce.number().min(1).max(9999999),
-  page: z.coerce.number().min(1).max(9999999),
-  limit: z.coerce.number().min(1).max(24),
+  userId: z.coerce.number<number>().min(1).max(9999999),
+  page: z.coerce.number<number>().min(1).max(9999999),
+  limit: z.coerce.number<number>().min(1).max(24),
   type: z.enum(KUN_USER_PAGE_GALGAME_TYPE)
 })
 
 export const getUserGalgameResourceSchema = z.object({
-  userId: z.coerce.number().min(1).max(9999999),
-  page: z.coerce.number().min(1).max(9999999),
-  limit: z.coerce.number().min(1).max(50),
+  userId: z.coerce.number<number>().min(1).max(9999999),
+  page: z.coerce.number<number>().min(1).max(9999999),
+  limit: z.coerce.number<number>().min(1).max(50),
   type: z.enum(KUN_USER_PAGE_GALGAME_RESOURCE_TYPE)
 })
 
 export const getUserRatingSchema = z.object({
-  userId: z.coerce.number().min(1).max(9999999),
-  page: z.coerce.number().min(1).max(9999999),
-  limit: z.coerce.number().min(1).max(50)
+  userId: z.coerce.number<number>().min(1).max(9999999),
+  page: z.coerce.number<number>().min(1).max(9999999),
+  limit: z.coerce.number<number>().min(1).max(50)
 })
 
 export const updateUserBioSchema = z.object({
@@ -68,7 +68,7 @@ export const updateUsernameSchema = z.object({
 
 export const userUpdateEmailSchema = z.object({
   codeSalt: z.string().min(64).max(64),
-  email: z.string().email(),
+  email: z.email(),
   code: z.string().min(7).max(7)
 })
 
@@ -93,12 +93,12 @@ export const userUpdatePasswordSchema = z.object({
   })
 })
 
-export const userRegisterSchema = userLoginSchema.merge(userUpdateEmailSchema)
+export const userRegisterSchema = userLoginSchema.extend(userUpdateEmailSchema)
 
 export const deleteUserSchema = z.object({
-  userId: z.coerce.number().min(1).max(9999999)
+  userId: z.coerce.number<number>().min(1).max(9999999)
 })
 
 export const updateBanUserSchema = z.object({
-  userId: z.coerce.number().min(1).max(9999999)
+  userId: z.coerce.number<number>().min(1).max(9999999)
 })
