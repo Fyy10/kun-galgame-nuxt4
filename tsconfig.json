@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "module": "esnext"
+    "module": "esnext",
+    "plugins": [{ "name": "@dxup/unimport" }]
   },
   // https://nuxt.com/docs/guide/concepts/typescript
   "exclude": [

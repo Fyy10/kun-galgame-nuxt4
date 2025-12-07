@@ -1,6 +1,6 @@
 {
   "name": "kun-galgame-nuxt4",
-  "version": "5.0.13",
+  "version": "5.0.14",
   "type": "module",
   "packageManager": "pnpm@10.17.1",
   "private": true,
@@ -34,6 +34,8 @@
     "schema": "./prisma/schema"
   },
   "devDependencies": {
+    "@dxup/nuxt": "^0.2.2",
+    "@dxup/unimport": "^0.1.2",
     "@iconify-json/ant-design": "^1.2.5",
     "@iconify-json/carbon": "^1.2.15",
     "@iconify-json/ci": "^1.2.2",
