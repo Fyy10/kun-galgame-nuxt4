@@ -65,7 +65,7 @@ export default defineEventHandler(async (event) => {
       uid,
       resource.user_id,
       'liked',
-      resource.link[0].url.slice(0, 233),
+      resource.link[0] ? resource.link[0].url.slice(0, 233) : '',
       undefined,
       resource.galgame_id
     )

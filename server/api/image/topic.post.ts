@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
   if (!imageFile || !Array.isArray(imageFile)) {
     return kunError(event, '读取图片数据错误')
   }
-  if (!checkBufferSize(imageFile[0].data, 10)) {
+  if (!checkBufferSize(imageFile[0]!.data, 10)) {
     return kunError(event, '图片大小应该小于 10MB')
   }
 
@@ -57,7 +57,7 @@ export default defineEventHandler(async (event) => {
 
   const newFileName = `${userInfo.name}-${Date.now()}`
 
-  const res = await compressImage(newFileName, imageFile[0].data, userInfo.uid)
+  const res = await compressImage(newFileName, imageFile[0]!.data, userInfo.uid)
   if (res) {
     return kunError(event, res)
   }

@@ -39,7 +39,11 @@ export default defineEventHandler(async (event) => {
     return kunError(event, '用户登录失效', 205)
   }
 
-  const res = await resizeUserAvatar('avatar', avatarFile[0].data, userInfo.uid)
+  const res = await resizeUserAvatar(
+    'avatar',
+    avatarFile[0]!.data,
+    userInfo.uid
+  )
   if (res) {
     return kunError(event, res)
   }

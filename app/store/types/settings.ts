@@ -1,4 +1,4 @@
-import type { MessageStatus } from '~/types/utils/message'
+import type { MessageStatus } from '~~/shared/types/utils/message'
 
 export interface KUNGalgameSettingsStore {
   showKUNGalgamePageTransparency: number

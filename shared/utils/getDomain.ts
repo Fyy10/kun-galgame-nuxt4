@@ -35,7 +35,7 @@ export const getDomain = (
         'ac',
         'edu'
       ])
-      const secondToLastPart = parts[parts.length - 2]
+      const secondToLastPart = parts[parts.length - 2] ?? ''
 
       if (commonSLDs.has(secondToLastPart)) {
         return parts.slice(-3).join('.')

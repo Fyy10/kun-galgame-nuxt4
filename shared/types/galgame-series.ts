@@ -10,7 +10,7 @@ export interface GalgameSeries {
   name: string
   description: string
   isNSFW: boolean
-  sampleGalgame: GalgameSample[]
+  sampleGalgame: GalgameSeriesSample[]
   galgameCount: number
   created: Date | string
   updated: Date | string

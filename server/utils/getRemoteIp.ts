@@ -4,9 +4,9 @@ export const getRemoteIp = (event: H3Event) => {
   const ipForwarded = () => {
     const ip = event.node.req.headers['x-forwarded-for']
     if (Array.isArray(ip)) {
-      return ip[0]
+      return ip[0]!
     } else {
-      return ip?.split(',')[0].trim()
+      return ip?.split(',')[0]!.trim()
     }
   }
 

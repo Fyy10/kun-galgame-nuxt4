@@ -90,7 +90,7 @@ export const rehypeKunInsertWbr = (options: Options = {}) => {
 
       const onlyText =
         newNodes.length === 1 &&
-        newNodes[0].type === 'text' &&
+        newNodes[0]!.type === 'text' &&
         (newNodes[0] as Text).value === text
       if (!onlyText) {
         const p = parent as Element

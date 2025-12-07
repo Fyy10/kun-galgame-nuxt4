@@ -16,7 +16,7 @@ const nestComments = (flatComments: WebsiteComment[]): WebsiteComment[] => {
       const parentComment = commentMap[comment.parentId]
       if (parentComment) {
         parentComment.reply.push(comment)
-        comment.targetUser = commentMap[comment.parentId].user
+        comment.targetUser = commentMap[comment.parentId]!.user
       }
     } else {
       nestedComments.push(comment)

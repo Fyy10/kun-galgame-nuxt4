@@ -3,6 +3,11 @@
     "module": "esnext"
   },
   // https://nuxt.com/docs/guide/concepts/typescript
-  "exclude": ["**/backup/**", "**/dist/**", "**/node_modules/**"],
+  "exclude": [
+    "**/backup/**",
+    "**/dist/**",
+    "**/node_modules/**",
+    "**/prisma/**"
+  ],
   "extends": "./.nuxt/tsconfig.json"
 }

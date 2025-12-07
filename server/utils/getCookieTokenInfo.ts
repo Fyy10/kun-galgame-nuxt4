@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken'
 import type { H3Event } from 'h3'
-import type { KUNGalgamePayload } from '~/types/utils/jwt'
+import type { KUNGalgamePayload } from '~~/shared/types/utils/jwt'
 
 const config = useRuntimeConfig()
 

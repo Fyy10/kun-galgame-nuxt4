@@ -208,7 +208,7 @@ export const syncVndbData = async (
 
       const mappedValue = TAG_MAP[tag.name] || tag.name
       const parts = mappedValue.split('/')
-      const newName = parts[0]
+      const newName = parts[0] ? parts[0] : ''
       const additionalAliases = parts.slice(1)
 
       const dbTag = await prisma.galgame_tag.upsert({
@@ -216,7 +216,7 @@ export const syncVndbData = async (
         update: {},
         create: {
           name: newName,
-          category: TAG_CATEGORY_MAP[tag.category],
+          category: TAG_CATEGORY_MAP[tag.category] || 'ero',
           description: tag.description || ''
         }
       })

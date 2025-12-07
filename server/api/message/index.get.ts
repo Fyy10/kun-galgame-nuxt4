@@ -36,7 +36,7 @@ const getMessages = async (
     receiverUid: message.receiver_id,
     link: message.link,
     content: message.content,
-    status: message.status as MessageStatus,
+    status: message.status as 'read',
     type: message.type as MessageType,
     created: message.created
   }))
