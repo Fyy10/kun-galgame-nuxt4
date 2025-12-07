@@ -1,6 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { getToolsetCommentSchema } from '~/validations/toolset'
-import type { ToolsetComment } from '~/types/api/toolset-comment'
 
 export default defineEventHandler(async (event) => {
   const input = kunParseGetQuery(event, getToolsetCommentSchema)

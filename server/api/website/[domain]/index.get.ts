@@ -1,6 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { getWebsiteDetailSchema } from '~/validations/website'
-import type { WebsiteDetail } from '~/types/api/website'
 
 export default defineEventHandler(async (event) => {
   const input = kunParseGetQuery(event, getWebsiteDetailSchema)

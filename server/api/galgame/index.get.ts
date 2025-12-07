@@ -1,7 +1,6 @@
 import { prisma } from '~~/prisma/prisma'
 import { getGalgameSchema } from '~/validations/galgame'
 import { PROVIDER_KEY_OPTIONS } from '~/constants/galgameResource'
-import type { GalgameCard } from '~/types/api/galgame'
 import type { Prisma } from '~~/prisma/generated/prisma/client'
 
 export default defineEventHandler(async (event) => {

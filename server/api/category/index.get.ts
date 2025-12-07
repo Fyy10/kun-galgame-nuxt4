@@ -1,10 +1,6 @@
 import { prisma } from '~~/prisma/prisma'
 import { getNSFWCookie } from '~~/server/utils/getNSFWCookie'
 import { getTopicCategoryStats } from '~/validations/category'
-import type {
-  CategoryLatestTopicInfo,
-  CategorySectionStats
-} from '~/types/api/category'
 
 export default defineEventHandler(async (event) => {
   const input = kunParseGetQuery(event, getTopicCategoryStats)

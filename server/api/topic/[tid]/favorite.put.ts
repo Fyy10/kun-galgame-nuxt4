@@ -1,6 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { updateTopicFavoriteSchema } from '~/validations/topic'
-import { markdownToText } from '~~/server/utils/markdownToText'
 
 export default defineEventHandler(async (event) => {
   const userInfo = await getCookieTokenInfo(event)

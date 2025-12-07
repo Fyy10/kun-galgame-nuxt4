@@ -8,7 +8,6 @@ import {
 } from 'date-fns'
 import { getOverviewStatsSchema } from '~/validations/admin'
 import { KUN_ADMIN_OVERVIEW_STATS_MODEL_ITEM } from '~/constants/admin'
-import type { AdminOverStats } from '~/types/api/admin'
 
 export default defineEventHandler(async (event) => {
   const input = kunParseGetQuery(event, getOverviewStatsSchema)

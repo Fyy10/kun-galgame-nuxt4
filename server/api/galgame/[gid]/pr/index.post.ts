@@ -1,6 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { updateGalgameSchema } from '~/validations/galgame'
-import { formatDate } from '~/utils/time'
 import { resyncVndbData } from '../../_syncVndb'
 
 export default defineEventHandler(async (event) => {

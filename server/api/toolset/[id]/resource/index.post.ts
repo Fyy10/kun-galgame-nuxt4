@@ -4,8 +4,6 @@ import {
   getUploadCache,
   removeUploadCache
 } from '~~/server/utils/upload/saveUploadSalt'
-import { isValidArchive } from '~/utils/validate'
-import type { ToolsetResource } from '~/types/api/toolset'
 
 export default defineEventHandler(async (event) => {
   const userInfo = await getCookieTokenInfo(event)

@@ -1,12 +1,13 @@
 import { prisma } from '~~/prisma/prisma'
 import { deleteReplySchema } from '~/validations/topic'
-import type { Prisma, PrismaClient } from '~~/prisma/generated/prisma/client'
+import type { PrismaClient } from '~~/prisma/generated/prisma/client'
+import type { DefaultArgs } from '@prisma/client/runtime/client'
 
 const deleteReplyRecursive = async (
   replyIdToDelete: number,
   prisma: Omit<
-    PrismaClient<Prisma.PrismaClientOptions, never, DefaultArgs>,
-    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+    PrismaClient<never, undefined, DefaultArgs>,
+    '$connect' | '$disconnect' | '$on' | '$transaction' | '$extends'
   >
 ) => {
   const allIdsToDelete = new Set<number>()

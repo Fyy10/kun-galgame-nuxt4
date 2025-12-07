@@ -1,7 +1,6 @@
 import { prisma } from '~~/prisma/prisma'
 import { getUserInfoSchema } from '~/validations/user'
 import { subDays } from 'date-fns'
-import type { UserInfo } from '~/types/api/user'
 
 export default defineEventHandler(async (event) => {
   const input = kunParseGetQuery(event, getUserInfoSchema)

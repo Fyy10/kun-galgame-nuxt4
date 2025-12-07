@@ -1,7 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { getGalgameByEngineSchema } from '~/validations/galgame-engine'
-import type { GalgameCard } from '~/types/api/galgame'
-import type { GalgameEngineDetail } from '~/types/api/galgame-engine'
 
 export default defineEventHandler(async (event) => {
   const input = kunParseGetQuery(event, getGalgameByEngineSchema)

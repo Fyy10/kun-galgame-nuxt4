@@ -1,7 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { getSeriesGalgameNameSchema } from '~/validations/galgame-series'
-import { getPreferredLanguageText } from '~/utils/getPreferredLanguageText'
-import type { GalgameSeriesSearchItem } from '~/types/api/galgame-series'
 
 export default defineEventHandler(async (event) => {
   const input = await kunParsePostBody(event, getSeriesGalgameNameSchema)

@@ -1,6 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { getUnmoeLogSchema } from '~/validations/unmoe'
-import type { UnmoeLog } from '~/types/api/unmoe'
 
 export default defineEventHandler(async (event) => {
   const input = kunParseGetQuery(event, getUnmoeLogSchema)

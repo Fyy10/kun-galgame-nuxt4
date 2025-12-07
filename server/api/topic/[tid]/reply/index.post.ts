@@ -1,8 +1,6 @@
 import { prisma } from '~~/prisma/prisma'
 import { createReplySchema } from '~/validations/topic'
-import { markdownToText } from '~~/server/utils/markdownToText'
 import { createMessage } from '~~/server/utils/message'
-import type { TopicReply } from '~/types/api/topic-reply'
 
 export default defineEventHandler(async (event) => {
   const input = await kunParsePostBody(event, createReplySchema)

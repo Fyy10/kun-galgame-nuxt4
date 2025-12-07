@@ -1,5 +1,4 @@
 import { prisma } from '~~/prisma/prisma'
-import type { RSSTopic } from '~/types/api/rss'
 
 export default defineEventHandler(async (event) => {
   const data = await prisma.topic.findMany({

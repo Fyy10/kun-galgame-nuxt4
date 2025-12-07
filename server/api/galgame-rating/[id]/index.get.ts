@@ -1,10 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { getGalgameRatingDetailSchema } from '~/validations/galgame-rating'
-import type { GalgameRatingDetails } from '~/types/api/galgame-rating'
-import type {
-  GalgameSeriesSample,
-  GalgameSeries
-} from '~/types/api/galgame-series'
 import type { KunGalgameOfficialCategory } from '~/constants/galgameOfficial'
 
 const userSelect = {

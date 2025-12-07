@@ -1,10 +1,7 @@
 import { prisma } from '~~/prisma/prisma'
 import { getReplySchema } from '~/validations/topic'
-import { markdownToText } from '~~/server/utils/markdownToText'
-import { Prisma } from '~~/prisma/generated/prisma/client'
+import type { Prisma } from '~~/prisma/generated/prisma/client'
 import type { z } from 'zod'
-import type { TopicReply } from '~/types/api/topic-reply'
-import type { TopicComment } from '~/types/api/topic-comment'
 
 const generateReplyInclude = (uid: number | undefined) => {
   return {
@@ -55,10 +52,10 @@ const generateReplyInclude = (uid: number | undefined) => {
   }
 }
 
-const prismaReplyWithDetails = Prisma.validator<Prisma.topic$replyArgs>()({
+const prismaReplyWithDetails = {
   // 1 is a user_id
   include: generateReplyInclude(1)
-})
+} satisfies Prisma.topic$replyArgs
 type PrismaReplyWithDetails = Prisma.topic_replyGetPayload<
   typeof prismaReplyWithDetails
 >

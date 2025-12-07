@@ -1,5 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
-import { s3 } from '~/lib/s3/client'
+import { s3 } from '~~/lib/s3/client'
 import {
   CreateMultipartUploadCommand,
   UploadPartCommand
@@ -16,7 +16,6 @@ import { initToolsetUploadSchema } from '~/validations/toolset'
 import { parseFileName } from '~~/server/utils/upload/parseFileName'
 import { saveUploadSalt } from '~~/server/utils/upload/saveUploadSalt'
 import { canUserUpload } from '~~/server/utils/upload/canUserUpload'
-import type { ToolsetLargeFileUploadResponse } from '~/types/api/toolset'
 
 const MB = 1024 * 1024
 

@@ -1,7 +1,6 @@
 import { prisma } from '~~/prisma/prisma'
 import { getNSFWCookie } from '~~/server/utils/getNSFWCookie'
 import { getTopicRankingSchema } from '~/validations/ranking'
-import type { RankingTopicItem } from '~/types/api/ranking'
 
 export default defineEventHandler(async (event) => {
   const input = kunParseGetQuery(event, getTopicRankingSchema)

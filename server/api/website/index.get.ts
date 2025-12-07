@@ -1,5 +1,4 @@
 import { prisma } from '~~/prisma/prisma'
-import type { WebsiteCard } from '~/types/api/website'
 
 export default defineEventHandler(async (event) => {
   const nsfw = getNSFWCookie(event)

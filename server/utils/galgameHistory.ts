@@ -1,11 +1,10 @@
-import type { Prisma, PrismaClient } from '~~/prisma/generated/prisma/client'
-import type { DefaultArgs } from '@prisma/client/runtime/library'
-import type { GalgameHistoryCreateRequestData } from '~/types/api/galgame-history'
+import type { DefaultArgs } from '@prisma/client/runtime/client'
+import type { PrismaClient } from '~~/prisma/generated/prisma/client'
 
 export const createGalgameHistory = async (
   prisma: Omit<
-    PrismaClient<Prisma.PrismaClientOptions, never, DefaultArgs>,
-    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+    PrismaClient<never, undefined, DefaultArgs>,
+    '$connect' | '$disconnect' | '$on' | '$transaction' | '$extends'
   >,
   history: GalgameHistoryCreateRequestData
 ) => {

@@ -1,6 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { getToolsetResourceDetailSchema } from '~/validations/toolset'
-import type { ToolsetResourceDetail } from '~/types/api/toolset'
 
 export default defineEventHandler(async (event) => {
   const input = kunParseGetQuery(event, getToolsetResourceDetailSchema)

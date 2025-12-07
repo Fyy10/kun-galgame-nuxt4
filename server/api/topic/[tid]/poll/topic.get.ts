@@ -1,7 +1,6 @@
 import { prisma } from '~~/prisma/prisma'
 import { getPollByTopicSchema } from '~/validations/topic-poll'
 import { canUserViewPollResults } from './_canUserViewPollResults'
-import type { TopicPoll } from '~/types/api/topic-poll'
 
 export default defineEventHandler(async (event) => {
   const userInfo = await getCookieTokenInfo(event)

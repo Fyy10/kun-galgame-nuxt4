@@ -1,7 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { getGalgameByTagSchema } from '~/validations/galgame-tag'
-import type { GalgameCard } from '~/types/api/galgame'
-import type { GalgameTagDetail } from '~/types/api/galgame-tag'
 import type { KunGalgameTagCategory } from '~/constants/galgameTag'
 
 export default defineEventHandler(async (event) => {

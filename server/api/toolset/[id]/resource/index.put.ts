@@ -1,6 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { updateToolsetResourceSchema } from '~/validations/toolset'
-import type { ToolsetResource } from '~/types/api/toolset'
 
 export default defineEventHandler(async (event) => {
   const userInfo = await getCookieTokenInfo(event)

@@ -1,5 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
-import { s3 } from '~/lib/s3/client'
+import { s3 } from '~~/lib/s3/client'
 import {
   CompleteMultipartUploadCommand,
   HeadObjectCommand,
@@ -11,7 +11,6 @@ import {
   removeUploadCache
 } from '~~/server/utils/upload/saveUploadSalt'
 import { canUserUpload } from '~~/server/utils/upload/canUserUpload'
-import type { ToolsetUploadCompleteResponse } from '~/types/api/toolset'
 
 export default defineEventHandler(async (event) => {
   const input = await kunParsePostBody(event, completeToolsetUploadSchema)

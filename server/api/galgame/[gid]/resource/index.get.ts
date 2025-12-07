@@ -1,6 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { getGalgameResourceDetailSchema } from '~/validations/galgame'
-import type { GalgameResourceDetails } from '~/types/api/galgame-resource'
 
 export default defineEventHandler(async (event) => {
   const input = kunParseGetQuery(event, getGalgameResourceDetailSchema)

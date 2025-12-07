@@ -1,6 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { createWebsiteSchema } from '~/validations/website'
-import { getDomain } from '~/utils/getDomain'
 
 export default defineEventHandler(async (event) => {
   const userInfo = await getCookieTokenInfo(event)

@@ -1,6 +1,6 @@
+import { visit } from 'unist-util-visit'
 import type { Plugin } from 'unified'
 import type { Root, Element } from 'hast'
-import { visit } from 'unist-util-visit'
 
 const getLanguage = (node: Element): string => {
   const className = (node.properties?.className as string[]) || []

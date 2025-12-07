@@ -1,6 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { getGalgameOfficialBySearchSchema } from '~/validations/galgame-official'
-import type { GalgameOfficialItem } from '~/types/api/galgame-official'
 import type { KunGalgameOfficialCategory } from '~/constants/galgameOfficial'
 
 export default defineEventHandler(async (event) => {

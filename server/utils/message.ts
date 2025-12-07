@@ -1,11 +1,10 @@
 import type { Prisma, PrismaClient } from '~~/prisma/generated/prisma/client'
-import type { DefaultArgs } from '@prisma/client/runtime/library'
-import type { MessageType } from '~/types/api/message'
+import type { DefaultArgs } from '@prisma/client/runtime/client'
 
 export const createMessage = async (
   prisma: Omit<
-    PrismaClient<Prisma.PrismaClientOptions, never, DefaultArgs>,
-    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+    PrismaClient<never, undefined, DefaultArgs>,
+    '$connect' | '$disconnect' | '$on' | '$transaction' | '$extends'
   >,
   sender_id: number,
   receiver_id: number,
@@ -40,8 +39,8 @@ export const createMessage = async (
 // When user toggle like ans dislike, maybe send a duplicate request
 export const createDedupMessage = async (
   prisma: Omit<
-    PrismaClient<Prisma.PrismaClientOptions, never, DefaultArgs>,
-    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+    PrismaClient<never, undefined, DefaultArgs>,
+    '$connect' | '$disconnect' | '$on' | '$transaction' | '$extends'
   >,
   sender_id: number,
   receiver_id: number,

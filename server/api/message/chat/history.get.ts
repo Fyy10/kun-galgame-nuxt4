@@ -1,6 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { getChatMessageHistorySchema } from '~/validations/chat'
-import type { ChatMessage } from '~/types/api/chat-message'
 
 export default defineEventHandler(async (event) => {
   const userInfo = await getCookieTokenInfo(event)

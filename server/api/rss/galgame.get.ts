@@ -1,6 +1,4 @@
-import { getPreferredLanguageText } from '~/utils/getPreferredLanguageText'
 import { prisma } from '~~/prisma/prisma'
-import type { RSSGalgame } from '~/types/api/rss'
 
 export default defineEventHandler(async () => {
   const data = await prisma.galgame.findMany({

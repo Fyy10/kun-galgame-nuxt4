@@ -1,6 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { getCommentsSchema } from '~/validations/website'
-import type { WebsiteComment } from '~/types/api/website'
 
 const nestComments = (flatComments: WebsiteComment[]): WebsiteComment[] => {
   const commentMap: { [key: number]: WebsiteComment } = {}

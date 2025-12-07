@@ -1,7 +1,6 @@
 import { prisma } from '~~/prisma/prisma'
 import { getNSFWCookie } from '~~/server/utils/getNSFWCookie'
 import { getUserTopicSchema } from '~/validations/user'
-import type { UserTopic } from '~/types/api/user'
 import type { Prisma } from '~~/prisma/generated/prisma/client'
 
 export default defineEventHandler(async (event) => {

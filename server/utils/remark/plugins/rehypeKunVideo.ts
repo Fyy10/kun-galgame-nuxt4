@@ -1,6 +1,6 @@
+import { visit } from 'unist-util-visit'
 import type { Plugin } from 'unified'
 import type { Root, Element, Text } from 'hast'
-import { visit } from 'unist-util-visit'
 
 export const rehypeKunVideo: Plugin<[], Root> = () => {
   return (tree) => {

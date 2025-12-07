@@ -1,5 +1,5 @@
 import { DeleteObjectCommand } from '@aws-sdk/client-s3'
-import { s3 } from '~/lib/s3/client'
+import { s3 } from '~~/lib/s3/client'
 import {
   removeUploadCache,
   type UploadSaltCache

@@ -1,6 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { getWebsiteTagSchema } from '~/validations/website'
-import type { WebsiteTag } from '~/types/api/website'
 
 export default defineEventHandler(async (event) => {
   const input = kunParseGetQuery(event, getWebsiteTagSchema)

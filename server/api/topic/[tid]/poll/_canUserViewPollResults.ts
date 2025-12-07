@@ -1,4 +1,4 @@
-import type { KUNGalgamePayload } from '~/types/utils/jwt'
+import type { KUNGalgamePayload } from '~~/shared/types/utils/jwt'
 
 type PollForVisibilityCheck = {
   user_id: number

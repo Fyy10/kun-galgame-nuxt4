@@ -1,10 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { getGalgameDetailSchema } from '~/validations/galgame'
-import type { GalgameDetail } from '~/types/api/galgame'
-import type {
-  GalgameSeries,
-  GalgameSeriesSample
-} from '~/types/api/galgame-series'
 import type { KunGalgameTagCategory } from '~/constants/galgameTag'
 import type { KunGalgameOfficialCategory } from '~/constants/galgameOfficial'
 

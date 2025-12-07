@@ -1,6 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { createCommentSchema } from '~/validations/topic'
-import type { TopicComment } from '~/types/api/topic-comment'
 
 export default defineEventHandler(async (event) => {
   const input = await kunParsePostBody(event, createCommentSchema)

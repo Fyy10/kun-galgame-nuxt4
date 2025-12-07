@@ -1,6 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { createGalgameRatingCommentSchema } from '~/validations/galgame-rating'
-import type { GalgameRatingComment } from '~/types/api/galgame-rating'
 
 export default defineEventHandler(async (event) => {
   const input = await kunParsePostBody(event, createGalgameRatingCommentSchema)

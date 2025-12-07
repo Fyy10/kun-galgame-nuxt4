@@ -1,9 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { getGalgameSeriesSchema } from '~/validations/galgame-series'
-import type {
-  GalgameSeries,
-  GalgameSeriesSample
-} from '~/types/api/galgame-series'
 
 export default defineEventHandler(async (event) => {
   const input = kunParseGetQuery(event, getGalgameSeriesSchema)

@@ -1,5 +1,4 @@
 import { prisma } from '~~/prisma/prisma'
-import type { GalgameEngineItem } from '~/types/api/galgame-engine'
 
 export default defineEventHandler(async (event) => {
   const data = await prisma.galgame_engine.findMany({

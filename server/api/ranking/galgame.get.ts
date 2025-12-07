@@ -1,6 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { getGalgameRankingSchema } from '~/validations/ranking'
-import type { RankingGalgameItem } from '~/types/api/ranking'
 
 export default defineEventHandler(async (event) => {
   const input = kunParseGetQuery(event, getGalgameRankingSchema)

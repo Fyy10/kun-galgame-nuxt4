@@ -1,7 +1,6 @@
 import { compare } from 'bcrypt'
 import { prisma } from '~~/prisma/prisma'
 import { userLoginSchema } from '~/validations/user'
-import type { AuthLoginResponseData } from '~/types/api/user'
 
 export default defineEventHandler(async (event) => {
   const input = await kunParsePostBody(event, userLoginSchema)

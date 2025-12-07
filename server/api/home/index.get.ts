@@ -2,7 +2,6 @@ import { prisma } from '~~/prisma/prisma'
 import { subMonths } from 'date-fns'
 import { getNSFWCookie } from '~~/server/utils/getNSFWCookie'
 import { getActivityTimelineData } from '~~/server/utils/activityTimeline'
-import type { HomeGalgame, HomeTopic } from '~/types/api/home'
 
 const GALGAME_LIMIT = 12
 const TOPIC_LIMIT = 10

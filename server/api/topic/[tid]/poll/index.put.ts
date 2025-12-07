@@ -1,7 +1,7 @@
 import { prisma } from '~~/prisma/prisma'
 import { updatePollSchema } from '~/validations/topic-poll'
 import type { z } from 'zod'
-import type { KUNGalgamePayload } from '~/types/utils/jwt'
+import type { KUNGalgamePayload } from '~~/shared/types/utils/jwt'
 
 const updatePoll = async (
   input: z.infer<typeof updatePollSchema>,

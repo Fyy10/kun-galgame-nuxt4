@@ -1,6 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { getTodoSchema } from '~/validations/todo'
-import type { UpdateTodo } from '~/types/api/update-log'
 
 export default defineEventHandler(async (event) => {
   const input = kunParseGetQuery(event, getTodoSchema)

@@ -1,4 +1,4 @@
-import { s3 } from '~/lib/s3/client'
+import { s3 } from '~~/lib/s3/client'
 import { AbortMultipartUploadCommand } from '@aws-sdk/client-s3'
 import { abortToolsetUploadSchema } from '~/validations/toolset'
 import {

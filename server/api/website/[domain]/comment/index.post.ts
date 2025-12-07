@@ -1,6 +1,5 @@
 import { prisma } from '~~/prisma/prisma'
 import { createCommentSchema } from '~/validations/website'
-import type { WebsiteComment } from '~/types/api/website'
 
 export default defineEventHandler(async (event) => {
   const userInfo = await getCookieTokenInfo(event)

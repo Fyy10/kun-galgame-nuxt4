@@ -1,5 +1,4 @@
 import { prisma } from '~~/prisma/prisma'
-import { markdownToText } from '~~/server/utils/markdownToText'
 import { updateReplyPinSchema } from '~/validations/topic'
 
 export default defineEventHandler(async (event) => {

@@ -1,7 +1,6 @@
 import { prisma } from '~~/prisma/prisma'
 import { getUserCommentSchema } from '~/validations/user'
 import type { Prisma } from '~~/prisma/generated/prisma/client'
-import type { UserComment } from '~/types/api/user'
 
 export default defineEventHandler(async (event) => {
   const input = kunParseGetQuery(event, getUserCommentSchema)
