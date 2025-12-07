@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { SearchResultComment } from '~/types/api/search'
-
 defineProps<{
   comment: SearchResultComment
 }>()

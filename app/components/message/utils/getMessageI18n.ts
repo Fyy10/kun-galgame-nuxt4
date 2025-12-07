@@ -1,5 +1,3 @@
-import type { Message } from '~/types/api/message'
-
 const messageTemplates: Record<string, Record<string, string>> = {
   'en-us': {
     upvoted: ' upvoted you!',

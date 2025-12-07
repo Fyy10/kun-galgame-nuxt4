@@ -1,4 +1,4 @@
-import type { GalgameCard } from '~/types/api/galgame'
+import type { GalgameCard } from './galgame'
 
 export interface UserInfo {
   id: number

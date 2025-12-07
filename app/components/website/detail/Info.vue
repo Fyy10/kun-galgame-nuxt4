@@ -4,8 +4,6 @@ import {
   KUN_WEBSITE_ACG_LIMIT_MAP
 } from '~/constants/galgameWebsite'
 
-import type { WebsiteDetail } from '~/types/api/website'
-
 defineProps<{
   data: WebsiteDetail
 }>()

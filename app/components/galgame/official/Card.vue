@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { KUN_GALGAME_OFFICIAL_LANGUAGE_MAP } from '~/constants/galgameOfficial'
-import type { GalgameOfficialItem } from '~/types/api/galgame-official'
 
 defineProps<{
   official: GalgameOfficialItem

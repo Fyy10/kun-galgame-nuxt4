@@ -1,5 +1,3 @@
-import type { SearchType } from '~/types/api/search'
-
 interface NavItem {
   textValue: string
   value: SearchType

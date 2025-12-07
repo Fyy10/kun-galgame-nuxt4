@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { KunTooltip } from '#components'
-import type { TopicDetail } from '~/types/api/topic'
 
 const props = defineProps<{
   topic: TopicDetail

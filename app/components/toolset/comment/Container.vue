@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { ToolsetComment } from '~/types/api/toolset-comment'
 import type { SerializeObject } from 'nitropack'
 
 const props = defineProps<{ toolsetId: number; ownerId?: number }>()

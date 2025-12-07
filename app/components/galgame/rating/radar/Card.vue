@@ -6,7 +6,6 @@ import {
   KUN_GALGAME_RATING_SPOILER_COLOR_MAP,
   KUN_GALGAME_RATING_PLAY_STATUS_MAP
 } from '~/constants/galgame-rating'
-import type { GalgameRatingCardOnGalgamePage } from '~/types/api/galgame-rating'
 
 defineProps<{
   ratings: GalgameRatingCardOnGalgamePage[]

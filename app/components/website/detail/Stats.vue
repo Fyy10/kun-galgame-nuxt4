@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { WebsiteDetail } from '~/types/api/website'
-
 defineProps<{
   data: WebsiteDetail
 }>()

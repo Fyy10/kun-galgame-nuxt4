@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { navItems } from './items'
-import type { SearchType, SearchResult } from '~/types/api/search'
 
 const { keywords } = storeToRefs(useTempSearchStore())
 

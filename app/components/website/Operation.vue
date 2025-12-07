@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { WebsiteDetail } from '~/types/api/website'
 import type { CreateWebsitePayload, UpdateWebsitePayload } from './modal/types'
 
 const props = defineProps<{

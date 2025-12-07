@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import VueApexCharts from 'vue3-apexcharts'
 import type { ApexOptions } from 'apexcharts'
-import type { ToolsetRating } from '~/types/api/toolset'
 
 const props = defineProps<{
   id: number

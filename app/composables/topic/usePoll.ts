@@ -1,5 +1,4 @@
 import type { PollFormData } from '~/components/topic/poll/types'
-import type { TopicPollOption } from '~/types/api/topic-poll'
 
 export const usePoll = (topicId: number) => {
   const getPoll = () => {

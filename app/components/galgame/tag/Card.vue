@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { KUN_GALGAME_TAG_CATEGORY_MAP } from '~/constants/galgameTag'
-import type { GalgameTagItem } from '~/types/api/galgame-tag'
 
 defineProps<{
   tag: GalgameTagItem

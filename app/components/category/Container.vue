@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { KUN_TOPIC_SECTION } from '~/constants/topic'
-import type { CategorySectionStats } from '~/types/api/category'
 
 defineProps<{
   sections: CategorySectionStats[]

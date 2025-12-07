@@ -6,11 +6,6 @@ import {
   KUN_GALGAME_TOOLSET_VERSION_MAP
 } from '~/constants/toolset'
 import { toolsetUpdateForm } from './rewriteStore'
-import type {
-  ToolsetDetail,
-  ToolsetRating,
-  ToolsetResource
-} from '~/types/api/toolset'
 
 const props = defineProps<{
   id: number

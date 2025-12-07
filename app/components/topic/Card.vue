@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { TopicCard } from '~/types/api/topic'
-
 const props = defineProps<{
   topic: TopicCard
 }>()

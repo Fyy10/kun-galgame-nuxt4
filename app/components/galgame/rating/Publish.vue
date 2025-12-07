@@ -15,7 +15,6 @@ import {
   updateGalgameRatingSchema
 } from '~/validations/galgame-rating'
 import { usePersistEditGalgameRatingStore } from '~/store/modules/edit/rating'
-import type { GalgameRatingCardOnGalgamePage } from '~/types/api/galgame-rating'
 
 type RatingInitialData = {
   galgameRatingId: number

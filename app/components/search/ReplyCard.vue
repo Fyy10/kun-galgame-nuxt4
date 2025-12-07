@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { SearchResultReply } from '~/types/api/search'
-
 defineProps<{
   reply: SearchResultReply
 }>()

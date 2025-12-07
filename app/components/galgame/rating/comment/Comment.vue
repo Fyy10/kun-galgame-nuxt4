@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { GalgameRatingComment } from '~/types/api/galgame-rating'
-
 const props = defineProps<{
   ratingId: number
   ratingAuthorId: number

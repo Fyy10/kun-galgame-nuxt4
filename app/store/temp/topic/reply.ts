@@ -2,7 +2,6 @@ import type {
   ReplyStoreTemp,
   SuccessfulReplyEvent
 } from '~/store/types/topic/reply'
-import type { TopicReply } from '~/types/api/topic-reply'
 
 export const useTempReplyStore = defineStore('tempTopicReply', {
   persist: false,

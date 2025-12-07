@@ -1,14 +1,4 @@
 <script setup lang="ts">
-import type {
-  SearchResultTopic,
-  SearchResultGalgame,
-  SearchResultUser,
-  SearchResultReply,
-  SearchResultComment,
-  SearchType,
-  SearchResult
-} from '~/types/api/search'
-
 const props = defineProps<{
   type: SearchType
   results: SearchResult[]

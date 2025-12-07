@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { TopicComment } from '~/types/api/topic-comment'
-
 const props = defineProps<{
   replyId: number
   commentsData: TopicComment[]

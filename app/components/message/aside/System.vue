@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { MessageSystemMessage } from '~/types/api/message'
-
 defineProps<{
   message: MessageSystemMessage
 }>()

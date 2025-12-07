@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
-import type { AdminUser } from '~/types/api/admin'
 
 useKunDisableSeo('用户管理')
 

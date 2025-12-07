@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { ChatMessage } from '~/types/api/chat-message'
-
 defineProps<{
   message: ChatMessage
   isSent: boolean

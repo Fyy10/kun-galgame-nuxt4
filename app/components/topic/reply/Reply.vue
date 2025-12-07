@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { scrollPage } from '../_helper'
-import type { TopicReply } from '~/types/api/topic-reply'
-import type { TopicComment } from '~/types/api/topic-comment'
 
 const bannerBaseClasses =
   'flex items-center gap-2 px-4 py-2 mb-3 rounded-lg font-semibold text-sm'

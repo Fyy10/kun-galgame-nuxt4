@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { replaceAsideItem } from '../aside/asideItemStore'
-import type { ChatMessage } from '~/types/api/chat-message'
 
 const props = defineProps<{
   userId: number

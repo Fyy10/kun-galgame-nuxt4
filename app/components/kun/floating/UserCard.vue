@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { UserFloatingCard } from '~/types/api/user'
-
 const props = withDefaults(
   defineProps<{
     userId: number

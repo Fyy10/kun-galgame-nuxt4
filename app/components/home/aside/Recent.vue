@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { KUN_ACTIVITY_TYPE_TYPE } from '~/constants/activity'
-import type { ActivityItem } from '~/types/api/activity'
 
 defineProps<{
   activities: ActivityItem[]

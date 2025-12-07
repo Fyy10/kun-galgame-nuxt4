@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { WebsiteCard } from '~/types/api/website'
-
 const props = defineProps<{
   website: WebsiteCard
 }>()

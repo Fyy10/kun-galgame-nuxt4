@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useTopicReplies } from '~/composables/topic/useTopicReplies'
-import type { TopicDetail } from '~/types/api/topic'
 
 const props = defineProps<{
   topic: TopicDetail

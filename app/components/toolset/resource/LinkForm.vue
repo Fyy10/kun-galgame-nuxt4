@@ -1,9 +1,5 @@
 <script setup lang="ts">
 import { createToolsetResourceSchema } from '~/validations/toolset'
-import type {
-  ToolsetUploadCompleteResponse,
-  ToolsetResource
-} from '~/types/api/toolset'
 
 const props = defineProps<{
   toolsetId: number

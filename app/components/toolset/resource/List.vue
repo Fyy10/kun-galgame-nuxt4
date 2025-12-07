@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { ToolsetResource } from '~/types/api/toolset'
-
 defineProps<{
   toolsetId: number
   resources: ToolsetResource[]

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { KUN_UPDATE_LOG_TYPE_MAP } from '~/constants/update'
-import type { UpdateLog } from '~/types/api/update-log'
 import type { UpdateUpdateLogPayload } from './types'
 
 const pageData = ref({

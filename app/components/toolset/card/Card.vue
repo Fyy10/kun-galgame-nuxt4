@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { ToolsetCard } from '~/types/api/toolset'
 import {
   KUN_GALGAME_TOOLSET_TYPE_MAP,
   KUN_GALGAME_TOOLSET_PLATFORM_MAP,

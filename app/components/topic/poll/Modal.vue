@@ -2,7 +2,6 @@
 import { usePoll } from '~/composables/topic/usePoll'
 import { createPollSchema, updatePollSchema } from '~/validations/topic-poll'
 import { TOPIC_POLL_VISIBILITY_OPTIONS } from '~/constants/topic'
-import type { TopicPoll } from '~/types/api/topic-poll'
 import type { PollFormData } from './types'
 
 const props = defineProps<{

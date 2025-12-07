@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { usePoll } from '~/composables/topic/usePoll'
-import type { TopicPoll } from '~/types/api/topic-poll'
 
 const props = defineProps<{
   topicId: number

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { GalgameResourceDetails } from '~/types/api/galgame-resource'
-
 const { id, role } = usePersistUserStore()
 const { resources, rewriteResourceId } = storeToRefs(
   useTempGalgameResourceStore()

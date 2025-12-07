@@ -1,8 +1,3 @@
-import type {
-  ChatMessageAsideItem,
-  ChatMessage
-} from '~/types/api/chat-message'
-
 export const asideItems = ref<ChatMessageAsideItem[]>([])
 
 export const replaceAsideItem = (message: ChatMessage) => {

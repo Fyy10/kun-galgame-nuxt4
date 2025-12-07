@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { ToolsetComment } from '~/types/api/toolset-comment'
-
 const props = defineProps<{
   toolsetId: number
   parentId?: number | null

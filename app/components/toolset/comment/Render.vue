@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { ToolsetComment } from '~/types/api/toolset-comment'
-
 const props = defineProps<{
   comments: ToolsetComment[]
   toolsetId: number

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { GalgameEngineItem } from '~/types/api/galgame-engine'
-
 defineProps<{
   engine: GalgameEngineItem
 }>()

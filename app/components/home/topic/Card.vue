@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { HomeTopic } from '~/types/api/home'
-
 defineProps<{
   topic: HomeTopic
   isTransparent?: boolean

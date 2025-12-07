@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { WebsiteComment } from '~/types/api/website'
-
 const props = defineProps<{
   comment: WebsiteComment
 }>()

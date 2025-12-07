@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import type { GalgameDetail } from '~/types/api/galgame'
-import type { GalgameRatingCardOnGalgamePage } from '~/types/api/galgame-rating'
-
 const props = defineProps<{
   galgame: GalgameDetail
 }>()

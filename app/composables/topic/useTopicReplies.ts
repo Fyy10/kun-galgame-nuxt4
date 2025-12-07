@@ -1,4 +1,3 @@
-import type { TopicReply } from '~/types/api/topic-reply'
 import type { Ref } from 'vue'
 
 export const useTopicReplies = (topicId: number | Ref<number>) => {

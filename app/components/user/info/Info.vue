@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { KUN_USER_ROLE_MAP, KUN_USER_STATUS_MAP } from '~/constants/user'
-import type { UserInfo } from '~/types/api/user'
 
 const props = defineProps<{
   user: UserInfo

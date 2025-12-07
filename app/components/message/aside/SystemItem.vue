@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { AsideItem } from '~/types/api/chat-message'
-
 defineProps<{
   title: string
   data: AsideItem

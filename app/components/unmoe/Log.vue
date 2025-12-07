@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { UnmoeLog } from '~/types/api/unmoe'
-
 const props = defineProps<{
   logs: UnmoeLog[]
 }>()

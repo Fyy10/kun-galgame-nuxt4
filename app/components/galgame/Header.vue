@@ -10,8 +10,6 @@ import {
   KUN_GALGAME_CONTENT_LIMIT_MAP
 } from '~/constants/galgame'
 import { updateGalgameBannerSchema } from '~/validations/galgame'
-import type { GalgameDetail } from '~/types/api/galgame'
-import type { GalgameRatingCardOnGalgamePage } from '~/types/api/galgame-rating'
 
 const props = defineProps<{
   galgame: GalgameDetail

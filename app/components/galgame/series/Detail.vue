@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { UpdateGalgameSeriesPayload } from '../types'
-import type { GalgameSeriesDetail } from '~/types/api/galgame-series'
 
 const props = defineProps<{
   data: GalgameSeriesDetail

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { TopicPollVoteLog } from '~/types/api/topic-poll'
-
 const props = defineProps<{
   modelValue: boolean
   pollId: number

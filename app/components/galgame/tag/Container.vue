@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
-import type { GalgameTagItem } from '~/types/api/galgame-tag'
-import type { GalgameCard } from '~/types/api/galgame'
 
 const pageData = reactive({
   page: 1,

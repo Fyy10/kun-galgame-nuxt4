@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { TopicDetail } from '~/types/api/topic'
-
 defineProps<{
   topic: TopicDetail
 }>()

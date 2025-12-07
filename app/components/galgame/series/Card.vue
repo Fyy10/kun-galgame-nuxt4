@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { GalgameSeries } from '~/types/api/galgame-series'
-
 const props = defineProps<{
   series: GalgameSeries
 }>()

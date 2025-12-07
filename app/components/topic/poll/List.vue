@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { TopicPoll } from '~/types/api/topic-poll'
 import { usePoll } from '~/composables/topic/usePoll'
 import { TOPIC_POLL_VISIBILITY_MAP } from '~/constants/topic'
 

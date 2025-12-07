@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import VueApexCharts from 'vue3-apexcharts'
 import type { ApexOptions } from 'apexcharts'
-import type { AdminOverStats } from '~/types/api/admin'
 import {
   type StatsModelType,
   KUN_ADMIN_OVERVIEW_STATS_MODEL_MAP

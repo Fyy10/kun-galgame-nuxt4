@@ -10,7 +10,6 @@ import {
   KUN_GALGAME_DIM_DESCRIPTIONS
 } from '~/constants/galgame-rating'
 import { calcGalgameRating } from '~/algorithms/GalgameRatingAlg'
-import type { GalgameRatingDetails } from '~/types/api/galgame-rating'
 
 const props = defineProps<{
   ratingId: number

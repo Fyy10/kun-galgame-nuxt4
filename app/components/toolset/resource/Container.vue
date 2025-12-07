@@ -1,9 +1,5 @@
 <script setup lang="ts">
 import { USER_DAILY_UPLOAD_LIMIT } from '~/config/upload'
-import type {
-  ToolsetUploadCompleteResponse,
-  ToolsetResource
-} from '~/types/api/toolset'
 
 const props = defineProps<{
   toolsetId: number

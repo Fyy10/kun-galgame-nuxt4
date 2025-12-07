@@ -1,5 +1,4 @@
 import { pageData } from '~/components/topic/pageData'
-import type { TopicCard } from '~/types/api/topic'
 
 export const useTopic = (topicType: 'resource' | 'all') => {
   const topics = useState<TopicCard[]>(topicType, () => [])

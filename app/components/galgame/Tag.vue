@@ -5,7 +5,6 @@ import {
   type KunGalgameTagCategory,
   type KunGalgameTagSpoiler
 } from '~/constants/galgameTag'
-import type { GalgameDetailTag } from '~/types/api/galgame'
 
 const props = defineProps<{
   tags: GalgameDetailTag[]

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { TopicReply } from '~/types/api/topic-reply'
-
 const props = defineProps<{
   reply: TopicReply
 }>()

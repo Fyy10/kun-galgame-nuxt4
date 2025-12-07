@@ -2,8 +2,6 @@
 import DOMPurify from 'isomorphic-dompurify'
 import { diffGalgame } from './compare'
 import { KUN_GALGAME_RESOURCE_PULL_REQUEST_I18N_FIELD_MAP } from '~/constants/galgame'
-import type { GalgamePRDetails } from '~/types/api/galgame-pr'
-import type { GalgameDetail } from '~/types/api/galgame'
 
 const props = defineProps<{
   details: Partial<GalgamePRDetails>

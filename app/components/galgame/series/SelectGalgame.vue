@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
-import type { GalgameSeriesSearchItem } from '~/types/api/galgame-series'
 
 const props = defineProps<{
   modelValue: number[]

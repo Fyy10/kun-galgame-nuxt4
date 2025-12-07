@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { GalgameDetail } from '~/types/api/galgame'
-
 defineProps<{
   galgame: GalgameDetail
 }>()

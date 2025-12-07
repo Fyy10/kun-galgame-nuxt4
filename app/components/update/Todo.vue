@@ -3,7 +3,6 @@ import {
   KUN_TODO_TYPE_MAP,
   KUN_UPDATE_LOG_STATUS_MAP
 } from '~/constants/update'
-import type { UpdateTodo } from '~/types/api/update-log'
 import type { UpdateTodoPayload } from './types'
 
 const { role } = usePersistUserStore()

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { SearchResultUser } from '~/types/api/search'
-
 defineProps<{
   user: SearchResultUser
 }>()

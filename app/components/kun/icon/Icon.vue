@@ -1,14 +1,22 @@
 <script setup lang="ts">
-const props = defineProps<{
-  name: string
-  class?: string
-  className?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    name?: string
+    class?: string
+    className?: string
+  }>(),
+  {
+    name: '',
+    class: '',
+    className: ''
+  }
+)
 </script>
 
 <template>
   <Icon
-    :name="name"
+    v-if="props.name"
+    :name="props.name"
     :class="cn('shrink-0 text-inherit', props.class, props.className)"
   />
 </template>

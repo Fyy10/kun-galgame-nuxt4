@@ -7,7 +7,6 @@ import {
   KUN_GALGAME_RESOURCE_TYPE_MAP,
   KUN_GALGAME_RESOURCE_LANGUAGE_MAP
 } from '~/constants/galgame'
-import type { GalgameResourceCard } from '~/types/api/galgame-resource'
 
 defineProps<{
   resource: GalgameResourceCard

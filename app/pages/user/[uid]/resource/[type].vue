@@ -3,7 +3,6 @@ import {
   GALGAME_RESOURCE_NAV_CONFIG,
   type KUN_USER_PAGE_GALGAME_RESOURCE_TYPE
 } from '~/constants/user'
-import type { UserInfo } from '~/types/api/user'
 
 const props = defineProps<{
   user: UserInfo

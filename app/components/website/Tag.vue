@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { WebsiteTag } from '~/types/api/website'
-
 const props = defineProps<{
   tags: WebsiteTag[]
   length?: number

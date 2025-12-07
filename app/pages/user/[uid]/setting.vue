@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { UserInfo } from '~/types/api/user'
-
 definePageMeta({
   middleware: 'auth'
 })

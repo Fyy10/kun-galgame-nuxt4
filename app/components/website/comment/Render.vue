@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { scrollIntoComment } from './_scrollIntoComment'
-import type { WebsiteComment } from '~/types/api/website'
 
 withDefaults(
   defineProps<{

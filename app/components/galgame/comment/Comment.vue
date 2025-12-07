@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import type { SerializeObject } from 'nitropack'
-import type { GalgameDetail } from '~/types/api/galgame'
-import type { GalgameComment } from '~/types/api/galgame-comment'
 
 const props = defineProps<{
   comment: SerializeObject<GalgameComment>

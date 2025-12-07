@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { GALGAME_RESOURCE_PLATFORM_ICON_MAP } from '~/constants/galgameResource'
-import type { GalgameCard } from '~/types/api/galgame'
 
 defineProps<{
   galgames: GalgameCard[]

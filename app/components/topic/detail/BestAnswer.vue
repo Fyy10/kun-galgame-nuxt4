@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { scrollPage } from '../_helper'
-import type { TopicBestAnswer } from '~/types/api/topic'
 
 defineProps<{
   bestAnswer: TopicBestAnswer

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { scrollPage } from '../_helper'
-import type { TopicReplyTargetInfo } from '~/types/api/topic-reply'
 
 const props = defineProps<{
   target: TopicReplyTargetInfo

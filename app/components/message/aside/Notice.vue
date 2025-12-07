@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { getMessageI18n } from '../utils/getMessageI18n'
-import type { Message } from '~/types/api/message'
 
 const props = defineProps<{
   message: Message

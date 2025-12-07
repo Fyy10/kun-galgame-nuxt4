@@ -1,5 +1,3 @@
-import type { TopicReply } from '~/types/api/topic-reply'
-
 interface ReplyDraft {
   targetUserId: number
   targetUserName: string

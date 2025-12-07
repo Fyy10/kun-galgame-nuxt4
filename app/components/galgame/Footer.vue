@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { GalgameDetail } from '~/types/api/galgame'
-
 const galgame = inject<GalgameDetail>('galgame')
 </script>
 

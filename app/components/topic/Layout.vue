@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { TopicCard } from '~/types/api/topic'
-
 defineProps<{
   topics: TopicCard[]
 }>()

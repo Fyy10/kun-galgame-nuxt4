@@ -3,7 +3,6 @@ import {
   REPLY_NAV_CONFIG,
   type KUN_USER_PAGE_REPLY_TYPE
 } from '~/constants/user'
-import type { UserInfo } from '~/types/api/user'
 
 const props = defineProps<{
   user: UserInfo

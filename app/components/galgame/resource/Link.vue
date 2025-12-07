@@ -10,10 +10,6 @@ import {
   KUN_GALGAME_RESOURCE_PLATFORM_MAP
 } from '~/constants/galgame'
 import { fetchTitle } from './_fetchTitle'
-import type {
-  GalgameResource,
-  GalgameResourceDetails
-} from '~/types/api/galgame-resource'
 
 const props = defineProps<{
   resource: GalgameResource

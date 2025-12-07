@@ -13,7 +13,6 @@ import {
   KUN_GALGAME_TOOLSET_UPLOAD_STATUS_MAP,
   type KUN_GALGAME_TOOLSET_UPLOAD_STATUS_CONST
 } from '~/constants/toolset'
-import type { ToolsetUploadCompleteResponse } from '~/types/api/toolset'
 
 const props = defineProps<{
   toolsetId: number

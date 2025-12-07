@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { HomeGalgame, HomeTopic } from '~/types/api/home'
-
 defineProps<{
   galgames: HomeGalgame[]
 }>()

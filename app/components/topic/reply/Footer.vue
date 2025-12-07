@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import type { TopicReply } from '~/types/api/topic-reply'
-import type { TopicComment } from '~/types/api/topic-comment'
-
 defineProps<{
   title: string
   reply: TopicReply

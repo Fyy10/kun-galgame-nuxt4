@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { KUN_USER_STATUS_MAP } from '~/constants/user'
-import type { AdminUser } from '~/types/api/admin'
 
 const props = defineProps<{
   user: AdminUser

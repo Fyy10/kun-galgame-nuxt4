@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { KUN_GALGAME_AGE_LIMIT_MAP } from '~/constants/galgame'
-import type { GalgameEngineItem } from '~/types/api/galgame-engine'
-import type { GalgameOfficialItem } from '~/types/api/galgame-official'
 
 defineProps<{
   official: GalgameOfficialItem[]
