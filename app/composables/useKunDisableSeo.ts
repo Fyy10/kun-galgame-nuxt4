@@ -2,7 +2,7 @@ export const useKunDisableSeo = (title: string) => {
   useHead({
     htmlAttrs: { lang: 'zh-Hans' },
     meta: [
-      { name: '', content: '' },
+      { name: 'title', content: '' },
       { name: 'robots', content: 'noindex, nofollow' }
     ],
     templateParams: {

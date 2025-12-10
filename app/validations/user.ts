@@ -93,7 +93,11 @@ export const userUpdatePasswordSchema = z.object({
   })
 })
 
-export const userRegisterSchema = userLoginSchema.extend(userUpdateEmailSchema)
+export const userRegisterSchema = userLoginSchema.extend({
+  codeSalt: z.string().min(64).max(64),
+  email: z.email(),
+  code: z.string().min(7).max(7)
+})
 
 export const deleteUserSchema = z.object({
   userId: z.coerce.number<number>().min(1).max(9999999)

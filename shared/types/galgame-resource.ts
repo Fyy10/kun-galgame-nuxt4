@@ -25,3 +25,23 @@ export interface GalgameResourceDetails extends GalgameResource {
 export interface GalgameResourceCard extends GalgameResource {
   galgameName: KunLanguage
 }
+
+export interface GalgameResourceSummary {
+  id: number
+  name: KunLanguage
+  banner: string
+  contentLimit: string
+  resourceUpdateTime: Date | string
+  view: number
+  originalLanguage: string
+  ageLimit: KunAgeLimit
+  platform: string[]
+  language: string[]
+  type: string[]
+}
+
+export interface GalgameResourcePageData {
+  galgame: GalgameResourceSummary
+  resource: GalgameResourceDetails
+  recommendations: GalgameResourceCard[]
+}

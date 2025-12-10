@@ -18,7 +18,7 @@ defineProps<{
     :is-transparent="true"
     :is-hoverable="true"
     :is-pressable="true"
-    :to="`/galgame/${resource.galgameId}`"
+    :to="`/galgame-resource/${resource.galgameId}`"
     :dark-border="true"
   >
     <div class="flex items-center gap-2">
