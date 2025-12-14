@@ -96,6 +96,8 @@ const { data, status, refresh } = await useLazyFetch(
       </template>
     </KunHeader>
 
+    <KunAdDZMMBanner />
+
     <KunNull
       v-if="!data?.length"
       description="这个 Galgame 还没有资源链接, 快添加一个吧!"

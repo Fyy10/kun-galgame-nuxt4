@@ -50,6 +50,8 @@ if (data.value && data.value !== 'not found') {
     <template v-if="data !== 'not found'">
       <GalgameResourceDetailHero :galgame="data.galgame" />
 
+      <KunAdDZMMBanner class-name="hidden lg:block" />
+
       <div class="grid grid-cols-1 gap-3 lg:grid-cols-3">
         <GalgameResourceDetailPanel
           class="lg:col-span-2"

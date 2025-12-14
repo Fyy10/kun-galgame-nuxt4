@@ -94,6 +94,14 @@ export const kungal: KunSiteConfig = {
     image: '/kungalgame.webp',
     url: KUN_SITE_URL
   },
+  ad: [
+    {
+      name: 'DZMM',
+      link: 'https://stats.kungal.org/q/9fCcXCYq5',
+      banner: '/a/kungal1.webp',
+      icon: '/a/icon1.webp'
+    }
+  ],
   images: [
     {
       url: '/kungalgame.webp',

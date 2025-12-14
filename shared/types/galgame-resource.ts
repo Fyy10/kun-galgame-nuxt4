@@ -12,12 +12,9 @@ export interface GalgameResource {
   likeCount: number
   isLiked: boolean
   linkDomain: string
+  note: string
   created: Date | string
   edited: Date | string | null
-}
-
-export interface GalgameResourceDetailPage extends GalgameResource {
-  note: string
 }
 
 export interface GalgameResourceDetailLink extends GalgameResource {

@@ -11,7 +11,7 @@ import {
 
 const props = defineProps<{
   galgame: GalgameResourceSummary
-  resource: GalgameResourceDetailPage
+  resource: GalgameResource
   refresh: () => Promise<void>
 }>()
 

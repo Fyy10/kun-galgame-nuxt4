@@ -10,7 +10,7 @@ const {
 const { providerName, resolveProviderName } = useGalgameResourceProvider()
 
 const props = defineProps<{
-  resource: GalgameResourceDetailPage
+  resource: GalgameResource
   resourceTypeLabel: string
   refresh: () => void
 }>()
@@ -137,6 +137,8 @@ onMounted(() => {
       </pre>
     </KunInfo>
 
+    <KunAdDZMMBanner class-name="block lg:hidden" />
+
     <KunInfo
       :color="isResourceExpired ? 'warning' : 'success'"
       variant="bordered"
@@ -229,15 +231,13 @@ onMounted(() => {
       </p>
     </KunInfo>
 
-    <div
-      class="mt-auto flex flex-wrap items-center justify-end gap-1"
-      v-if="resource.user.id === id || role > 1"
-    >
+    <div class="mt-auto flex flex-wrap items-center justify-end gap-1">
       <KunButton
         :is-icon-only="true"
         variant="flat"
         @click="handleRewriteResource"
         :loading="isFetching"
+        v-if="resource.user.id === id || role > 1"
       >
         编辑资源
         <KunIcon name="lucide:pencil" />
@@ -248,6 +248,7 @@ onMounted(() => {
         variant="flat"
         @click="handleDeleteResource"
         :loading="isFetching"
+        v-if="resource.user.id === id || role > 1"
       >
         删除资源
         <KunIcon name="lucide:trash-2" />

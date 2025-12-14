@@ -70,7 +70,7 @@ export default defineEventHandler(async (event) => {
     ...new Set(data.link.map((l) => getDomain(l.url, { getRootDomain: true })))
   ]
 
-  const resource: GalgameResourceDetailPage = {
+  const resource: GalgameResource = {
     id: data.id,
     view: data.view,
     galgameId: data.galgame_id,

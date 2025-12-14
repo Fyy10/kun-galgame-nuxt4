@@ -46,5 +46,7 @@ const { data, status } = await useFetch(`/api/galgame`, {
         :is-loading="status === 'pending'"
       />
     </KunCard>
+
+    <KunAdDZMMBanner />
   </div>
 </template>

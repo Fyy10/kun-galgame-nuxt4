@@ -90,7 +90,7 @@ onMounted(async () => {
         color="default"
         size="xl"
         variant="light"
-        class-name="hidden sm:block"
+        class-name="hidden sm:block mr-6"
         @click="canGoBack ? router.back() : navigateTo('/')"
       >
         <KunIcon :name="canGoBack ? 'lucide:arrow-left' : 'lucide:home'" />
@@ -117,6 +117,8 @@ onMounted(async () => {
         <span class="text-sm sm:text-base">GitHub</span>
       </KunButton>
     </KunTooltip>
+
+    <KunAdDZMMIcon />
 
     <!-- <KunModal
       :modal-value="isShowUpdateAvatarModal"
