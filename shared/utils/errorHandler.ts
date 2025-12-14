@@ -1,5 +1,5 @@
-import { useMessage } from '~/composables/useMessage'
-import { errorMessages } from '~/error/errorI18n'
+import { useMessage } from '../../app/composables/useMessage'
+import { errorMessages } from '../../app/error/errorI18n'
 
 export const kungalgameErrorHandler = (errorNumber: string) => {
   const messageType = 'error'
