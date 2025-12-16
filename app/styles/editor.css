@@ -1,5 +1,5 @@
 .milkdown {
-  @apply text-default-800 leading-7 whitespace-pre-line;
+  @apply text-default-800 max-h-[500px] overflow-y-scroll leading-7 whitespace-pre-line;
 }
 
 .milkdown .ProseMirror[data-placeholder]::before {
@@ -7,7 +7,7 @@
 }
 
 .milkdown .ProseMirror {
-  @apply focus:border-primary-500 border-default-200 focus:ring-primary-500 min-h-[300px] rounded-lg border p-4 transition-colors duration-200 focus:ring-1 focus:outline-none;
+  @apply focus:bg-default-500/5 min-h-[300px] rounded-lg border p-4 transition-colors duration-200 focus:outline-none;
 }
 
 .milkdown h1,
