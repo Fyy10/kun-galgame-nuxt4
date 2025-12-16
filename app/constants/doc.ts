@@ -13,3 +13,9 @@ export const KUN_DOC_CATEGORY_COLOR_MAP: Record<string, KunUIColor> = {
   notice: 'primary',
   other: 'default'
 }
+
+export const KUN_DOC_STATUS_OPTIONS = [
+  { value: 0, label: '草稿' },
+  { value: 1, label: '已发布' },
+  { value: 2, label: '隐藏' }
+]

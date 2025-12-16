@@ -1,7 +1,54 @@
+
 <script setup lang="ts">
-defineProps<{
+import { kungalgameResponseHandler } from '~/utils/responseHandler'
+
+const props = defineProps<{
   metadata: DocArticleDetail
 }>()
+
+const metadata = computed(() => props.metadata)
+const { role } = storeToRefs(usePersistUserStore())
+const canManageDoc = computed(() => role.value > 2)
+const isDeleting = ref(false)
+
+const handleEdit = async () => {
+  if (!metadata.value) {
+    return
+  }
+  await navigateTo({
+    path: '/edit/doc/rewrite',
+    query: { slug: metadata.value.slug }
+  })
+}
+
+const handleDelete = async () => {
+  if (!metadata.value || isDeleting.value) {
+    return
+  }
+  const confirmed = await useComponentMessageStore().alert(
+    '确认删除这篇文档吗？',
+    '删除操作不可恢复，请慎重。',
+    true
+  )
+  if (!confirmed) {
+    return
+  }
+
+  isDeleting.value = true
+  try {
+    await $fetch('/api/doc/article', {
+      method: 'DELETE',
+      params: {
+        articleId: metadata.value.id
+      },
+      ...kungalgameResponseHandler
+    })
+    useMessage('删除文档成功', 'success')
+    await navigateTo('/doc')
+  } finally {
+    isDeleting.value = false
+  }
+}
 </script>
 
 <template>
@@ -26,7 +73,34 @@ defineProps<{
         <KunBadge color="secondary">
           {{ metadata.category.title }}
         </KunBadge>
-        <span class="text-default-500"> 浏览量 {{ metadata.view }} </span>
+        <div class="flex items-center gap-1 text-default-500">
+          <KunIcon name="lucide:eye" class="h-4 w-4" />
+          <span>{{ metadata.view }} 次浏览</span>
+        </div>
+
+        <div
+          v-if="canManageDoc"
+          class="flex flex-wrap items-center gap-2"
+        >
+          <KunButton
+            size="sm"
+            variant="light"
+            color="primary"
+            @click="handleEdit"
+          >
+            编辑
+          </KunButton>
+          <KunButton
+            size="sm"
+            variant="light"
+            color="danger"
+            :loading="isDeleting"
+            :disabled="isDeleting"
+            @click="handleDelete"
+          >
+            删除
+          </KunButton>
+        </div>
       </div>
 
       <div class="flex items-center gap-3">
