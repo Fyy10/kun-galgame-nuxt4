@@ -6,6 +6,13 @@ import { markdownToHtml } from '../server/utils/remark/markdownToHtml'
 
 const DOC_ROOT = path.resolve('content/doc')
 
+const DOC_CATEGORY_TITLE_MAP: Record<string, string> = {
+  galgame: 'Galgame',
+  kun: '关于鲲',
+  notice: '网站公告',
+  other: '其它'
+}
+
 const CATEGORY_CACHE = new Map<string, number>()
 const TAG_CACHE = new Map<string, number>()
 
@@ -189,7 +196,10 @@ const migrateFile = async (filePath: string) => {
       : `/doc/${slug}`
 
   const categorySlug = normalizeSlug(meta.category || 'other') || 'other'
-  const categoryTitle = (meta.category as string) || '其他'
+  const categoryTitle =
+    DOC_CATEGORY_TITLE_MAP[categorySlug] ||
+    (meta.category as string) ||
+    DOC_CATEGORY_TITLE_MAP.other
   const categoryId = await ensureCategory(categorySlug, categoryTitle)
   const tagIds = await ensureTags(
     Array.isArray(meta.tags)
