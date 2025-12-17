@@ -39,13 +39,11 @@ export default defineNuxtConfig({
     '@nuxt/icon',
     '@nuxt/eslint',
     '@nuxtjs/color-mode',
-    '@nuxt/content',
     '@pinia/nuxt',
     '@dxup/nuxt',
     '@vite-pwa/nuxt',
     'pinia-plugin-persistedstate/nuxt',
     'nuxt-schema-org',
-    // 'nuxt-og-image',
     'nuxt-umami'
   ],
 

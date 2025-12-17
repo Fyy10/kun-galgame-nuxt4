@@ -1,6 +1,6 @@
 {
   "name": "kun-galgame-nuxt4",
-  "version": "5.0.45",
+  "version": "5.0.46",
   "type": "module",
   "packageManager": "pnpm@10.17.1",
   "private": true,
@@ -91,7 +91,6 @@
     "@lezer/highlight": "^1.2.3",
     "@milkdown/kit": "^7.17.2",
     "@milkdown/vue": "7.17.2",
-    "@nuxt/content": "^3.9.0",
     "@prisma/adapter-pg": "^7.1.0",
     "@prisma/client": "^7.1.0",
     "@prosemirror-adapter/vue": "^0.4.6",
