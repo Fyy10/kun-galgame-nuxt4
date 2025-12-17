@@ -274,7 +274,7 @@ const submit = async () => {
         scale="h3"
       />
 
-      <KunLink to="/doc/help/galgame-rating-guide">
+      <KunLink to="/doc/galgame-rating-guide">
         鲲 Galgame 八维超评分系统介绍及使用说明
       </KunLink>
 

@@ -151,6 +151,6 @@ pin: true
 
 <br />
 
-言灵法阵支持上古的魔导文——Markdown 语法。若汝对这门古老的语言感到陌生，可翻阅此处的禁忌书卷 - [Markdown 编辑器语法指南](/doc/other/markdown-grammar)
+言灵法阵支持上古的魔导文——Markdown 语法。若汝对这门古老的语言感到陌生，可翻阅此处的禁忌书卷 - [Markdown 编辑器语法指南](/doc/markdown-grammar)
 
-(回复面板支持 Markdown 语法, 如果您不熟悉 Markdown 语法, 可以查看 [Markdown 编辑器语法指南](/doc/other/markdown-grammar))
+(回复面板支持 Markdown 语法, 如果您不熟悉 Markdown 语法, 可以查看 [Markdown 编辑器语法指南](/doc/markdown-grammar))

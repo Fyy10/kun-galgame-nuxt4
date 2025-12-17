@@ -56,7 +56,7 @@ import { friendArray } from '~/config/friend'
     </template>
 
     <div class="flex flex-col items-center justify-center gap-3">
-      <KunLink underline="none" to="/doc/notice/contact">
+      <KunLink underline="none" to="/doc/contact">
         <h3 class="text-primary text-xl font-bold">加入我们</h3>
       </KunLink>
 

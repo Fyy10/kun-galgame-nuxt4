@@ -136,7 +136,7 @@ watch(
           <p class="text-default-500">
             默认仅显示了 SFW 的标签, 查看 NSFW 标签请在设置面板打开 NSFW
             开关。如果有数据错误请
-            <KunLink to="/doc/notice/contact"> 联系我们 </KunLink>。
+            <KunLink to="/doc/contact"> 联系我们 </KunLink>。
           </p>
 
           <div

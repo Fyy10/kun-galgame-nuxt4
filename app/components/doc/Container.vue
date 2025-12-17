@@ -24,8 +24,8 @@ const articles = computed(() => articleResponse.value?.articles || [])
     content-class="space-y-6"
   >
     <KunHeader
-      name="文档中心"
-      description="收录站内所有指南、更新日志与公告，方便你快速查阅"
+      name="Galgame 帮助文档"
+      description="如果您在 Galgame 发布, Galgame 交流, Galgame 资源 等方面有任何的问题, 或者想要联系我们, 都可以查看此界面的帮助文档"
     />
 
     <div

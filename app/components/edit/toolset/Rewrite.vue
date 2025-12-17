@@ -106,7 +106,7 @@ const handleUpdatePageLink = (value: string | number) => {
         @set-markdown="(value) => (toolsetUpdateForm.description = value)"
         language="zh-cn"
       >
-        <KunLink target="_blank" to="/doc/notice/create-galgame-toolset">
+        <KunLink target="_blank" to="/doc/create-galgame-toolset">
           发布 Galgame 工具规定
         </KunLink>
       </KunMilkdownDualEditorProvider>

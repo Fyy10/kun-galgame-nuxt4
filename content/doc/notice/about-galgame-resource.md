@@ -15,7 +15,7 @@ pin: false
 
 ## Galgame 资源链接的提供
 
-首先请您阅读 [发布 Galgame 帮助](/doc/notice/galgame-publish-help)
+首先请您阅读 [发布 Galgame 帮助](/doc/galgame-publish-help)
 
 这里, 很多人误解了资源区的使用方法，资源链接的提供实际上是**允许将其它网站的页面直接作为资源链接提供的**
 
@@ -55,7 +55,7 @@ pin: false
 
 所以只能请大家在下载资源的时候多下载可信的资源，比如点赞数高的资源链接，大量发布过资源的用户提供过的链接等等
 
-或者您可以在 [Galgame 资源网站大全](/doc/notice/galgame-resource-website) 寻找其它 Galgame 下载站
+或者您可以在 [Galgame 资源网站大全](/doc/galgame-resource-website) 寻找其它 Galgame 下载站
 
 **我们的论坛不是 Galgame 资源网站, 也不想做一个 Galgame 资源网站**
 

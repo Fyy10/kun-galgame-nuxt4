@@ -110,7 +110,7 @@ const handleDeleteRating = async () => {
                 {{ rating }}
               </span>
               <KunLink
-                to="/doc/help/galgame-rating-guide"
+                to="/doc/galgame-rating-guide"
                 size="sm"
                 class="text-default"
               >

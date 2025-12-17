@@ -108,11 +108,11 @@ const handleCreateWebsite = async (
           </p>
           <p class="text-default-500">
             关于 Galgame 网站 Wiki 请查看
-            <KunLink to="/doc/galgame/galgame-website-wiki">
+            <KunLink to="/doc/galgame-website-wiki">
               Galgame 网站 Wiki
             </KunLink>
             , 如果有数据错误请
-            <KunLink to="/doc/notice/contact"> 联系我们 </KunLink>。
+            <KunLink to="/doc/contact"> 联系我们 </KunLink>。
           </p>
           <KunInput
             v-model="searchQuery"

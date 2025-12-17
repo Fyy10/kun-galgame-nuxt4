@@ -220,7 +220,7 @@ export const kunLayoutItem: KunLayoutItem[] = [
     name: 'doc',
     icon: 'lucide:info',
     router: '/doc',
-    label: '关于我们'
+    label: 'Galgame 帮助文档'
   },
   {
     name: 'friends',

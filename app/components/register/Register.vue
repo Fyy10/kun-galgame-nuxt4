@@ -116,9 +116,9 @@ onKeyStroke('Enter', async (e) => {
           class-name="mb-4 flex items-center gap-2 text-sm"
         >
           <span>我同意</span>
-          <KunLink size="sm" to="/doc/notice/agreement">用户协议</KunLink>
+          <KunLink size="sm" to="/doc/agreement">用户协议</KunLink>
           和
-          <KunLink size="sm" to="/doc/notice/privacy">隐私政策</KunLink>
+          <KunLink size="sm" to="/doc/privacy">隐私政策</KunLink>
         </KunCheckBox>
 
         <KunButton

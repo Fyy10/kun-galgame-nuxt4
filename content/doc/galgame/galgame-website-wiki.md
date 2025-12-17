@@ -571,4 +571,4 @@ Galgame 网站类型只是一个 Galgame 网站的标签, 这和 Galgame 网站�
 
 我们的 [Galgame 网站 Wiki](/website) 依然在不断的扩大着, 之后也还会持续不断的收录各种类型的 Galgame 网站
 
-如果您有推荐的, 好的 Galgame 网站, 或者有 Galgame 网站信息错误想要请我们修正, 都欢迎 [加入我们](/doc/notice/contact)
+如果您有推荐的, 好的 Galgame 网站, 或者有 Galgame 网站信息错误想要请我们修正, 都欢迎 [加入我们](/doc/contact)

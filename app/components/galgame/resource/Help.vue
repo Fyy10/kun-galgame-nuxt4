@@ -7,12 +7,12 @@
     <KunInfo title="相关文档" color="info" icon="lucide:book-open">
       <ul class="list-none space-y-1">
         <li>
-          <KunLink to="/doc/notice/about-galgame-resource">
+          <KunLink to="/doc/about-galgame-resource">
             关于 Galgame 资源的盗链界定
           </KunLink>
         </li>
         <li>
-          <KunLink to="/doc/notice/galgame-publish-rule">
+          <KunLink to="/doc/galgame-publish-rule">
             Galgame 资源发布规定
           </KunLink>
         </li>

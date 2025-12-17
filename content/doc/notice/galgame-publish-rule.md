@@ -75,7 +75,7 @@ Galgame 资源区, 除了使用网盘以外, 还可以使用以下的下载方�
 
 种子是一种极佳的下载方式, **这不是一种落后的下载方式**, 建议您发布种子之前测试种子的可用性
 
-种子网站可以查看 [Galgame 资源网站](/doc/notice/galgame-resource-website)
+种子网站可以查看 [Galgame 资源网站](/doc/galgame-resource-website)
 
 ### 2. Telegram 或者其它支持存储的不限速聊天软件
 

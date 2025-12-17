@@ -239,7 +239,7 @@ const getBackgroundColor = (color: string): string => {
     >
       <p class="text-info-800 text-sm">
         评分数值仅供参考, 如果您对此评分或者网站数据有任何问题, 欢迎评论或
-        <KunLink size="sm" to="/doc/notice/contact"> 联系我们 </KunLink>。
+        <KunLink size="sm" to="/doc/contact"> 联系我们 </KunLink>。
       </p>
       <KunButton variant="flat" size="sm" @click="isShowDetail = !isShowDetail">
         展开网站价值分析详情

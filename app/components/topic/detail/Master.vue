@@ -90,7 +90,7 @@ defineProps<{
           underline="hover"
           size="sm"
           class-name="text-default-500"
-          to="/doc/notice/article-copyright"
+          to="/doc/article-copyright"
         >
           本站版权政策
         </KunLink>

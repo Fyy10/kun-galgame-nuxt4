@@ -28,7 +28,7 @@ const { form, readingMinute } = useDocEditorContext()
       <template #default>
         <KunLink
           underline="hover"
-          to="/doc/notice/topic-publish-rule"
+          to="/doc/topic-publish-rule"
           target="_blank"
           size="sm"
         >
@@ -38,4 +38,3 @@ const { form, readingMinute } = useDocEditorContext()
     </KunMilkdownDualEditorProvider>
   </div>
 </template>
-

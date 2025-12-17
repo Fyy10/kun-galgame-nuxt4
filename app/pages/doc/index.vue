@@ -1,8 +1,8 @@
 <script setup lang="ts">
 useKunSeoMeta({
-  title: '关于我们 | 网站博客',
+  title: 'Galgame 帮助文档',
   description:
-    '这里存放了网站的简介信息, 网站公告, 开发文档等等, 如果您遇到了任何与 Galgame 有关的问题, 都可以在这里寻找答案'
+    '如果您在 Galgame 发布, Galgame 交流, Galgame 资源 等方面有任何的问题, 或者想要联系我们, 都可以查看此界面的帮助文档'
 })
 </script>
 
