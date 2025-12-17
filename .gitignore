@@ -24,7 +24,7 @@ logs
 !.env.example
 
 # backup
-backup
+/backup
 .vs
 
 # sitemap
@@ -32,10 +32,6 @@ public/*.xml
 
 # prisma generated
 prisma/generated
-
-# migration
-migrate/lib.ts
-migrate/*.json
 
 # docs
 docs/milkdown

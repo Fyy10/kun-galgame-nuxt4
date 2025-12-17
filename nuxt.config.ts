@@ -1,6 +1,7 @@
 import tailwindcss from '@tailwindcss/vite'
 import fs from 'fs'
 import path from 'path'
+import { ICON_COLLECTIONS, ICON_NAMES } from './lib/icon'
 import type { TSConfig } from 'pkg-types'
 
 const packageJson = JSON.parse(
@@ -87,9 +88,12 @@ export default defineNuxtConfig({
 
   icon: {
     mode: 'svg',
+    serverBundle: {
+      collections: ICON_COLLECTIONS
+    },
     clientBundle: {
-      scan: true,
-      sizeLimitKb: 256
+      icons: ICON_NAMES,
+      scan: false
     }
   },
 
