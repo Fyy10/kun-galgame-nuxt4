@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import matter from 'gray-matter'
 import { prisma } from '../../prisma/prisma'
-import { markdownToHtml } from '../server/utils/remark/markdownToHtml'
+import { markdownToHtml } from '../../server/utils/remark/markdownToHtml'
 
 const DOC_ROOT = path.resolve('content/doc')
 
