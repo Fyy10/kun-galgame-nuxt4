@@ -41,7 +41,6 @@ export default defineNuxtConfig({
     '@nuxtjs/color-mode',
     '@pinia/nuxt',
     '@dxup/nuxt',
-    '@vite-pwa/nuxt',
     'pinia-plugin-persistedstate/nuxt',
     'nuxt-schema-org',
     'nuxt-umami'
