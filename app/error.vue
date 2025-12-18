@@ -37,7 +37,7 @@ const handleError = async () => {
         "
       />
       <div class="bg-default-100 w-full max-w-xl rounded-lg p-3 text-sm">
-        {{ error.statusMessage }}
+        {{ JSON.stringify(error) }}
       </div>
       <KunButton variant="shadow" color="secondary" @click="handleError">
         一键转生为萝莉
