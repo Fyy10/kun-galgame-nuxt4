@@ -13,8 +13,8 @@ export default defineEventHandler(async (event) => {
     return kunError(event, input)
   }
 
-  await prisma.chat_message.delete({
-    where: { id: input.messageId, sender_id: uid }
+  await prisma.message.delete({
+    where: { id: input.messageId, receiver_id: uid }
   })
 
   return 'MOEMOE delete message successfully!'

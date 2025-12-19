@@ -7,7 +7,7 @@ const props = defineProps<{
   refresh: () => void
 }>()
 
-const handleDeleteMessage = async (mid: number) => {
+const handleDeleteMessage = async (messageId: number) => {
   const res = await useComponentMessageStore().alert(
     '您确定要删除这条消息吗？此操作不可撤销。'
   )
@@ -15,9 +15,9 @@ const handleDeleteMessage = async (mid: number) => {
     return
   }
 
-  const result = await $fetch(`/api/message/delete`, {
+  const result = await $fetch(`/api/message/${messageId}`, {
     method: 'DELETE',
-    query: { mid },
+    query: { messageId },
     watch: false,
     ...kungalgameResponseHandler
   })
