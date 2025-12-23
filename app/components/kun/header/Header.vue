@@ -36,6 +36,7 @@ const headingClass = computed(() => {
         >
           {{ description }}
         </p>
+        <slot name="description" />
       </div>
       <slot name="headerEndContent" />
     </div>
