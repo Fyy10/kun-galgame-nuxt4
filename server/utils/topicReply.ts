@@ -6,7 +6,7 @@ export type PrismaTransactionClient = Omit<
   '$connect' | '$disconnect' | '$on' | '$transaction' | '$extends'
 >
 
-export const deleteTopicRepliesRecursive = async (
+export const collectTopicReplyCascadeIds = async (
   rootReplyIds: number[],
   prisma: PrismaTransactionClient
 ) => {
@@ -42,6 +42,18 @@ export const deleteTopicRepliesRecursive = async (
         queue.push(id)
       }
     }
+  }
+
+  return idsToDelete
+}
+
+export const deleteTopicRepliesRecursive = async (
+  rootReplyIds: number[],
+  prisma: PrismaTransactionClient
+) => {
+  const idsToDelete = await collectTopicReplyCascadeIds(rootReplyIds, prisma)
+  if (idsToDelete.size === 0) {
+    return idsToDelete
   }
 
   await prisma.topic_reply.deleteMany({

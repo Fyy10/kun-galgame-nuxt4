@@ -1,4 +1,4 @@
-import { prisma } from '../prisma/prisma'
+import { prisma } from '../../prisma/prisma'
 
 const DAY = 1000 * 60 * 60 * 24
 
