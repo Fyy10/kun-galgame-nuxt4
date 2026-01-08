@@ -1,53 +1,6 @@
 import { prisma } from '~~/prisma/prisma'
 import { deleteReplySchema } from '~/validations/topic'
-import type { PrismaClient } from '~~/prisma/generated/prisma/client'
-import type { DefaultArgs } from '@prisma/client/runtime/client'
-
-const deleteReplyRecursive = async (
-  replyIdToDelete: number,
-  prisma: Omit<
-    PrismaClient<never, undefined, DefaultArgs>,
-    '$connect' | '$disconnect' | '$on' | '$transaction' | '$extends'
-  >
-) => {
-  const allIdsToDelete = new Set<number>()
-
-  let queue = [replyIdToDelete]
-
-  while (queue.length > 0) {
-    const directChildren = await prisma.topic_reply.findMany({
-      where: {
-        target: {
-          some: {
-            target_reply_id: {
-              in: queue
-            }
-          }
-        }
-      },
-      select: { id: true }
-    })
-
-    const newIds = directChildren.map((r) => r.id)
-
-    queue = []
-
-    for (const id of newIds) {
-      if (!allIdsToDelete.has(id)) {
-        allIdsToDelete.add(id)
-        queue.push(id)
-      }
-    }
-  }
-
-  allIdsToDelete.add(replyIdToDelete)
-
-  await prisma.topic_reply.deleteMany({
-    where: {
-      id: { in: Array.from(allIdsToDelete) }
-    }
-  })
-}
+import { deleteTopicRepliesRecursive } from '~~/server/utils/topicReply'
 
 export default defineEventHandler(async (event) => {
   const input = kunParseDeleteQuery(event, deleteReplySchema)
@@ -108,10 +61,10 @@ export default defineEventHandler(async (event) => {
     )
   }
 
-  return prisma.$transaction(async (prisma) => {
-    await deleteReplyRecursive(reply.id, prisma)
+  return prisma.$transaction(async (tx) => {
+    await deleteTopicRepliesRecursive([reply.id], tx)
 
-    await prisma.user.update({
+    await tx.user.update({
       where: { id: reply.user_id },
       data: { moemoepoint: { increment: -moemoepointToDecrease } }
     })

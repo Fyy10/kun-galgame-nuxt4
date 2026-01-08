@@ -2,6 +2,7 @@ import { prisma } from '~~/prisma/prisma'
 import { deleteUserSchema } from '~/validations/user'
 import { s3 } from '~~/lib/s3/client'
 import { DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { deleteTopicRepliesRecursive } from '~~/server/utils/topicReply'
 
 export default defineEventHandler(async (event) => {
   const input = kunParseDeleteQuery(event, deleteUserSchema)
@@ -47,8 +48,38 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  await prisma.user.delete({
-    where: { id: input.userId }
+  await prisma.$transaction(async (tx) => {
+    const repliesCreatedByUser = await tx.topic_reply.findMany({
+      where: { user_id: input.userId },
+      select: { id: true }
+    })
+
+    const replyIds = repliesCreatedByUser.map((reply) => reply.id)
+    if (replyIds.length > 0) {
+      await deleteTopicRepliesRecursive(replyIds, tx)
+    }
+
+    await tx.chat_message_read_by.deleteMany({
+      where: { user_id: input.userId }
+    })
+    await tx.chat_message_reaction.deleteMany({
+      where: { user_id: input.userId }
+    })
+    await tx.chat_message.deleteMany({
+      where: {
+        OR: [{ sender_id: input.userId }, { receiver_id: input.userId }]
+      }
+    })
+    await tx.chat_room_admin.deleteMany({
+      where: { user_id: input.userId }
+    })
+    await tx.chat_room_participant.deleteMany({
+      where: { user_id: input.userId }
+    })
+
+    await tx.user.delete({
+      where: { id: input.userId }
+    })
   })
 
   return 'Moemoe delete user successfully!'

@@ -36,7 +36,7 @@ model galgame_rating {
     updated DateTime @updatedAt
 
     user_id    Int
-    user       user    @relation(fields: [user_id], references: [id])
+    user       user    @relation(fields: [user_id], references: [id], onDelete: Cascade)
     galgame_id Int
     galgame    galgame @relation(fields: [galgame_id], references: [id])
 
