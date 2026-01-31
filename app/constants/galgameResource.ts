@@ -71,7 +71,8 @@ export const GALGAME_RESOURCE_PROVIDER_MAP: Record<string, string> = {
   'oo0o.ooo': '真红小站',
   'touchgal.io': 'TouchGal',
   'touchgal.us': 'TouchGal',
-  'dlgal.com': 'GGbases'
+  'dlgal.com': 'GGbases',
+  'lycorisgal.com': 'LycorisGal'
 }
 
 export type ProviderKey =

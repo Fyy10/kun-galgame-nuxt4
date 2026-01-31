@@ -51,8 +51,6 @@ export default defineNuxtConfig({
   ],
 
   runtimeConfig: {
-    MONGODB_URL: process.env.MONGODB_URL,
-
     KUN_GALGAME_API: process.env.KUN_GALGAME_API,
 
     REDIS_HOST: process.env.REDIS_HOST,

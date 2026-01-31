@@ -47,7 +47,7 @@ const handleUpdateCategory = async (data: UpdateWebsiteCategoryPayload) => {
 
 if (data.value) {
   useKunSeoMeta({
-    title: data.value.name,
+    title: data.value.label,
     description: data.value.description,
     articlePublishedTime: data.value.created.toString(),
     articleModifiedTime: data.value.updated.toString()

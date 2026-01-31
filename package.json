@@ -8,14 +8,13 @@
     "build": "nuxt build",
     "build:limit": "NODE_OPTIONS='--max-old-space-size=8192' nuxt build",
     "dev": "nuxt dev",
+    "prepare": "nuxt prepare",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "format": "prettier . --write",
     "start": "pm2 start ecosystem.config.cjs",
     "stop": "pm2 delete kun-visual-novel",
-    "prepare": "husky",
-    "precommit": "node ./.husky/scripts/bumpAppVersion.js && git add package.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
@@ -29,8 +28,8 @@
     "deploy:install": "esno scripts/deployInstall.ts",
     "deploy:build": "esno scripts/deployBuild.ts"
   },
-  "prisma": {
-    "schema": "./prisma/schema"
+  "hooks": {
+    "pre-commit": "node ./.husky/scripts/bumpAppVersion.js && git add package.json"
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.12.1",
