@@ -54,9 +54,10 @@ watch(
 
       const result = await sendCode()
 
-      if (result) {
+      if (typeof result === 'string' && result.length === 64) {
         useKunLoliInfo('验证码发送成功')
       } else {
+        countdown.value = 0
         isSending.value = false
       }
     }
