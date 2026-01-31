@@ -1,6 +1,6 @@
 {
   "name": "kun-galgame-nuxt4",
-  "version": "5.0.65",
+  "version": "5.0.67",
   "type": "module",
   "packageManager": "pnpm@10.17.1",
   "private": true,
@@ -8,13 +8,14 @@
     "build": "nuxt build",
     "build:limit": "NODE_OPTIONS='--max-old-space-size=8192' nuxt build",
     "dev": "nuxt dev",
-    "prepare": "nuxt prepare",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "format": "prettier . --write",
     "start": "pm2 start ecosystem.config.cjs",
     "stop": "pm2 delete kun-visual-novel",
+    "prepare": "husky",
+    "precommit": "node .husky/scripts/bumpAppVersion.js && git add package.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
@@ -27,9 +28,6 @@
     "build:friend": "esno scripts/generateFriendSiteCapture.ts",
     "deploy:install": "esno scripts/deployInstall.ts",
     "deploy:build": "esno scripts/deployBuild.ts"
-  },
-  "hooks": {
-    "pre-commit": "node ./.husky/scripts/bumpAppVersion.js && git add package.json"
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.12.1",
