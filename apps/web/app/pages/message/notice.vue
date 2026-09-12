@@ -6,7 +6,7 @@ definePageMeta({
 useKunDisableSeo('通知消息')
 
 const pageData = reactive({
-  page: 1,
+  page: usePageQuery(),
   limit: 30,
   sort_order: 'desc'
 })

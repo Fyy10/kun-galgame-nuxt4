@@ -21,7 +21,7 @@ const props = defineProps<{
 const isCurrentUser = computed(() => usePersistUserStore().id === props.userId)
 const activeTab = ref(props.type)
 const pageData = reactive({
-  page: 1,
+  page: usePageQuery(),
   limit: 50,
   type: props.type,
   userId: props.userId

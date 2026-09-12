@@ -11,7 +11,7 @@ const props = defineProps<{
 
 const activeTab = ref(props.type)
 const pageData = reactive({
-  page: 1,
+  page: usePageQuery(),
   limit: 50,
   userId: props.userId,
   type: props.type

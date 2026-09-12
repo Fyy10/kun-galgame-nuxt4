@@ -3,17 +3,39 @@ import { watchDebounced } from '@vueuse/core'
 import { useRouteQuery } from '@vueuse/router'
 import { TAG_FILTER_MAX } from '~/components/search/items'
 
-const pageData = reactive({
-  page: 1,
-  limit: 100
+// One page for both lists below: they are mutually exclusive (tag grid while
+// nothing is picked, Galgame results once something is), and every selection
+// change resets it, so ?page= is never read by the list it was not set on.
+const page = usePageQuery()
+const tagsLimit = 100
+
+// The picked tags live in the URL: a multi-tag result is the one thing on this
+// page worth sharing, and before this it was a local ref — the link a reader
+// copied reopened on the unfiltered tag list.
+const tagIdsQuery = useRouteQuery<string>('tag_ids', '', { mode: 'replace' })
+const selectedIds = computed<number[]>({
+  get: () =>
+    tagIdsQuery.value
+      .split(',')
+      .map(Number)
+      .filter((id) => Number.isInteger(id) && id > 0),
+  set: (ids) => {
+    tagIdsQuery.value = ids.join(',')
+  }
 })
 
+// Pinned to page 1 while tags are picked, because the tag grid is not on screen
+// then: paging the Galgame results would otherwise refetch 100 tags from catalog
+// per click, and catalog's limiter counts the whole site as one IP.
 const { data, status } = await useKunFetch<{
   tags: GalgameTagItem[]
   total: number
 }>(`/galgame-tag`, {
   method: 'GET',
-  query: pageData
+  query: computed(() => ({
+    page: selectedIds.value.length ? 1 : page.value,
+    limit: tagsLimit
+  }))
 })
 
 const { showKUNGalgameContentLimit } = storeToRefs(usePersistSettingsStore())
@@ -53,28 +75,22 @@ watchDebounced(
   { debounce: 500, maxWait: 1000 }
 )
 
-// The picked tags live in the URL: a multi-tag result is the one thing on this
-// page worth sharing, and before this it was a local ref — the link a reader
-// copied reopened on the unfiltered tag list.
-const tagIdsQuery = useRouteQuery<string>('tag_ids', '', { mode: 'replace' })
-const selectedIds = computed<number[]>({
-  get: () =>
-    tagIdsQuery.value
-      .split(',')
-      .map(Number)
-      .filter((id) => Number.isInteger(id) && id > 0),
-  set: (ids) => {
-    tagIdsQuery.value = ids.join(',')
-  }
-})
-
 const entityNames = useEntityNames()
+
+// Both writes land in one navigation: useRouteQuery batches every set made in
+// the same tick into a single replace.
+const setSelectedIds = (ids: number[]) => {
+  selectedIds.value = ids
+  page.value = 1
+}
 
 const toggleTag = (item: SearchEntityItem) => {
   entityNames.remember(item)
-  selectedIds.value = selectedIds.value.includes(item.id)
-    ? selectedIds.value.filter((id) => id !== item.id)
-    : [...selectedIds.value, item.id].slice(0, TAG_FILTER_MAX)
+  setSelectedIds(
+    selectedIds.value.includes(item.id)
+      ? selectedIds.value.filter((id) => id !== item.id)
+      : [...selectedIds.value, item.id].slice(0, TAG_FILTER_MAX)
+  )
 }
 
 const chips = computed<FilterChip[]>(() =>
@@ -86,7 +102,6 @@ const chips = computed<FilterChip[]>(() =>
 
 const resultGames = ref<GalgameCard[]>([])
 const totalGameCount = ref(0)
-const gamesPage = ref(1)
 const gamesLimit = 24
 const loadingGames = ref(false)
 
@@ -102,7 +117,7 @@ const fetchGames = async () => {
     {
       method: 'GET',
       query: {
-        page: gamesPage.value,
+        page: page.value,
         limit: gamesLimit,
         tag_ids: tagIdsQuery.value
       }
@@ -115,19 +130,13 @@ const fetchGames = async () => {
   }
 }
 
-watch(
-  selectedIds,
-  () => {
-    gamesPage.value = 1
-    entityNames.resolve({ tag: selectedIds.value })
-    fetchGames()
-  },
-  { immediate: true }
-)
-
-watch(gamesPage, () => {
-  fetchGames()
+watch(selectedIds, () => entityNames.resolve({ tag: selectedIds.value }), {
+  immediate: true
 })
+
+// Immediate, and it must not reset the page: a reader arriving on
+// ?tag_ids=…&page=3 has to get page 3.
+watch([selectedIds, page], () => fetchGames(), { immediate: true })
 
 const isBrowsing = computed(() => !selectedIds.value.length)
 </script>
@@ -160,8 +169,10 @@ const isBrowsing = computed(() => !selectedIds.value.length)
       :total="isBrowsing ? (data?.total ?? 0) : totalGameCount"
       :unit="isBrowsing ? '个标签' : '个 Galgame'"
       :pending="isBrowsing ? status === 'pending' : loadingGames"
-      @remove="selectedIds = selectedIds.filter((id) => id !== Number($event))"
-      @clear="selectedIds = []"
+      @remove="
+        setSelectedIds(selectedIds.filter((id) => id !== Number($event)))
+      "
+      @clear="setSelectedIds([])"
     >
       <FilterEntityMenu
         family="tag"
@@ -199,9 +210,9 @@ const isBrowsing = computed(() => !selectedIds.value.length)
       />
 
       <KunPagination
-        v-if="!searchQuery.trim() && data && data.total > pageData.limit"
-        v-model:current-page="pageData.page"
-        :total-page="Math.ceil(data.total / pageData.limit)"
+        v-if="!searchQuery.trim() && data && data.total > tagsLimit"
+        v-model:current-page="page"
+        :total-page="Math.ceil(data.total / tagsLimit)"
         :is-loading="status === 'pending'"
       />
     </template>
@@ -215,7 +226,7 @@ const isBrowsing = computed(() => !selectedIds.value.length)
       <KunPagination
         v-if="totalGameCount > gamesLimit"
         class="mt-3"
-        v-model:current-page="gamesPage"
+        v-model:current-page="page"
         :total-page="Math.ceil(totalGameCount / gamesLimit)"
         :is-loading="loadingGames"
       />

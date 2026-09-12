@@ -6,7 +6,11 @@ const emit = defineEmits<{
   'update:loading': [boolean]
 }>()
 
-const params = reactive({ page: 1, limit: 12, galgame_id: gid.value })
+const params = reactive({
+  page: usePageQuery(),
+  limit: 12,
+  galgame_id: gid.value
+})
 const { data, status, refresh } = await useKunFetch<QuizListPage>(
   '/galgame-quiz/all',
   { method: 'GET', query: params }

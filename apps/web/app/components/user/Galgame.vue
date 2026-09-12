@@ -17,7 +17,7 @@ const isCommentMode = computed(() =>
 
 const activeTab = ref(props.type)
 const pageData = reactive({
-  page: 1,
+  page: usePageQuery(),
   limit: 24,
   type: props.type,
   userId: props.userId

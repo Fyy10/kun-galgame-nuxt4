@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useRouteQuery } from '@vueuse/router'
 import { localNotificationCategories } from '~/constants/notification'
 
 definePageMeta({
@@ -18,18 +19,22 @@ const tabItems = computed(() => [
   { value: 'all', textValue: '全部' },
   ...mutedCategories.value.map((c) => ({ value: c.key, textValue: c.label }))
 ])
-const activeTab = ref('all')
+// Tab and page both in the URL: a notice opens the topic it is about, so coming
+// back has to land on the tab and page it was opened from. The tab has to come
+// along — a page restored under a different filter is a list the reader never saw.
+const activeTab = useRouteQuery<string>('tab', 'all', { mode: 'replace' })
+const page = usePageQuery()
 
 const pageData = reactive({
-  page: 1,
+  page,
   limit: 30,
   sort_order: 'desc',
-  type: ''
+  type: activeTab.value === 'all' ? '' : activeTab.value
 })
 
 watch(activeTab, (tab) => {
   pageData.type = tab === 'all' ? '' : tab
-  pageData.page = 1
+  page.value = 1
 })
 
 const { data, status, refresh } = await useKunFetch<MessageList>(

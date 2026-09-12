@@ -2,7 +2,7 @@
 const route = useRoute()
 const collectionId = computed(() => Number((route.params as { id: string }).id))
 
-const page = ref(1)
+const page = usePageQuery()
 const limit = 24
 
 const {

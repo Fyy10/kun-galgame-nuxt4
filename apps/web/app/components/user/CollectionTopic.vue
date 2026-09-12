@@ -3,7 +3,7 @@ const props = defineProps<{
   userId: number
 }>()
 
-const page = ref(1)
+const page = usePageQuery()
 const limit = 24
 
 const { data, status } = await useKunFetch<{

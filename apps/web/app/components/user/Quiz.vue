@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { KunTabItem } from '@kungal/ui-vue'
+import { useRouteQuery } from '@vueuse/router'
 
 const props = defineProps<{
   userId: number
@@ -8,7 +9,14 @@ const props = defineProps<{
 const { id } = storeToRefs(usePersistUserStore())
 const isOwner = computed(() => !!id.value && id.value === props.userId)
 
-const tab = ref<'publish' | 'answered'>('publish')
+// The tab goes in the URL with the page, or a restored page would land on
+// whichever tab happens to be the default. /mine/answered answers for the
+// *viewer*, so a hand-typed ?tab=answered on someone else's profile would show
+// a reader their own history under that name — hence isOwner here too.
+const tabQuery = useRouteQuery<string>('tab', 'publish', { mode: 'replace' })
+const tab = computed(() =>
+  tabQuery.value === 'answered' && isOwner.value ? 'answered' : 'publish'
+)
 const tabItems = computed<KunTabItem[]>(() => {
   const items: KunTabItem[] = [
     { value: 'publish', textValue: '出题', icon: 'lucide:pencil-line' }
@@ -19,7 +27,11 @@ const tabItems = computed<KunTabItem[]>(() => {
   return items
 })
 
-const params = reactive({ page: 1, limit: 50, user_id: props.userId })
+const params = reactive({
+  page: usePageQuery(),
+  limit: 50,
+  user_id: props.userId
+})
 const requestUrl = computed(() =>
   tab.value === 'answered' ? '/galgame-quiz/mine/answered' : '/galgame-quiz/all'
 )
@@ -30,7 +42,7 @@ const { data, status } = await useKunFetch<QuizListPage>(requestUrl, {
 
 const onTab = (v: string) => {
   params.page = 1
-  tab.value = v as 'publish' | 'answered'
+  tabQuery.value = v
 }
 </script>
 

@@ -1,19 +1,39 @@
 <script setup lang="ts">
+import { useRouteQuery } from '@vueuse/router'
 import {
   spoilerOptions,
   playStatusOptions,
   typeOptions,
   sortFieldOptions
 } from './_sort'
+const opts = { mode: 'replace' as const }
+
+// The filters go in the URL with the page: a page restored on its own would
+// point into a list the reader never saw, since every filter would have reset
+// to its default on the way back.
+const page = usePageQuery()
 const params = reactive({
-  page: 1,
+  page,
   limit: 24,
-  sort_field: 'time',
-  sort_order: 'desc',
-  spoiler_level: 'all',
-  play_status: 'all',
-  galgame_type: 'all'
+  sort_field: useRouteQuery<string>('sort_field', 'time', opts),
+  sort_order: useRouteQuery<'asc' | 'desc'>('sort_order', 'desc', opts),
+  spoiler_level: useRouteQuery<string>('spoiler_level', 'all', opts),
+  play_status: useRouteQuery<string>('play_status', 'all', opts),
+  galgame_type: useRouteQuery<string>('galgame_type', 'all', opts)
 })
+
+watch(
+  () => [
+    params.sort_field,
+    params.sort_order,
+    params.spoiler_level,
+    params.play_status,
+    params.galgame_type
+  ],
+  () => {
+    page.value = 1
+  }
+)
 
 const { data, status } = await useKunFetch<{
   rating_data: GalgameRatingCard[]

@@ -5,7 +5,7 @@ import {
   type KunGalgamePlayStateRead
 } from '~/constants/galgame-playtime'
 
-const pageData = reactive({ page: 1, limit: 24 })
+const pageData = reactive({ page: usePageQuery(), limit: 24 })
 
 const { data, status } = await useKunFetch<PlaytimeMinePage>(
   '/galgame/playtime/mine',

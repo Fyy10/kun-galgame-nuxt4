@@ -4,7 +4,7 @@ const props = defineProps<{
 }>()
 
 const pageData = reactive({
-  page: 1,
+  page: usePageQuery(),
   limit: 24,
   userId: props.userId
 })

@@ -27,6 +27,8 @@ watch(activeTab, (tab) => {
   const query = { ...route.query }
   delete query.comment
   delete query.thread
+  // Only the quiz panel paginates, so ?page= belongs to that tab alone.
+  delete query.page
   if (tab !== 'intro' && DEEP_LINK_TABS.includes(tab)) {
     query.tab = tab
   } else {

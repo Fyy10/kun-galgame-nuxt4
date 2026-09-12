@@ -4,7 +4,7 @@ const props = defineProps<{
   ownerName: string
 }>()
 
-const page = ref(1)
+const page = usePageQuery()
 const limit = 24
 
 const { data, status } = await useKunFetch<{

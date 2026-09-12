@@ -5,7 +5,7 @@ import { KUN_TOPIC_SECTION_DESCRIPTION_MAP } from '~/constants/section'
 const props = defineProps<{
   section: string
 }>()
-const page = ref(1)
+const page = usePageQuery()
 
 const categoryMap: Record<string, string> = {
   g: 'galgame',
