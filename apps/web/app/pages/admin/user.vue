@@ -9,7 +9,7 @@ definePageMeta({
 useKunDisableSeo('用户内容管理')
 
 const oauthUsersAdminURL = computed(
-  () => `${useRuntimeConfig().public.oauthFrontendUrl}/users`
+  () => `${useRuntimeConfig().public.oauthAdminUrl}/users`
 )
 
 const searchQuery = ref('')
@@ -55,8 +55,8 @@ watchDebounced(() => searchQuery.value, handleSearch, {
     <KunInfo
       color="info"
       icon="lucide:shield-alert"
-      title="封禁 / 注销账号请前往统一账号后台"
-      description="账号本身的封禁、解封、注销 (匿名化) 与角色管理由统一身份服务 (OAuth) 集中处理，在那里操作会对所有站点 (kungal / 摸鱼 / 贴纸…) 同时生效；本页仅用于清理用户在本站发布的内容。"
+      :title="`封禁 / 注销账号请前往 ${nextmoe.admin}`"
+      :description="`账号本身的封禁、解封、注销 (匿名化) 与角色管理由 ${nextmoe.account} 集中处理，在那里操作会对所有站点 (kungal / 摸鱼 / 贴纸…) 同时生效；本页仅用于清理用户在本站发布的内容。`"
       class-name="mt-6"
     >
       <KunButton
@@ -67,7 +67,7 @@ watchDebounced(() => searchQuery.value, handleSearch, {
         class-name="mt-2"
       >
         <KunIcon name="lucide:external-link" />
-        前往统一账号后台管理用户
+        前往 {{ nextmoe.admin }} 管理用户
       </KunButton>
     </KunInfo>
 

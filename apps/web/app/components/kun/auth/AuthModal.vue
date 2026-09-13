@@ -26,7 +26,9 @@ const handleRegister = async () => {
         <h2 class="text-xl font-bold">欢迎来到 {{ kungal.titleShort }}</h2>
         <p class="text-default-500 text-center text-sm">
           登录或注册以解锁完整功能。账号统一由
-          <span class="text-default-700 font-medium">鲲 Galgame OAuth</span>
+          <span class="text-default-700 font-medium">{{
+            nextmoe.account
+          }}</span>
           管理。
         </p>
       </div>
@@ -53,9 +55,16 @@ const handleRegister = async () => {
         </KunButton>
       </div>
 
-      <p class="text-default-400 text-center text-xs">
-        点击按钮将跳转至鲲 Galgame OAuth 统一认证系统
-      </p>
+      <div
+        class="text-default-400 flex items-center justify-center gap-1.5 text-xs"
+      >
+        <KunImage
+          :src="nextmoe.logo"
+          :alt="nextmoe.account"
+          class-name="ring-default-200 size-5 shrink-0 rounded-full ring-1"
+        />
+        点击按钮将跳转至 {{ nextmoe.account }}
+      </div>
     </div>
   </KunModal>
 </template>

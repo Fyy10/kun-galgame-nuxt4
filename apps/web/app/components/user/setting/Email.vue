@@ -9,16 +9,15 @@ const oauthProfileURL = computed(
     <div class="space-y-2">
       <span class="text-xl">更改邮箱</span>
       <p class="text-default-500 text-sm">
-        邮箱由 鲲 Galgame OAuth 账户中心统一管理。修改邮箱需要二次验证
-        (邮箱验证码), 请前往 鲲 Galgame OAuth
-        账户中心进行修改。修改后下次刷新页面即会同步至
+        邮箱由 {{ nextmoe.account }} 统一管理。修改邮箱需要二次验证
+        (邮箱验证码), 请前往账号中心进行修改。修改后下次刷新页面即会同步至
         {{ kungal.titleShort }}。
       </p>
     </div>
 
     <div class="flex justify-end">
       <KunButton :href="oauthProfileURL" target="_blank">
-        前往 鲲 Galgame OAuth 账户中心
+        前往账号中心
       </KunButton>
     </div>
   </KunCard>

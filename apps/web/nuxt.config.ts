@@ -80,7 +80,13 @@ export default defineNuxtConfig({
       oauthServerUrl:
         process.env.OAUTH_SERVER_URL || 'http://127.0.0.1:9277/api/v1',
       oauthFrontendUrl:
-        process.env.OAUTH_FRONTEND_URL || 'https://oauth.kungal.com',
+        process.env.OAUTH_FRONTEND_URL || 'https://account.nextmoe.com',
+      // The identity console is a SEPARATE app on a separate domain since the
+      // 2026-09 rebrand split account.nextmoe.com (login / profile) from
+      // admin.nextmoe.dev (console). It used to be one host, so the admin link
+      // was built from oauthFrontendUrl — that now resolves to
+      // account.nextmoe.com/users, which does not exist.
+      oauthAdminUrl: process.env.OAUTH_ADMIN_URL || 'https://admin.nextmoe.dev',
       oauthClientId: process.env.OAUTH_CLIENT_ID || '',
       oauthRedirectUri:
         process.env.OAUTH_REDIRECT_URI || 'http://127.0.0.1:2333/auth/callback',

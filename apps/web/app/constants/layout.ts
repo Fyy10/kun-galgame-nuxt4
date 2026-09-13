@@ -1,3 +1,5 @@
+import { nextmoe } from '~/config/nextmoe'
+
 export interface KunLayoutItem {
   name: string
   label: string
@@ -268,11 +270,10 @@ export const kunSubSites: KunSubSite[] = [
     hint: '震憾上线'
   },
   {
-    short: 'OAuth 系统',
-    name: '鲲 Galgame OAuth 系统',
-    description:
-      '鲲 Galgame OAuth 系统，统一鲲 Galgame 所有用户账户，为用户一键登录鲲 Galgame 下的所有网站提供最良好的体验！',
-    link: 'https://oauth.kungal.com/',
+    short: '账号中心',
+    name: nextmoe.account,
+    description: `${nextmoe.account}，统一 NextMoe 站点集群的所有用户账户，一个账号即可登录旗下的所有网站！`,
+    link: 'https://account.nextmoe.com/',
     icon: 'lucide:key-round'
   },
   {

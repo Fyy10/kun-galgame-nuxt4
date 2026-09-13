@@ -198,8 +198,11 @@ services:
       NODE_ENV: production
       NUXT_API_BASE_URL: http://kungal-api:2334 # SSR → 本仓 api 服务名 kungal-api(唯一,避免与 moyu api 冲突)
       NUXT_PUBLIC_API_BASE_URL: https://www.kungal.com # browser
-      NUXT_PUBLIC_OAUTH_SERVER_URL: https://oauth.kungal.com/api/v1
-      NUXT_PUBLIC_OAUTH_FRONTEND_URL: https://oauth.kungal.com
+      NUXT_PUBLIC_OAUTH_SERVER_URL: https://account.nextmoe.com/api/v1
+      NUXT_PUBLIC_OAUTH_FRONTEND_URL: https://account.nextmoe.com
+      # 身份管理台自 2026-09 改名起是独立域上的独立应用(account 域只有登录/注册/
+      # 个人资料),所以它不能再从 FRONTEND_URL 拼出来。
+      NUXT_PUBLIC_OAUTH_ADMIN_URL: https://admin.nextmoe.dev
       NUXT_PUBLIC_OAUTH_CLIENT_ID: 4ed9bc99ec0a789a4796b83e22bd84c5
       NUXT_PUBLIC_OAUTH_REDIRECT_URI: https://www.kungal.com/auth/callback
       NUXT_PUBLIC_KUN_GALGAME_URL: https://www.kungal.com

@@ -75,7 +75,7 @@ const submit = async () => {
     <div class="space-y-2">
       <span class="text-xl">更改头像</span>
       <p class="text-default-500 text-sm">
-        头像统一由 鲲 Galgame OAuth 账户中心管理, 在
+        头像统一由 {{ nextmoe.account }} 管理, 在
         {{ kungal.titleShort }} 直接上传图片即可生效。支持 PNG / JPEG / WebP /
         GIF / AVIF, 不超过 4 MiB。
       </p>
