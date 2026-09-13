@@ -339,8 +339,12 @@ func (s *ResourceService) CreateResource(
 		if err := s.resourceRepo.TouchGalgameUpdated(tx, req.GalgameID); err != nil {
 			return err
 		}
+		// res.ID, not req.GalgameID: the ledger renders this ref as the "#id" next
+		// to the entry, the delete path already stores the resource id, and the
+		// two halves of one resource's history were landing under different
+		// numbers — unpairable, and the create half pointed at a galgame.
 		s.helpers.AdjustMoemoepoint(tx, userID, constants.RewardCreateResource,
-			moemoepoint.ReasonContentApproved, moemoepoint.Ref("galgame_resource", req.GalgameID))
+			moemoepoint.ReasonContentApproved, moemoepoint.Ref("galgame_resource", res.ID))
 		return nil
 	})
 	if txErr != nil {
