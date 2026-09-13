@@ -31,6 +31,11 @@ const (
 )
 
 const (
+	contentLimitSFW  = "sfw"
+	contentLimitNSFW = "nsfw"
+)
+
+const (
 	titleKindOfficial = 0
 	titleKindAlias    = 1
 )
@@ -87,7 +92,7 @@ func (f *SubmissionForm) Fields() map[string]any {
 	fields := map[string]any{
 		"catalog.work.display_name": f.DisplayName(),
 		"catalog.work.olang":        olangOf(f.OriginalLanguage),
-		"catalog.work.display_nsfw": f.ContentLimit == "nsfw",
+		"catalog.work.display_nsfw": f.ContentLimit == contentLimitNSFW,
 	}
 	rating := contentRatingAllAges
 	if f.AgeLimit == "r18" {

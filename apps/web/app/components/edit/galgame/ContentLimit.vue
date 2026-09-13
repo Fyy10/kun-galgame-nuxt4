@@ -1,41 +1,31 @@
 <script setup lang="ts">
-const props = defineProps<{
-  type: 'create' | 'rewrite'
-}>()
-
 const { content_limit } = storeToRefs(usePersistEditGalgameStore())
-const { galgamePR } = storeToRefs(useTempGalgamePRStore())
 
-const isNsfw =
-  props.type === 'create'
-    ? content_limit.value === 'nsfw'
-    : galgamePR.value[0]!.content_limit === 'nsfw'
-const option = ref(isNsfw)
-
-watch(
-  () => option.value,
-  () => {
-    const optionString = option.value ? 'nsfw' : 'sfw'
-    if (props.type === 'create') {
-      content_limit.value = optionString
-    } else {
-      galgamePR.value[0]!.content_limit = optionString
-    }
+const contentLimitOptions = [
+  {
+    value: 'sfw',
+    label: 'SFW (可以在公共场所打开)',
+    description: '游戏名、介绍、封面都没有不适宜在公共场所显示的内容'
+  },
+  {
+    value: 'nsfw',
+    label: 'NSFW (不适合在公共场所打开)',
+    description: '游戏名、介绍、封面任意一项露骨, 或者封面需要打码才能放上来'
   }
-)
+] as const
 </script>
 
 <template>
   <div class="space-y-2">
     <h2 class="space-x-2 text-xl">
       <span>内容限制</span>
-      <span class="font-base text-danger text-sm">新增</span>
+      <span class="font-base text-danger text-sm">必选</span>
     </h2>
     <p class="text-default-500 text-sm">
       如果您觉得您的游戏介绍以及封面不适合在公共场所打开 (例如:
-      用淫乱喷雾强制贞淑人妻们发情), 请将本项设置为 NSFW (Not safe for work),
-      若没有任何不适宜打开的内容 (例如: 永不枯萎的世界与终结之花), 则默认为 SFW
-      (Safe for work)。这将防止社死并有助于网站索引。
+      用淫乱喷雾强制贞淑人妻们发情), 请选择 NSFW (Not safe for work), 若没有
+      任何不适宜打开的内容 (例如: 永不枯萎的世界与终结之花), 请选择 SFW (Safe
+      for work)。这将防止社死并有助于网站索引。
     </p>
 
     <KunInfo
@@ -52,7 +42,12 @@ watch(
       </div>
     </KunInfo>
 
-    <p>请注意这个 NSFW 开关, 越严越好, 只要有一点不对立即设置为 NSFW</p>
-    <KunSwitch v-model="option" label="开启 NSFW" />
+    <p>请注意这个选项, 越严越好, 只要有一点不对立即选择 NSFW</p>
+    <KunRadioGroup
+      v-model="content_limit"
+      :options="contentLimitOptions"
+      variant="card"
+      aria-label="内容限制"
+    />
   </div>
 </template>

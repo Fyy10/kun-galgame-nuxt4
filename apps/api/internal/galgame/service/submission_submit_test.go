@@ -358,6 +358,23 @@ func TestSubmittedEntryIsReachableByItsOwnID(t *testing.T) {
 	}
 }
 
+// An unchosen content_limit used to mint display_nsfw=false, which is how 961
+// works reached catalog's SFW shelf with nothing safe to elect for their cover.
+func TestSubmitRefusesAnUnchosenContentLimit(t *testing.T) {
+	rec := &submitRecorder{}
+	svc := rec.service(t)
+
+	if _, appErr := svc.Submit(t.Context(), "user-jwt", 0,
+		&SubmissionForm{NameJaJP: "白恋サクラ", AgeLimit: "r18"}); appErr == nil {
+		t.Fatal("want a refusal for a form that chose neither sfw nor nsfw")
+	}
+	rec.mu.Lock()
+	defer rec.mu.Unlock()
+	if rec.body != nil {
+		t.Error("an unchosen display verdict must not reach the registry")
+	}
+}
+
 func TestSubmitRefusesATitlelessForm(t *testing.T) {
 	rec := &submitRecorder{}
 	svc := rec.service(t)

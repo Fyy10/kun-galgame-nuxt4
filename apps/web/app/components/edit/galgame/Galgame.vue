@@ -162,7 +162,7 @@ const goto = (n: number) => {
         </section>
 
         <section v-show="step === 3" class="space-y-6">
-          <EditGalgameContentLimit type="create" />
+          <EditGalgameContentLimit />
           <EditGalgameMeta />
           <KunInfo
             color="info"

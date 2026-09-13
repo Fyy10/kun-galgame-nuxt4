@@ -19,7 +19,12 @@ export const usePersistEditGalgameStore = defineStore(
       'zh-cn': '',
       'zh-tw': ''
     })
-    const content_limit = ref<GalgameStorePersist['content_limit']>('sfw')
+    // Unset, never 'sfw': a display verdict nobody looked at put 961 works on
+    // catalog's SFW shelf with only explicit cover art, where the election had
+    // nothing safe to elect and every viewer got the blurred stand-in instead
+    // of the real cover (infra audit-cover-shelf, 2026-09-13). Omitted from
+    // persistence below for the same reason — a remembered 'sfw' is no choice.
+    const content_limit = ref<GalgameStorePersist['content_limit']>('')
     const age_limit = ref<GalgameStorePersist['age_limit']>('all')
     const original_language =
       ref<GalgameStorePersist['original_language']>('ja-jp')
@@ -31,7 +36,7 @@ export const usePersistEditGalgameStore = defineStore(
       vndb_id.value = ''
       resetReactiveState(name, createEmptyLocaleMap())
       resetReactiveState(introduction, createEmptyLocaleMap())
-      content_limit.value = 'sfw'
+      content_limit.value = ''
       age_limit.value = 'all'
       original_language.value = 'ja-jp'
       aliases.value = []
@@ -55,7 +60,8 @@ export const usePersistEditGalgameStore = defineStore(
   },
   {
     persist: {
-      storage: piniaPluginPersistedstate.localStorage()
+      storage: piniaPluginPersistedstate.localStorage(),
+      omit: ['content_limit']
     }
   }
 )

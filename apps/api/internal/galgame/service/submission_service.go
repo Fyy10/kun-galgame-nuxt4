@@ -54,6 +54,14 @@ func (s *SubmissionService) Submit(
 	if form.DisplayName() == "" {
 		return nil, errors.ErrValidation("请至少填写一个语言的标题")
 	}
+	// An absent content_limit must not mean sfw. A wizard default nobody looked
+	// at left 961 works on catalog's SFW shelf whose only cover art the nightly
+	// grader had marked explicit: the cover election had nothing safe to elect,
+	// so every viewer got the blurred censored stand-in instead of the real
+	// cover, in both modes (infra audit-cover-shelf, 2026-09-13).
+	if form.ContentLimit != contentLimitSFW && form.ContentLimit != contentLimitNSFW {
+		return nil, errors.ErrValidation("请选择内容限制 (SFW 或 NSFW)")
+	}
 	released, appErr := form.Released()
 	if appErr != nil {
 		return nil, appErr

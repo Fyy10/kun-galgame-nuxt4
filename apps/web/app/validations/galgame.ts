@@ -82,7 +82,7 @@ export const submitGalgameSchema = z
       .string()
       .max(100007, { message: '游戏介绍最多 100007 字' })
       .default(''),
-    content_limit: z.enum(['sfw', 'nsfw']),
+    content_limit: z.enum(['sfw', 'nsfw'], { error: '请选择 SFW 或 NSFW' }),
     age_limit: z.enum(['all', 'r18']).default('all'),
     original_language: originalLanguageCode.default('ja-jp'),
     release_date: z
