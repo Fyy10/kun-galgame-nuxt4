@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"kun-galgame-api/internal/constants"
 	"kun-galgame-api/internal/galgame/client"
 	galgameService "kun-galgame-api/internal/galgame/service"
 	msgService "kun-galgame-api/internal/message/service"
@@ -122,7 +123,7 @@ func (s *UserService) CheckIn(ctx context.Context, userID int) (int, *errors.App
 		return 0, errors.ErrBadRequest("您今天已经签到过了")
 	}
 
-	points := rand.IntN(8)
+	points := rand.IntN(constants.CheckinMaxReward + 1)
 	moemoepoint.Award(userID, points, moemoepoint.ReasonDailyCheckin, "",
 		moemoepoint.Key("checkin", strconv.Itoa(userID), time.Now().Format("2006-01-02")))
 	return points, nil

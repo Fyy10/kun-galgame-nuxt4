@@ -143,7 +143,7 @@ func (s *TopicWriteService) Create(
 		if err != nil {
 			return err
 		}
-		dailyLimit := int64(state.Moemoepoint/10 + 1)
+		dailyLimit := int64(state.Moemoepoint/constants.DailyTopicPerMoemoepoint + 1)
 		if todayCount >= dailyLimit {
 			return gorm.ErrInvalidData
 		}
@@ -568,9 +568,9 @@ func (s *TopicWriteService) SetBestAnswer(ctx context.Context, userID int, canMo
 	}
 
 	isCurrentBest := topic.BestAnswerID != nil && *topic.BestAnswerID == replyID
-	delta := 7
+	delta := constants.RewardBestAnswer
 	if isCurrentBest {
-		delta = -7
+		delta = -constants.RewardBestAnswer
 	}
 
 	txErr := s.topicRepo.DB().Transaction(func(tx *gorm.DB) error {

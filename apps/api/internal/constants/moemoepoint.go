@@ -22,5 +22,11 @@ const (
 	QuizCreateReward  = 2
 	QuizCorrectReward = 0
 
+	RewardBestAnswer = 7
+	CheckinMaxReward = 7
+
+	// A balance buys posting room: dailyLimit = moemoepoint/this + 1.
+	DailyTopicPerMoemoepoint = 10
+
 	TextPreviewLength = 233
 )
