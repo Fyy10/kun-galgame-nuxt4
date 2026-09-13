@@ -7,24 +7,31 @@
 # does nothing and the request still answers 200. See apps/api/.errcheck-exclude
 # for the (short) list of calls whose error is genuinely nothing to act on.
 #
-# Every test in apps/api is a pure unit test (no test reads a DB / Meilisearch
-# env var), so a single always-green unit job is the whole gate — there is no
-# integration job because there is nothing service-gated to run. If a
-# service-backed test is ever added, spin its containers up in a second job
-# then (mirror the pattern; don't pre-build it).
+# The job needs no services and is always green: the DB-backed tests that do
+# exist go through internal/testdb, which SKIPS unless TEST_DATABASE_DSN is set,
+# and nothing here sets it. If those are ever meant to run in CI, spin their
+# containers up in a second job then (mirror the pattern; don't pre-build it) —
+# do not hand this job a DSN.
+#
+# The paths include three web files because Go tests read them: the permission
+# tri-mirror (pkg/perm/frontend_mirror_test.go) and the moemoepoint rules mirror
+# (internal/constants/frontend_mirror_test.go) both compare a Go vocabulary
+# against its hand-kept web copy. Filtered on apps/api alone, editing only the
+# web copy skips the very job that would catch the drift.
 #
 # Independent of build.yml on purpose — deploys are not blocked while this
 # gate settles. Add `needs: test` to build.yml once it has proven green.
 
 on:
   push:
-    paths:
+    paths: &paths
       - "apps/api/**"
+      - "apps/web/app/composables/useCan.ts"
+      - "apps/web/app/constants/permission.ts"
+      - "apps/web/app/constants/moemoepoint.ts"
       - ".github/workflows/test.yml"
   pull_request:
-    paths:
-      - "apps/api/**"
-      - ".github/workflows/test.yml"
+    paths: *paths
 
 permissions:
   contents: read

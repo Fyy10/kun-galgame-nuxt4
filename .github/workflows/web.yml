@@ -1,0 +1,56 @@
+# CI gate for the Nuxt app under apps/web.
+#
+#   web — eslint + vue-tsc + vitest, no external services.
+#
+# This exists because nothing was checking the web app. test.yml is filtered to
+# apps/api, build.yml only runs `nuxt build` (which does not typecheck), so a
+# change that failed `vue-tsc` could and did reach master: #172 landed two
+# TS2345 errors in the galgame filter bar under noUncheckedIndexedAccess, and
+# the PR was green.
+#
+# `pnpm install` runs web's `postinstall: nuxt prepare`, which is what generates
+# the .nuxt types vue-tsc and @nuxt/test-utils read — so no separate prepare step
+# (docker/nuxt.Dockerfile passes --ignore-scripts only because it installs before
+# copying the sources). The @kungal/* packages are public npm, so no registry
+# auth is needed.
+#
+# Independent of build.yml on purpose — deploys are not blocked while this gate
+# settles. Add `needs: web` to build.yml once it has proven green.
+
+name: web
+
+on:
+  push:
+    paths: &paths
+      - "apps/web/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "package.json"
+      - ".github/workflows/web.yml"
+  pull_request:
+    paths: *paths
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: web (lint · typecheck · test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          # Matches docker/nuxt.Dockerfile's NODE_VERSION — the gate has to run
+          # on the runtime the image ships.
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -F web lint
+      - run: pnpm -F web typecheck
+      - run: pnpm -F web test
