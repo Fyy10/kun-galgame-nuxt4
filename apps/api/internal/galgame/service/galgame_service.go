@@ -340,11 +340,11 @@ func (s *GalgameService) GetList(
 	if err != nil {
 		return nil, errors.ErrBadRequest(err.Error())
 	}
-	collectedFrom, err := utils.ParseReleaseLowerBound(req.CollectedFrom)
+	collectedFrom, err := utils.ParseDateLowerBound(req.CollectedFrom, "收录日期")
 	if err != nil {
 		return nil, errors.ErrBadRequest(err.Error())
 	}
-	collectedTo, err := utils.ParseReleaseUpperBound(req.CollectedTo)
+	collectedTo, err := utils.ParseDateUpperBound(req.CollectedTo, "收录日期")
 	if err != nil {
 		return nil, errors.ErrBadRequest(err.Error())
 	}
@@ -352,7 +352,6 @@ func (s *GalgameService) GetList(
 	if err != nil {
 		return nil, errors.ErrBadRequest(err.Error())
 	}
-	collectedActive := collectedFrom != "" || collectedTo != "" || len(collectedMonths) > 0
 
 	filter := model.GalgameListFilter{
 		Type:                 req.Type,
@@ -376,13 +375,6 @@ func (s *GalgameService) GetList(
 		Page:                 req.Page,
 		Limit:                req.Limit,
 	}
-	if collectedActive {
-		// A "论坛收录时间" filter anchors on the moment the entry was
-		// collected here. Direction follows the page's asc/desc toggle
-		// (default desc, newest first) instead of being forced.
-		filter.SortField = "created"
-	}
-
 	if req.Library {
 		return s.catalogLibrary(ctx, req, releasedFrom, releasedTo, isSFW)
 	}
@@ -391,9 +383,11 @@ func (s *GalgameService) GetList(
 }
 
 // CollectedCalendar lists the (year, month) pairs that have collected rows, so
-// the filter UI only offers times the site actually has entries for.
-func (s *GalgameService) CollectedCalendar() []repository.CollectedMonth {
-	return s.listRepo.ListCollectedCalendar()
+// the filter UI only offers times the site actually has entries for. It takes
+// the reader's SFW gate for the same reason: an option that can only ever
+// answer with rows this reader may not see is an option that looks broken.
+func (s *GalgameService) CollectedCalendar(isSFW bool) []repository.CollectedMonth {
+	return s.listRepo.ListCollectedCalendar(isSFW)
 }
 
 func (s *GalgameService) hydrateListCards(

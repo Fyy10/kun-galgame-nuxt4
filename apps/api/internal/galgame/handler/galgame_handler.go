@@ -50,7 +50,7 @@ func (h *GalgameHandler) GetList(c fiber.Ctx) error {
 }
 
 func (h *GalgameHandler) CollectedCalendar(c fiber.Ctx) error {
-	return response.OK(c, h.galgameService.CollectedCalendar())
+	return response.OK(c, h.galgameService.CollectedCalendar(utils.IsSFW(c)))
 }
 
 func (h *GalgameHandler) ToggleLike(c fiber.Ctx) error {

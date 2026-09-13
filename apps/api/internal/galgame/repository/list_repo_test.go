@@ -167,3 +167,113 @@ func TestOrderRestrictIDsKeepsUnknownMembersLast(t *testing.T) {
 		}
 	}
 }
+
+// The bounds are dates and the column is a timestamptz, so which rows a year
+// contains is decided by the session time zone: production pins
+// TimeZone=Asia/Shanghai in the DSN (internal/infrastructure/database/postgres.go),
+// and every timestamp below straddles a boundary that moves if that changes.
+// The upper bound is the other half — it arrives as the inclusive 2025-12-31 and
+// only `< date + 1 day` keeps a row stamped late on New Year's Eve.
+func TestListIDsCollectedFilter(t *testing.T) {
+	db := testdb.Open(t)
+	if err := db.Exec("SET TIME ZONE 'Asia/Shanghai'").Error; err != nil {
+		t.Fatalf("pin the session zone: %v", err)
+	}
+
+	const base = 2_000_200_000
+	before, newYear, midYear, lastDay, after := base, base+1, base+2, base+3, base+4
+	all := []int{before, newYear, midYear, lastDay, after}
+
+	cleanup := func() {
+		db.Exec("DELETE FROM galgame_resource WHERE galgame_id = ANY(?::int[])", intArrayLit(all))
+		db.Exec("DELETE FROM galgame WHERE id = ANY(?::int[])", intArrayLit(all))
+	}
+	cleanup()
+	defer cleanup()
+
+	for id, stamp := range map[int]string{
+		before:  "2024-12-31 23:30:00+08",
+		newYear: "2025-01-01 00:30:00+08",
+		midYear: "2025-07-15 12:00:00+08",
+		lastDay: "2025-12-31 23:30:00+08",
+		after:   "2026-01-01 00:30:00+08",
+	} {
+		seed(t, db, id, nil)
+		if err := db.Exec("UPDATE galgame SET created = ?::timestamptz WHERE id = ?", stamp, id).Error; err != nil {
+			t.Fatalf("stamp %d: %v", id, err)
+		}
+	}
+
+	repo := NewGalgameListRepository(db)
+	for name, tc := range map[string]struct {
+		filter model.GalgameListFilter
+		want   []int
+	}{
+		"a year keeps both of its edges and neither neighbour": {
+			model.GalgameListFilter{CollectedFrom: "2025-01-01", CollectedTo: "2025-12-31"},
+			[]int{newYear, midYear, lastDay},
+		},
+		"a month set reaches across years": {
+			model.GalgameListFilter{CollectedMonths: []int{1}},
+			[]int{newYear, after},
+		},
+		"the resource-filter lane filters too": {
+			model.GalgameListFilter{
+				CollectedFrom: "2025-01-01", CollectedTo: "2025-12-31", Platform: "windows",
+			},
+			[]int{newYear, midYear, lastDay},
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			f := tc.filter
+			f.RestrictIDs, f.Page, f.Limit, f.SortOrder = all, 1, 10, "desc"
+			ids, total := repo.ListIDs(f)
+			if total != int64(len(tc.want)) {
+				t.Errorf("total = %d, want %d", total, len(tc.want))
+			}
+			if !sameSet(ids, tc.want) {
+				t.Errorf("ids = %v, want %v", ids, tc.want)
+			}
+		})
+	}
+}
+
+// The dropdown is built from this, so a month it offers a SFW reader must hold
+// something that reader can open — otherwise the option looks broken.
+func TestCollectedCalendarHonoursTheReadersGate(t *testing.T) {
+	db := testdb.Open(t)
+	if err := db.Exec("SET TIME ZONE 'Asia/Shanghai'").Error; err != nil {
+		t.Fatalf("pin the session zone: %v", err)
+	}
+
+	const id = 2_000_200_100
+	cleanup := func() {
+		db.Exec("DELETE FROM galgame_resource WHERE galgame_id = ?", id)
+		db.Exec("DELETE FROM galgame WHERE id = ?", id)
+	}
+	cleanup()
+	defer cleanup()
+
+	// 1999-03 is a month no real row occupies, so the assertion reads the seed
+	// rather than whatever else the database happens to hold.
+	seed(t, db, id, ptr("nsfw"))
+	if err := db.Exec("UPDATE galgame SET created = '1999-03-15 12:00:00+08'::timestamptz WHERE id = ?", id).Error; err != nil {
+		t.Fatalf("stamp the seed: %v", err)
+	}
+
+	repo := NewGalgameListRepository(db)
+	holds := func(rows []CollectedMonth) bool {
+		for _, r := range rows {
+			if r.Year == 1999 && r.Month == 3 {
+				return true
+			}
+		}
+		return false
+	}
+	if !holds(repo.ListCollectedCalendar(false)) {
+		t.Error("an adult reader was not offered the only month with an adult entry")
+	}
+	if holds(repo.ListCollectedCalendar(true)) {
+		t.Error("a SFW reader was offered a month whose only entry the list will hide")
+	}
+}

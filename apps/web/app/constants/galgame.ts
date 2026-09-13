@@ -148,7 +148,7 @@ export const KUN_RESOURCE_PLATFORM_CONST = [
 export const KUN_GALGAME_RESOURCE_SORT_FIELD_MAP: Record<string, string> = {
   views: '总浏览数',
   time: '更新顺序',
-  created: '创建顺序',
+  created: '收录时间',
   view_1d: '日浏览数',
   view_7d: '周浏览数',
   view_30d: '月浏览数',

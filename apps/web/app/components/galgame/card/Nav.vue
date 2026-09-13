@@ -17,7 +17,7 @@ import type {
   KunGalgameResourcePlatformOptions
 } from '~/constants/galgame'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     isShowAdvanced?: boolean
     total?: number | null
@@ -164,9 +164,17 @@ const loadCollectedCalendar = async () => {
   )
   if (res) collectedCalendar.value = res
 }
-onMounted(loadCollectedCalendar)
+// Only /galgame renders the advanced pills; the four entity pages mount this
+// same Nav with isShowAdvanced false, and an unconditional load spent a
+// two-sequential-scan aggregate (21ms over 8.5k published rows on prod) per
+// visit to fill a dropdown none of them draw.
+onMounted(() => {
+  if (props.isShowAdvanced) loadCollectedCalendar()
+})
 
-const selectedCollectedYear = computed(() => collectedFrom.value || collectedTo.value || '')
+const selectedCollectedYear = computed(
+  () => collectedFrom.value || collectedTo.value || ''
+)
 const collectedYearOptions = computed(() => {
   const years = new Set<number>()
   for (const c of collectedCalendar.value) years.add(c.year)
@@ -199,6 +207,14 @@ const setCollectedYear = (value: string) => {
   collectedFrom.value = value
   collectedTo.value = value
   collectedMonths.value = ''
+  // Browsing by collection time wants collection order, but the server used to
+  // force SortField = created whenever this filter was set: the sort pill went
+  // on reading 评分 while the list came back in another order entirely. Move the
+  // pill instead, and only off the page default, so a sort the reader actually
+  // picked survives the filter.
+  if (value && sortField.value === 'time') {
+    sortField.value = 'created'
+  }
 }
 const setCollectedMonth = (value: string) => {
   if (value === '' || selectedCollectedYear.value) {
@@ -206,14 +222,16 @@ const setCollectedMonth = (value: string) => {
   }
 }
 
+const lastOf = (values: string[]) => values[values.length - 1] ?? ''
+
 const onPickCollectedYear = (values: string[]) => {
-  setCollectedYear(values.length ? values[values.length - 1] : '')
+  setCollectedYear(lastOf(values))
 }
 const onPickCollectedMonth = (values: string[]) => {
   if (!selectedCollectedYear.value) {
     return
   }
-  setCollectedMonth(values.length ? values[values.length - 1] : '')
+  setCollectedMonth(lastOf(values))
 }
 
 const collectedLabel = computed(() => {

@@ -19,6 +19,18 @@ var (
 // silently returning the whole table. Returns date strings, not time.Time: the
 // column is date-typed and tz-free, so day granularity is exact and cannot drift.
 func ParseReleaseLowerBound(s string) (string, error) {
+	return ParseDateLowerBound(s, "发售日期")
+}
+
+func ParseReleaseUpperBound(s string) (string, error) {
+	return ParseDateUpperBound(s, "发售日期")
+}
+
+// noun names the filter in the 400 a reader gets back. The forum has two of
+// these ladders now — the release date and the forum collection date — and a
+// rejected collection bound that complains about 发售日期 sends whoever reads it
+// looking at the wrong field.
+func ParseDateLowerBound(s, noun string) (string, error) {
 	if s == "" {
 		return "", nil
 	}
@@ -31,10 +43,10 @@ func ParseReleaseLowerBound(s string) (string, error) {
 		}
 		return m[1] + "-" + m[2] + "-01", nil
 	}
-	return "", fmt.Errorf("非法的发售日期下限 %q（应为 YYYY 或 YYYY-MM）", s)
+	return "", fmt.Errorf("非法的%s下限 %q（应为 YYYY 或 YYYY-MM）", noun, s)
 }
 
-func ParseReleaseUpperBound(s string) (string, error) {
+func ParseDateUpperBound(s, noun string) (string, error) {
 	if s == "" {
 		return "", nil
 	}
@@ -50,7 +62,7 @@ func ParseReleaseUpperBound(s string) (string, error) {
 		last := time.Date(year, time.Month(month)+1, 0, 0, 0, 0, 0, time.UTC)
 		return last.Format("2006-01-02"), nil
 	}
-	return "", fmt.Errorf("非法的发售日期上限 %q（应为 YYYY 或 YYYY-MM）", s)
+	return "", fmt.Errorf("非法的%s上限 %q（应为 YYYY 或 YYYY-MM）", noun, s)
 }
 
 func validMonth(mm string) error {
