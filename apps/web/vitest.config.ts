@@ -9,7 +9,12 @@ export default defineVitestConfig({
     // "Cannot read properties of undefined (reading 'vueApp')".
     environment: 'happy-dom',
     globals: true,
-    include: ['app/**/*.spec.ts', 'shared/**/*.spec.ts', 'tests/**/*.spec.ts'],
+    include: [
+      'app/**/*.spec.ts',
+      'shared/**/*.spec.ts',
+      'server/**/*.spec.ts',
+      'tests/**/*.spec.ts'
+    ],
     exclude: ['**/node_modules/**', '**/dist/**', '**/.nuxt/**']
   }
 })

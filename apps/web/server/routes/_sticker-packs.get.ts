@@ -1,12 +1,8 @@
-interface StickerItem {
-  src: string
-  name: string
-}
-
-interface StickerPack {
-  name: string
-  stickers: StickerItem[]
-}
+import {
+  hostFromCdnBase,
+  transformStickerPacks,
+  type StickerPack
+} from '../utils/imageRef'
 
 /**
  * The official sticker packs, proxied from sticker.kungal.com.
@@ -30,12 +26,13 @@ interface StickerPack {
  * module calls it inside Nitro, never over the network.)
  */
 export default defineCachedEventHandler(
-  async (): Promise<{ packs: StickerPack[] }> => {
-    const base = useRuntimeConfig().stickerBaseUrl
+  async (event): Promise<{ packs: StickerPack[] }> => {
+    const cfg = useRuntimeConfig(event)
+    const base = cfg.stickerBaseUrl
     const res = await $fetch<{
       code: number
       message: string
-      data: { packs: StickerPack[] } | null
+      data: { packs: StickerPack[]; variant?: string } | null
     }>(`${base}/api/v1/editor-packs`, { timeout: 8000 })
     if (res.code !== 0 || !res.data) {
       throw createError({
@@ -43,10 +40,14 @@ export default defineCachedEventHandler(
         statusMessage: res.message || 'sticker packs unavailable'
       })
     }
-    return res.data
+    return transformStickerPacks(
+      res.data,
+      hostFromCdnBase(String(cfg.public.imageCdnBase || ''))
+    )
   },
   {
-    name: 'sticker-packs',
+    // name bump: staleMaxAge is a week, so the old absolute-URL payload would otherwise keep serving.
+    name: 'sticker-packs-v2',
     maxAge: 3600,
     staleMaxAge: 604800,
     swr: true
