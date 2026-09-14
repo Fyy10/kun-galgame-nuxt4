@@ -156,6 +156,7 @@ func (s *ChatService) SendChatMessage(
 	senderName string,
 	req *dto.SendChatMessageRequest,
 ) *errors.AppError {
+	req.Content = markdown.NormalizeStoredContent(req.Content)
 	if req.ReceiverID == senderUserID {
 		return errors.ErrBadRequest("不能给自己发送消息")
 	}

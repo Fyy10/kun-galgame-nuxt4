@@ -121,6 +121,7 @@ func (s *ToolsetService) Create(
 	userID int,
 	req *dto.CreateToolsetRequest,
 ) (*dto.CreatedToolsetResponse, *errors.AppError) {
+	req.Description = markdown.NormalizeStoredContent(req.Description)
 	moderationText := toolsetModerationText(req.Name, req.Description, req.Aliases, req.Version)
 	authorID := int64(userID)
 	decision, matched := s.check.Decision(ctx, moderationText, &authorID)
@@ -274,6 +275,7 @@ func (s *ToolsetService) Update(
 		return errors.ErrForbidden("您没有权限编辑此工具")
 	}
 
+	req.Description = markdown.NormalizeStoredContent(req.Description)
 	moderationText := toolsetModerationText(req.Name, req.Description, req.Aliases, req.Version)
 	authorID := int64(toolset.UserID)
 	decision, matched := s.check.Decision(ctx, moderationText, &authorID)

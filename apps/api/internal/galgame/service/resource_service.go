@@ -13,6 +13,7 @@ import (
 	"kun-galgame-api/internal/galgame/dto"
 	"kun-galgame-api/internal/galgame/model"
 	"kun-galgame-api/internal/galgame/repository"
+	"kun-galgame-api/internal/infrastructure/markdown"
 	"kun-galgame-api/internal/infrastructure/storelink"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/internal/trust/gate"
@@ -285,6 +286,7 @@ func (s *ResourceService) CreateResource(
 	accessToken string,
 	req *dto.CreateGalgameResourceRequest,
 ) *errors.AppError {
+	req.Note = markdown.NormalizeStoredContent(req.Note)
 	if s.resourceRepo.IsResourcePublishBanned(req.GalgameID) {
 		return errors.ErrForbidden("该游戏已被禁止发布下载资源")
 	}
@@ -388,6 +390,7 @@ func (s *ResourceService) UpdateResource(
 	userID int, canModerate bool,
 	req *dto.UpdateGalgameResourceRequest,
 ) *errors.AppError {
+	req.Note = markdown.NormalizeStoredContent(req.Note)
 	row, ok := s.resourceRepo.FindByID(req.GalgameResourceID)
 	if !ok {
 		return errors.ErrNotFound("未找到这个 Galgame 资源")

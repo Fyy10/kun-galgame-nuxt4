@@ -3,6 +3,7 @@ package service
 import (
 	"strings"
 
+	"kun-galgame-api/internal/infrastructure/markdown"
 	"kun-galgame-api/internal/topic/dto"
 	"kun-galgame-api/internal/topic/model"
 	"kun-galgame-api/internal/topic/repository"
@@ -22,6 +23,7 @@ func NewDraftService(draftRepo *repository.TopicDraftRepository) *DraftService {
 }
 
 func (s *DraftService) Save(userID int, req *dto.SaveTopicDraftRequest) (int, *errors.AppError) {
+	req.Content = markdown.NormalizeStoredContent(req.Content)
 	if strings.TrimSpace(req.Title) == "" && strings.TrimSpace(req.Content) == "" {
 		return 0, errors.ErrBadRequest("草稿的标题和正文不能都为空")
 	}

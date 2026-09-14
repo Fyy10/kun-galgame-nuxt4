@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"kun-galgame-api/internal/infrastructure/markdown"
 	"kun-galgame-api/internal/infrastructure/storage"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/internal/toolset/dto"
@@ -87,6 +88,8 @@ func (s *ResourceService) CreateResource(
 	userID, toolsetID int,
 	req *dto.CreateResourceRequest,
 ) (*dto.CreatedResourceResponse, *errors.AppError) {
+	req.Content = markdown.NormalizeStoredContent(req.Content)
+	req.Note = markdown.NormalizeStoredContent(req.Note)
 	if _, err := s.toolsetRepo.FindByID(toolsetID); err != nil {
 		return nil, errors.ErrNotFound("未找到该工具")
 	}
@@ -142,6 +145,8 @@ func (s *ResourceService) UpdateResource(
 	userID int, canModerate bool,
 	req *dto.UpdateResourceRequest,
 ) (*model.GalgameToolsetResource, *errors.AppError) {
+	req.Content = markdown.NormalizeStoredContent(req.Content)
+	req.Note = markdown.NormalizeStoredContent(req.Note)
 	resource, err := s.resourceRepo.FindByID(req.ResourceID)
 	if err != nil {
 		return nil, errors.ErrNotFound("未找到该资源")

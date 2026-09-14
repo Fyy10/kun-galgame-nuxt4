@@ -199,6 +199,7 @@ func (s *QuizService) CreateQuiz(
 	userID int,
 	req *dto.CreateQuizRequest,
 ) (*dto.CreatedQuiz, *errors.AppError) {
+	req.Description = markdown.NormalizeStoredContent(req.Description)
 	if appErr := validateQuizContent(req.Type, req.Content); appErr != nil {
 		return nil, appErr
 	}
@@ -460,6 +461,7 @@ func (s *QuizService) UpdateQuiz(
 	ctx context.Context,
 	userID int, canModerate bool, req *dto.UpdateQuizRequest,
 ) (int, *errors.AppError) {
+	req.Description = markdown.NormalizeStoredContent(req.Description)
 	quiz, ok := s.quizRepo.FindByID(req.QuizID)
 	if !ok {
 		return 0, errors.ErrNotFound("题目不存在")

@@ -28,6 +28,7 @@ type LocateResult struct {
 }
 
 func (s *CommunityCommentService) CreateComment(ctx context.Context, userID, galgameID int, content string, replyToPostID *int64) (*CommunityPostItem, *errors.AppError) {
+	content = markdown.NormalizeStoredContent(content)
 	thread, err := s.community.ResolveComments(ctx, communityclient.ResolveCommentsRequest{
 		AnchorKind: communityclient.AnchorSiteGame, AnchorID: strconv.Itoa(galgameID), ContentRating: communityclient.RatingAll,
 	})
@@ -82,6 +83,7 @@ func (s *CommunityCommentService) afterCreate(userID, galgameID int, content str
 }
 
 func (s *CommunityCommentService) UpdateComment(ctx context.Context, userID int, roles []string, postID int64, galgameID *int, content string) (*CommunityPostItem, *errors.AppError) {
+	content = markdown.NormalizeStoredContent(content)
 	canModerate := s.resolveModEdit(ctx, userID, roles, postID)
 
 	post, err := s.community.EditPost(ctx, postID, communityclient.EditPostRequest{

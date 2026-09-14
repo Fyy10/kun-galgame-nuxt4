@@ -109,6 +109,7 @@ func (s *TopicWriteService) Create(
 	userID int,
 	req *dto.CreateTopicRequest,
 ) (int, *errors.AppError) {
+	req.Content = markdown.NormalizeStoredContent(req.Content)
 	scope, grants, accessErr := normalizeTopicAccess(req.AccessScope, req.AccessRoles, req.AccessUserIDs, userID, true)
 	if accessErr != nil {
 		return 0, accessErr
@@ -213,6 +214,7 @@ func (s *TopicWriteService) Update(
 	topicID int,
 	req *dto.UpdateTopicRequest,
 ) *errors.AppError {
+	req.Content = markdown.NormalizeStoredContent(req.Content)
 	topic, err := s.topicRepo.FindByID(topicID)
 	if err != nil {
 		return errors.ErrNotFound("未找到该话题")

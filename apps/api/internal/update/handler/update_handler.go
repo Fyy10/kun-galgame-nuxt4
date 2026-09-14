@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	adminModel "kun-galgame-api/internal/admin/model"
+	"kun-galgame-api/internal/infrastructure/markdown"
 	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/internal/trust/gate"
 	"kun-galgame-api/internal/update/dto"
@@ -65,6 +66,7 @@ func (h *UpdateHandler) CreateHistory(c fiber.Ctx) error {
 	if appErr := utils.ParseAndValidate(c, &req); appErr != nil {
 		return response.Error(c, appErr)
 	}
+	req.Content = markdown.NormalizeStoredContent(req.Content)
 
 	log := adminModel.UpdateLog{
 		Type: req.Type, Version: req.Version,
@@ -86,6 +88,7 @@ func (h *UpdateHandler) UpdateHistory(c fiber.Ctx) error {
 	if appErr := utils.ParseAndValidate(c, &req); appErr != nil {
 		return response.Error(c, appErr)
 	}
+	req.Content = markdown.NormalizeStoredContent(req.Content)
 
 	fields := map[string]any{
 		"type":    req.Type,
@@ -158,6 +161,7 @@ func (h *UpdateHandler) CreateTodo(c fiber.Ctx) error {
 	if appErr := utils.ParseAndValidate(c, &req); appErr != nil {
 		return response.Error(c, appErr)
 	}
+	req.Content = markdown.NormalizeStoredContent(req.Content)
 
 	authorID := int64(user.ID)
 	decision, matched := h.check.Decision(c.Context(), req.Content, &authorID)
@@ -203,6 +207,8 @@ func (h *UpdateHandler) UpdateTodo(c fiber.Ctx) error {
 	if todo.Status == adminModel.TodoStatusDone || todo.Status == adminModel.TodoStatusDiscarded {
 		return response.Error(c, errors.ErrForbidden("已完成或已废弃的待办不可编辑"))
 	}
+
+	req.Content = markdown.NormalizeStoredContent(req.Content)
 
 	authorID := int64(user.ID)
 	decision, matched := h.check.Decision(c.Context(), req.Content, &authorID)

@@ -189,6 +189,7 @@ func (s *ArticleService) GetBySlug(slug string) (*dto.ArticleDetailResponse, *er
 }
 
 func (s *ArticleService) Create(userID int, req *dto.CreateArticleRequest) (*model.DocArticle, *errors.AppError) {
+	req.ContentMarkdown = markdown.NormalizeStoredContent(req.ContentMarkdown)
 	now := time.Now()
 	article := model.DocArticle{
 		Title:           req.Title,
@@ -219,6 +220,7 @@ func (s *ArticleService) Create(userID int, req *dto.CreateArticleRequest) (*mod
 }
 
 func (s *ArticleService) Update(req *dto.UpdateArticleRequest) *errors.AppError {
+	req.ContentMarkdown = markdown.NormalizeStoredContent(req.ContentMarkdown)
 	now := time.Now()
 	updates := map[string]any{
 		"title":             req.Title,

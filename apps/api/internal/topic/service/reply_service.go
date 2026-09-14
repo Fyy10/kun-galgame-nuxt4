@@ -166,6 +166,7 @@ func (s *ReplyService) CreateReply(
 	user *middleware.UserInfo,
 	req *dto.CreateReplyRequest,
 ) (*dto.TopicReplyResponse, *errors.AppError) {
+	req.Content = markdown.NormalizeStoredContent(req.Content)
 	userID := user.ID
 	topic, err := s.topicRepo.FindByID(req.TopicID)
 	if err != nil {
@@ -248,6 +249,7 @@ func (s *ReplyService) UpdateReply(
 	canEditAny bool,
 	req *dto.UpdateReplyRequest,
 ) *errors.AppError {
+	req.Content = markdown.NormalizeStoredContent(req.Content)
 	reply, err := s.replyRepo.FindByID(req.ReplyID)
 	if err != nil {
 		return errors.ErrNotFound("未找到该回复")

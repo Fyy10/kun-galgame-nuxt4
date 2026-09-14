@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"kun-galgame-api/internal/constants"
+	"kun-galgame-api/internal/infrastructure/markdown"
 	msgService "kun-galgame-api/internal/message/service"
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/internal/topic/dto"
@@ -56,6 +57,7 @@ func (s *CommentService) CreateComment(
 	parentCommentID *int,
 	content string,
 ) (*dto.TopicCommentResponse, *errors.AppError) {
+	content = markdown.NormalizeStoredContent(content)
 	userID := user.ID
 	if parentCommentID != nil {
 		parent, err := s.commentRepo.FindCommentByID(*parentCommentID)
@@ -149,6 +151,7 @@ func (s *CommentService) UpdateComment(
 	canEditAny bool,
 	req *dto.UpdateCommentRequest,
 ) (*dto.TopicCommentResponse, *errors.AppError) {
+	req.Content = markdown.NormalizeStoredContent(req.Content)
 	comment, err := s.commentRepo.FindCommentByID(req.CommentID)
 	if err != nil {
 		return nil, errors.ErrNotFound("未找到该评论")

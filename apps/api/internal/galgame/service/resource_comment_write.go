@@ -35,6 +35,7 @@ func (s *ResourceCommentService) CreateComment(ctx context.Context, src CommentS
 		return nil, mapCommunityError(err)
 	}
 
+	content = markdown.NormalizeStoredContent(content)
 	req := communityclient.ReplyRequest{AuthorID: int64(userID), Body: content}
 	if replyToPostID != nil {
 		req.ReplyToPostID = *replyToPostID
