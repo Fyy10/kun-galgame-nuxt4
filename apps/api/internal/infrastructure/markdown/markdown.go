@@ -63,6 +63,7 @@ var contentImageCDNBase string
 
 func SetContentImageCDNBase(base string) {
 	contentImageCDNBase = strings.TrimRight(base, "/")
+	rememberCDNBaseHost(contentImageCDNBase)
 }
 
 var contentSiteBase string
@@ -157,6 +158,7 @@ func RenderHardWrap(source string) string {
 }
 
 func RenderWithTOC(source string) (string, []TocLink) {
+	source = ResolveLegacyStickerRefs(source)
 	src := []byte(source)
 	reader := text.NewReader(src)
 	ctx := parser.NewContext(parser.WithIDs(newUnicodeIDs()))
@@ -173,6 +175,7 @@ func RenderWithTOC(source string) (string, []TocLink) {
 }
 
 func renderWith(m goldmark.Markdown, source string) string {
+	source = ResolveLegacyStickerRefs(source)
 	src := []byte(source)
 	reader := text.NewReader(src)
 	ctx := parser.NewContext(parser.WithIDs(newUnicodeIDs()))

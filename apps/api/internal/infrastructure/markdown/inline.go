@@ -42,6 +42,23 @@ func resolveAllowedImageHosts() []string {
 
 var messageImageSrcPattern = buildImageSrcPattern(allowedImageHosts)
 
+// RenderInline expands a /image/<hash> token to the CDN base before the policy sees
+// it, so a base pointing at a host this list does not name makes bluemonday drop the
+// img and the picture just disappears from chat. Re-derive both when the base is set.
+func allowInlineImageHost(host string) {
+	if host == "" {
+		return
+	}
+	for _, h := range allowedImageHosts {
+		if strings.EqualFold(h, host) {
+			return
+		}
+	}
+	allowedImageHosts = append(allowedImageHosts, host)
+	messageImageSrcPattern = buildImageSrcPattern(allowedImageHosts)
+	inlineSanitizer = newInlineSanitizePolicy()
+}
+
 func buildImageSrcPattern(hosts []string) *regexp.Regexp {
 	escaped := make([]string, len(hosts))
 	for i, h := range hosts {
@@ -86,6 +103,7 @@ func RenderInline(source string) string {
 	if source == "" {
 		return ""
 	}
+	source = ResolveLegacyStickerRefs(source)
 	var buf bytes.Buffer
 	if err := inlineMd.Convert([]byte(source), &buf); err != nil {
 		return inlineSanitizer.Sanitize(source)
