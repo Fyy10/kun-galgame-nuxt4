@@ -1,5 +1,6 @@
 export interface GalgameCommunityComment {
   id: number
+  thread_id: number
   content: string
   content_html: string
   galgame_id: number
@@ -24,3 +25,4 @@ export interface GalgameCommunityCommentPage {
   total: number
   locked: boolean
 }
+

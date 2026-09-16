@@ -67,31 +67,20 @@ func (s *ResourceCommentService) GetComments(ctx context.Context, src CommentSou
 		return lockedCommentPage(), nil
 	}
 
-	thread, err := s.community.ResolveComments(ctx, communityclient.ResolveCommentsRequest{
-		AnchorKind: communityclient.AnchorSiteResource, AnchorID: src.anchorID(resourceID), ContentRating: communityclient.RatingAll,
-	})
+	page, err := s.community.GetComments(ctx, communityclient.AnchorSiteResource, src.anchorID(resourceID), cursor, clampReadLimit(limit))
 	if err != nil {
 		if isCommunityDown(err) {
 			return emptyCommentPage(), nil
 		}
 		return nil, mapCommunityError(err)
 	}
-
-	posts, next := thread.Posts, thread.NextCursor
-	if cursor != "" {
-		page, perr := s.community.ListPosts(ctx, thread.Thread.ID, cursor, clampReadLimit(limit))
-		if perr != nil {
-			if isCommunityDown(perr) {
-				return emptyCommentPage(), nil
-			}
-			return nil, mapCommunityError(perr)
-		}
-		posts, next = page.Posts, page.NextCursor
+	if page.Thread == nil {
+		return emptyCommentPage(), nil
 	}
 
-	items := s.renderPosts(ctx, viewerID, posts)
+	items := s.renderPosts(ctx, viewerID, page.Posts)
 	return &CommunityCommentPage{
-		ThreadID: thread.Thread.ID, Posts: items, NextCursor: next, Total: int(thread.Thread.PostsCount),
+		ThreadID: page.Thread.ID, Posts: items, NextCursor: page.NextCursor, Total: int(page.Thread.PostsCount),
 	}, nil
 }
 

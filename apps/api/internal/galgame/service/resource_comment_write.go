@@ -28,25 +28,22 @@ func (s *ResourceCommentService) CreateComment(ctx context.Context, src CommentS
 		return nil, errors.ErrForbidden("作答后才能参与这道题目的讨论")
 	}
 
-	thread, err := s.community.ResolveComments(ctx, communityclient.ResolveCommentsRequest{
-		AnchorKind: communityclient.AnchorSiteResource, AnchorID: src.anchorID(resourceID), ContentRating: communityclient.RatingAll,
-	})
-	if err != nil {
-		return nil, mapCommunityError(err)
-	}
-
 	content = markdown.NormalizeStoredContent(content)
-	req := communityclient.ReplyRequest{AuthorID: int64(userID), Body: content}
+	req := communityclient.CommentRequest{
+		AnchorKind: communityclient.AnchorSiteResource, AnchorID: src.anchorID(resourceID),
+		ContentRating: communityclient.RatingAll, AuthorID: int64(userID), Body: content,
+	}
 	if replyToPostID != nil {
 		req.ReplyToPostID = *replyToPostID
 	}
 	if targetUserID != nil {
 		req.TargetUserID = *targetUserID
 	}
-	post, err := s.community.Reply(ctx, thread.Thread.ID, req)
+	res, err := s.community.CommentOnAnchor(ctx, req)
 	if err != nil {
 		return nil, mapCommunityError(err)
 	}
+	post := &res.Post
 
 	s.afterCreate(src, resourceID, cc, userID, content, post)
 
@@ -215,27 +212,23 @@ func (s *ResourceCommentService) resourceOwner(src CommentSource, resourceID int
 }
 
 func (s *ResourceCommentService) postInResourceThread(ctx context.Context, src CommentSource, resourceID int, postID int64) (bool, error) {
-	thread, err := s.community.ResolveComments(ctx, communityclient.ResolveCommentsRequest{
-		AnchorKind: communityclient.AnchorSiteResource, AnchorID: src.anchorID(resourceID), ContentRating: communityclient.RatingAll,
-	})
-	if err != nil {
-		return false, err
-	}
-	if containsPost(thread.Posts, postID) {
-		return true, nil
-	}
-	cursor := thread.NextCursor
-	for cursor != "" {
-		page, perr := s.community.ListPosts(ctx, thread.Thread.ID, cursor, "50")
-		if perr != nil {
-			return false, perr
+	cursor := ""
+	for {
+		page, err := s.community.GetComments(ctx, communityclient.AnchorSiteResource, src.anchorID(resourceID), cursor, "50")
+		if err != nil {
+			return false, err
+		}
+		if page.Thread == nil {
+			return false, nil
 		}
 		if containsPost(page.Posts, postID) {
 			return true, nil
 		}
+		if page.NextCursor == "" {
+			return false, nil
+		}
 		cursor = page.NextCursor
 	}
-	return false, nil
 }
 
 func containsPost(posts []communityclient.PostView, postID int64) bool {

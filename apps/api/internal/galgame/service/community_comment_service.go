@@ -39,7 +39,10 @@ type UserObj struct {
 }
 
 type CommunityPostItem struct {
-	ID                int64    `json:"id"`
+	ID int64 `json:"id"`
+	// ThreadID is how the first comment on a wall tells the page the wall now
+	// exists: until then there is no thread to follow or report a receipt for.
+	ThreadID          int64    `json:"thread_id"`
 	Content           string   `json:"content"`
 	ContentHtml       string   `json:"content_html"`
 	GalgameID         int      `json:"galgame_id"`
@@ -66,31 +69,20 @@ type CommunityCommentPage struct {
 }
 
 func (s *CommunityCommentService) GetComments(ctx context.Context, galgameID, viewerID int, cursor string, limit int) (*CommunityCommentPage, *errors.AppError) {
-	thread, err := s.community.ResolveComments(ctx, communityclient.ResolveCommentsRequest{
-		AnchorKind: communityclient.AnchorSiteGame, AnchorID: strconv.Itoa(galgameID), ContentRating: communityclient.RatingAll,
-	})
+	page, err := s.community.GetComments(ctx, communityclient.AnchorSiteGame, strconv.Itoa(galgameID), cursor, clampReadLimit(limit))
 	if err != nil {
 		if isCommunityDown(err) {
 			return emptyCommentPage(), nil
 		}
 		return nil, mapCommunityError(err)
 	}
-
-	posts, next := thread.Posts, thread.NextCursor
-	if cursor != "" {
-		page, perr := s.community.ListPosts(ctx, thread.Thread.ID, cursor, clampReadLimit(limit))
-		if perr != nil {
-			if isCommunityDown(perr) {
-				return emptyCommentPage(), nil
-			}
-			return nil, mapCommunityError(perr)
-		}
-		posts, next = page.Posts, page.NextCursor
+	if page.Thread == nil {
+		return emptyCommentPage(), nil
 	}
 
-	items := s.renderPosts(ctx, galgameID, viewerID, posts)
+	items := s.renderPosts(ctx, galgameID, viewerID, page.Posts)
 	return &CommunityCommentPage{
-		ThreadID: thread.Thread.ID, Posts: items, NextCursor: next, Total: int(thread.Thread.PostsCount),
+		ThreadID: page.Thread.ID, Posts: items, NextCursor: page.NextCursor, Total: int(page.Thread.PostsCount),
 	}, nil
 }
 
@@ -139,6 +131,7 @@ func buildCommunityItem(p communityclient.PostView, galgameID int, author usercl
 	}
 	item := &CommunityPostItem{
 		ID:                p.ID,
+		ThreadID:          p.ThreadID,
 		Content:           raw,
 		ContentHtml:       markdown.Render(raw),
 		GalgameID:         galgameID,

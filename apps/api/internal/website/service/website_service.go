@@ -191,23 +191,19 @@ const websiteDetailCommentCap = 20
 
 func (s *WebsiteService) resolveDetailComments(ctx context.Context, websiteID int) []dto.WebsiteDetailComment {
 	out := []dto.WebsiteDetailComment{}
-	thread, err := s.community.ResolveComments(ctx, communityclient.ResolveCommentsRequest{
-		AnchorKind:    communityclient.AnchorSiteResource,
-		AnchorID:      "website:" + strconv.Itoa(websiteID),
-		ContentRating: communityclient.RatingAll,
-	})
+	page, err := s.community.GetComments(ctx, communityclient.AnchorSiteResource, "website:"+strconv.Itoa(websiteID), "", "")
 	if err != nil {
-		slog.Warn("website detail: community resolve failed (best-effort)", "website_id", websiteID, "error", err)
+		slog.Warn("website detail: community read failed (best-effort)", "website_id", websiteID, "error", err)
 		return out
 	}
 
-	uids := make([]int, 0, len(thread.Posts))
-	for _, p := range thread.Posts {
+	uids := make([]int, 0, len(page.Posts))
+	for _, p := range page.Posts {
 		uids = append(uids, int(p.AuthorID))
 	}
 	userMap := s.userClient.Hydrate(ctx, uids)
 
-	for _, p := range thread.Posts {
+	for _, p := range page.Posts {
 		if len(out) >= websiteDetailCommentCap {
 			break
 		}

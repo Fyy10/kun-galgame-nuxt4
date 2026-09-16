@@ -29,20 +29,18 @@ type LocateResult struct {
 
 func (s *CommunityCommentService) CreateComment(ctx context.Context, userID, galgameID int, content string, replyToPostID *int64) (*CommunityPostItem, *errors.AppError) {
 	content = markdown.NormalizeStoredContent(content)
-	thread, err := s.community.ResolveComments(ctx, communityclient.ResolveCommentsRequest{
-		AnchorKind: communityclient.AnchorSiteGame, AnchorID: strconv.Itoa(galgameID), ContentRating: communityclient.RatingAll,
-	})
-	if err != nil {
-		return nil, mapCommunityError(err)
+	req := communityclient.CommentRequest{
+		AnchorKind: communityclient.AnchorSiteGame, AnchorID: strconv.Itoa(galgameID),
+		ContentRating: communityclient.RatingAll, AuthorID: int64(userID), Body: content,
 	}
-	req := communityclient.ReplyRequest{AuthorID: int64(userID), Body: content}
 	if replyToPostID != nil {
 		req.ReplyToPostID = *replyToPostID
 	}
-	post, err := s.community.Reply(ctx, thread.Thread.ID, req)
+	res, err := s.community.CommentOnAnchor(ctx, req)
 	if err != nil {
 		return nil, mapCommunityError(err)
 	}
+	post := &res.Post
 
 	s.afterCreate(userID, galgameID, content, post)
 

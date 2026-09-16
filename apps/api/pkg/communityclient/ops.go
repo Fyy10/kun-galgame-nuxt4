@@ -5,9 +5,25 @@ import (
 	"net/http"
 )
 
-func (c *Client) ResolveComments(ctx context.Context, req ResolveCommentsRequest) (*ThreadWithPosts, error) {
-	var out ThreadWithPosts
-	err := c.do(ctx, http.MethodPost, "/comments/resolve", req, &out)
+// GetComments is a pure read: an anchor nobody has commented on yet has no
+// thread, so Thread comes back nil and Posts empty. The face it replaced,
+// POST /comments/resolve, was get-or-create, so the three downstream sites
+// calling it to render a page had minted 110,918 empty threads by 2026-09-15
+// — 97.2% of every thread in the community database.
+func (c *Client) GetComments(ctx context.Context, anchorKind int32, anchorID, after, limit string) (*CommentsPage, error) {
+	var out CommentsPage
+	q := query(map[string]string{
+		"anchor_kind": itoa(int64(anchorKind)), "anchor_id": anchorID, "after": after, "limit": limit,
+	})
+	err := c.do(ctx, http.MethodGet, "/comments"+q, nil, &out)
+	return &out, err
+}
+
+// CommentOnAnchor posts to an anchor's comment wall; the thread is created in
+// the same transaction when this is its first comment.
+func (c *Client) CommentOnAnchor(ctx context.Context, req CommentRequest) (*ThreadWithPost, error) {
+	var out ThreadWithPost
+	err := c.do(ctx, http.MethodPost, "/comments", req, &out)
 	return &out, err
 }
 

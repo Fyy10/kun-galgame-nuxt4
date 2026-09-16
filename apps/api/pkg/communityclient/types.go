@@ -76,12 +76,6 @@ type ThreadView struct {
 	LastPostedAt      string `json:"last_posted_at"`
 }
 
-type ThreadWithPosts struct {
-	Thread     ThreadView `json:"thread"`
-	Posts      []PostView `json:"posts"`
-	NextCursor string     `json:"next_cursor"`
-}
-
 type PostListResponse struct {
 	Posts      []PostView `json:"posts"`
 	NextCursor string     `json:"next_cursor"`
@@ -129,10 +123,26 @@ type TrustView struct {
 	GrantedBoost            int32 `json:"granted_boost"`
 }
 
-type ResolveCommentsRequest struct {
+type CommentsPage struct {
+	Thread     *ThreadView `json:"thread"`
+	Posts      []PostView  `json:"posts"`
+	NextCursor string      `json:"next_cursor"`
+}
+
+type CommentRequest struct {
 	AnchorKind    int32  `json:"anchor_kind"`
 	AnchorID      string `json:"anchor_id"`
 	ContentRating int32  `json:"content_rating"`
+	AuthorID      int64  `json:"author_id"`
+	Body          string `json:"body"`
+	RootPostID    int64  `json:"root_post_id,omitempty"`
+	ReplyToPostID int64  `json:"reply_to_post_id,omitempty"`
+	TargetUserID  int64  `json:"target_user_id,omitempty"`
+}
+
+type ThreadWithPost struct {
+	Thread ThreadView `json:"thread"`
+	Post   PostView   `json:"post"`
 }
 
 type PostsResolveRequest struct {

@@ -26,23 +26,19 @@ func NewCommentService(
 
 func (s *CommentService) GetLatestForDetail(ctx context.Context, toolsetID, limit int) []dto.CommentDetailItem {
 	items := []dto.CommentDetailItem{}
-	thread, err := s.community.ResolveComments(ctx, communityclient.ResolveCommentsRequest{
-		AnchorKind:    communityclient.AnchorSiteResource,
-		AnchorID:      "toolset:" + strconv.Itoa(toolsetID),
-		ContentRating: communityclient.RatingAll,
-	})
+	page, err := s.community.GetComments(ctx, communityclient.AnchorSiteResource, "toolset:"+strconv.Itoa(toolsetID), "", "")
 	if err != nil {
-		slog.Warn("toolset detail: community resolve failed (best-effort)", "toolset_id", toolsetID, "error", err)
+		slog.Warn("toolset detail: community read failed (best-effort)", "toolset_id", toolsetID, "error", err)
 		return items
 	}
 
-	uids := make([]int, 0, len(thread.Posts))
-	for _, p := range thread.Posts {
+	uids := make([]int, 0, len(page.Posts))
+	for _, p := range page.Posts {
 		uids = append(uids, int(p.AuthorID))
 	}
 	userMap := s.userClient.Hydrate(ctx, uids)
 
-	for _, p := range thread.Posts {
+	for _, p := range page.Posts {
 		if len(items) >= limit {
 			break
 		}
