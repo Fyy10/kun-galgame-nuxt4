@@ -11,10 +11,12 @@ const emit = defineEmits<{
   'update:modelValue': [value: SearchType]
 }>()
 
-const counts = computed<Record<SearchType, number>>(() => {
+// Partial, not Record: the community lane answers no total, so its count is
+// absent rather than zero — and SearchNavCount draws nothing for absent.
+const counts = computed<Partial<Record<SearchType, number>>>(() => {
   const totals = props.totals
   if (!totals) {
-    return {} as Record<SearchType, number>
+    return {}
   }
   const sum = Object.values(totals).reduce((acc, value) => acc + value, 0)
   return { ...totals, all: sum }

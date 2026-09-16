@@ -6,6 +6,9 @@ const props = defineProps<{
 
 const {
   status,
+  threadId,
+  subscription,
+  setLevel,
   seeded,
   groups,
   isEmpty,
@@ -29,7 +32,15 @@ const target: CommunityCommentTarget = {
       name="评论区"
       description="发布对这个评分的观点, 请不要锐评"
       scale="h2"
-    />
+    >
+      <template #endContent>
+        <CommentCommunitySubscribe
+          :thread-id="threadId"
+          :subscription="subscription"
+          :submit="setLevel"
+        />
+      </template>
+    </KunHeader>
 
     <div class="space-y-5">
       <CommentCommunityComposer

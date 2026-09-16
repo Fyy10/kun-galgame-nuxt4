@@ -78,6 +78,22 @@ func (h *SearchHandler) ResolveEntities(c fiber.Ctx) error {
 	return response.OK(c, dto.EntityResolveResult{Items: items})
 }
 
+// SearchGalComments is its own route rather than a type= on Search: the
+// community face is keyset and answers no total, so it cannot ride the
+// {items, total} envelope every other lane returns.
+func (h *SearchHandler) SearchGalComments(c fiber.Ctx) error {
+	var req dto.GalCommentSearchRequest
+	if appErr := utils.ParseQueryAndValidate(c, &req); appErr != nil {
+		return response.Error(c, appErr)
+	}
+
+	res, appErr := h.searchService.SearchGalComments(c.Context(), req.Keywords, req.Cursor, req.Limit)
+	if appErr != nil {
+		return response.Error(c, appErr)
+	}
+	return response.OK(c, res)
+}
+
 func (h *SearchHandler) Search(c fiber.Ctx) error {
 	var req dto.SearchRequest
 	if appErr := utils.ParseQueryAndValidate(c, &req); appErr != nil {

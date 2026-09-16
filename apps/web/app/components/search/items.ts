@@ -56,6 +56,12 @@ export const SEARCH_CATEGORIES: SearchCategory[] = [
     countUnit: '条评论'
   },
   {
+    value: 'galcomment',
+    textValue: '游戏评论',
+    icon: 'lucide:message-circle',
+    countUnit: '条评论'
+  },
+  {
     value: 'toolset',
     textValue: 'Gal 工具',
     icon: 'lucide:wrench',

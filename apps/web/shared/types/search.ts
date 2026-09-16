@@ -35,6 +35,25 @@ export type SearchResultComment = {
   created: Date | string
 }
 
+// A comment wall on a Galgame or one of the resource pages around it. These
+// live in the community service, which answers a cursor and no total — the lane
+// therefore loads more rather than paginating, and carries no rail count.
+export interface SearchResultGalComment {
+  id: number
+  content: string
+  link: string
+  title: string
+  label: string
+  galgame_id?: number
+  user: KunUser
+  created: string
+}
+
+export interface SearchGalCommentResult {
+  items: SearchResultGalComment[]
+  next_cursor: string
+}
+
 export type SearchEntityFamily =
   | 'character'
   | 'company'
@@ -72,9 +91,13 @@ export type SearchType =
   | 'user'
   | 'reply'
   | 'comment'
+  | 'galcomment'
   | 'toolset'
 
-export type SearchPagedType = Exclude<SearchType, 'all' | 'entity'>
+export type SearchPagedType = Exclude<
+  SearchType,
+  'all' | 'entity' | 'galcomment'
+>
 
 export type SearchResult =
   | SearchResultTopic
@@ -117,6 +140,7 @@ export interface SearchOverviewResult {
   users: SearchResultUser[]
   replies: SearchResultReply[]
   comments: SearchResultComment[]
+  gal_comments: SearchResultGalComment[]
   toolsets: SearchResultToolset[]
   totals: SearchOverviewTotals
 }

@@ -185,3 +185,54 @@ type SetBoostRequest struct {
 	UserID int64 `json:"user_id"`
 	Boost  int32 `json:"boost"`
 }
+
+const (
+	NotificationMuted    = 0
+	NotificationNormal   = 1
+	NotificationTracking = 2
+	NotificationWatching = 3
+)
+
+type PostFeedResponse struct {
+	Posts      []AuthorPostView `json:"posts"`
+	NextCursor string           `json:"next_cursor"`
+}
+
+type ThreadUserView struct {
+	ThreadID           int64 `json:"thread_id"`
+	UserID             int64 `json:"user_id"`
+	LastReadPostNumber int32 `json:"last_read_post_number"`
+	HighestPostNumber  int32 `json:"highest_post_number"`
+	UnreadCount        int32 `json:"unread_count"`
+	NotificationLevel  int32 `json:"notification_level"`
+}
+
+type ThreadReadRequest struct {
+	UserID             int64 `json:"user_id"`
+	LastReadPostNumber int32 `json:"last_read_post_number"`
+}
+
+type ThreadNotificationRequest struct {
+	UserID int64 `json:"user_id"`
+	Level  int32 `json:"level"`
+}
+
+type ThreadStatesRequest struct {
+	UserID    int64   `json:"user_id"`
+	ThreadIDs []int64 `json:"thread_ids"`
+}
+
+type ThreadStatesResponse struct {
+	States []ThreadUserView `json:"states"`
+}
+
+type UnreadThreadView struct {
+	Thread ThreadView     `json:"thread"`
+	State  ThreadUserView `json:"state"`
+}
+
+type UnreadListResponse struct {
+	Threads    []UnreadThreadView `json:"threads"`
+	NextCursor string             `json:"next_cursor"`
+	Total      int64              `json:"total"`
+}

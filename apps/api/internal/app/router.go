@@ -106,6 +106,7 @@ func (a *App) setupRoutes() {
 	api.Get("/search", middleware.OptionalAuth(a.Redis, a.OAuthClient), a.SearchHandler.Search)
 	api.Get("/search/quick", middleware.OptionalAuth(a.Redis, a.OAuthClient), a.SearchHandler.QuickSearch)
 	api.Get("/search/overview", middleware.OptionalAuth(a.Redis, a.OAuthClient), a.SearchHandler.Overview)
+	api.Get("/search/gal-comment", middleware.OptionalAuth(a.Redis, a.OAuthClient), a.SearchHandler.SearchGalComments)
 	api.Get("/search/entity", middleware.OptionalAuth(a.Redis, a.OAuthClient), a.SearchHandler.SearchEntities)
 	api.Get("/search/entity/resolve", middleware.OptionalAuth(a.Redis, a.OAuthClient), a.SearchHandler.ResolveEntities)
 
@@ -274,6 +275,10 @@ func (a *App) setupRoutes() {
 	authed.Get("/message/admin", a.MessageHandler.GetSystemMessages)
 	authed.Put("/message/admin/read", a.MessageHandler.MarkAdminRead)
 	authed.Get("/message/nav/system", a.MessageHandler.GetNavSummary)
+	authed.Get("/community/unread", a.CommunityEngagementHandler.Unread)
+	authed.Get("/community/unread/count", a.CommunityEngagementHandler.UnreadCount)
+	authed.Post("/community/thread/:id/read", a.CommunityEngagementHandler.MarkRead)
+	authed.Post("/community/thread/:id/notification", a.CommunityEngagementHandler.SetNotification)
 	authed.Get("/message/nav/contact", a.MessageChatHandler.GetNavContact)
 	authed.Get("/message/chat/history", a.MessageChatHandler.GetChatHistory)
 	authed.Post("/message/chat/send", a.MessageChatHandler.SendChatMessage)

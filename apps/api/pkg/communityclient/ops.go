@@ -110,3 +110,52 @@ func (c *Client) ResolvePosts(ctx context.Context, ids []int64) (*PostsResolveRe
 	err := c.do(ctx, http.MethodPost, "/posts/resolve", PostsResolveRequest{IDs: ids}, &out)
 	return &out, err
 }
+
+// SearchPosts matches the markdown source, not the cooked HTML, and answers a
+// keyset page: there is no total to count and no relevance to rank by.
+func (c *Client) SearchPosts(ctx context.Context, q string, kind int32, cursor string, limit int) (*PostFeedResponse, error) {
+	var out PostFeedResponse
+	q2 := map[string]string{"q": q, "kind": itoa(int64(kind)), "cursor": cursor}
+	if limit > 0 {
+		q2["limit"] = itoa(int64(limit))
+	}
+	err := c.do(ctx, http.MethodGet, "/search/posts"+query(q2), nil, &out)
+	return &out, err
+}
+
+// MarkThreadRead advances the reader's high-water mark; it is clamped upstream
+// to the thread's highest post number, so MaxInt32 means "all of it".
+func (c *Client) MarkThreadRead(ctx context.Context, threadID, userID int64, lastRead int32) (*ThreadUserView, error) {
+	var out ThreadUserView
+	req := ThreadReadRequest{UserID: userID, LastReadPostNumber: lastRead}
+	err := c.do(ctx, http.MethodPost, "/threads/"+itoa(threadID)+"/read", req, &out)
+	return &out, err
+}
+
+func (c *Client) SetThreadNotification(ctx context.Context, threadID, userID int64, level int32) (*ThreadUserView, error) {
+	var out ThreadUserView
+	req := ThreadNotificationRequest{UserID: userID, Level: level}
+	err := c.do(ctx, http.MethodPost, "/threads/"+itoa(threadID)+"/notification", req, &out)
+	return &out, err
+}
+
+// ThreadStates reports only the threads the user has actually interacted with:
+// a thread they never opened carries no row and is simply absent.
+func (c *Client) ThreadStates(ctx context.Context, userID int64, threadIDs []int64) (*ThreadStatesResponse, error) {
+	if len(threadIDs) == 0 {
+		return &ThreadStatesResponse{States: []ThreadUserView{}}, nil
+	}
+	var out ThreadStatesResponse
+	err := c.do(ctx, http.MethodPost, "/threads/states", ThreadStatesRequest{UserID: userID, ThreadIDs: threadIDs}, &out)
+	return &out, err
+}
+
+func (c *Client) ListUnread(ctx context.Context, userID int64, cursor string, limit int) (*UnreadListResponse, error) {
+	var out UnreadListResponse
+	q := map[string]string{"cursor": cursor}
+	if limit > 0 {
+		q["limit"] = itoa(int64(limit))
+	}
+	err := c.do(ctx, http.MethodGet, "/users/"+itoa(userID)+"/unread"+query(q), nil, &out)
+	return &out, err
+}

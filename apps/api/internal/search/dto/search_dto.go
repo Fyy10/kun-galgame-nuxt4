@@ -108,6 +108,30 @@ type CommentItem struct {
 	Created    time.Time `json:"created"`
 }
 
+type GalCommentItem struct {
+	ID      int64  `json:"id"`
+	Content string `json:"content"`
+	Link    string `json:"link"`
+	// Title is the game's name where catalog answered with one, and the anchor's
+	// own label otherwise — a resource wall has no name to borrow.
+	Title     string    `json:"title"`
+	Label     string    `json:"label"`
+	GalgameID int       `json:"galgame_id,omitempty"`
+	User      UserBrief `json:"user"`
+	Created   string    `json:"created"`
+}
+
+type GalCommentResult struct {
+	Items      []GalCommentItem `json:"items"`
+	NextCursor string           `json:"next_cursor"`
+}
+
+type GalCommentSearchRequest struct {
+	Keywords string `query:"keywords" validate:"required,max=107"`
+	Cursor   string `query:"cursor" validate:"omitempty,max=256"`
+	Limit    int    `query:"limit" validate:"omitempty,min=1,max=50"`
+}
+
 type QuickSearchRequest struct {
 	Keywords string `query:"keywords" validate:"required,max=107"`
 }
@@ -149,8 +173,11 @@ type OverviewResult struct {
 	Users     []UserItem                     `json:"users"`
 	Replies   []ReplyItem                    `json:"replies"`
 	Comments  []CommentItem                  `json:"comments"`
-	Toolsets  []toolsetDto.ToolsetCard       `json:"toolsets"`
-	Totals    OverviewTotals                 `json:"totals"`
+	// The community lane is keyset and answers no total, so it contributes no
+	// entry to Totals and its rail count stays blank.
+	GalComments []GalCommentItem         `json:"gal_comments"`
+	Toolsets    []toolsetDto.ToolsetCard `json:"toolsets"`
+	Totals      OverviewTotals           `json:"totals"`
 }
 
 type EntitySearchResult struct {

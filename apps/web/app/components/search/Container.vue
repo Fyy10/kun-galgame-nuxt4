@@ -164,6 +164,11 @@ const setType = (value: SearchType) => {
           :keywords="keywords"
         />
 
+        <SearchGalComments
+          v-else-if="currentType === 'galcomment'"
+          :keywords="keywords"
+        />
+
         <SearchList
           v-else
           :key="currentType"

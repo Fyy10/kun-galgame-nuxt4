@@ -14,6 +14,9 @@ const galgame = inject<GalgameDetail>('galgame')
 const {
   posts,
   status,
+  threadId,
+  subscription,
+  setLevel,
   seeded,
   groups,
   isEmpty,
@@ -107,9 +110,16 @@ onMounted(() => {
   <div class="space-y-5">
     <KunHeader name="游戏评论" scale="h2">
       <template #endContent>
-        <KunLink size="sm" to="/topic/1482">
-          Galgame 评论注意事项, 资源失效, 解压密码错误等问题反馈
-        </KunLink>
+        <div class="flex flex-wrap items-center gap-3">
+          <KunLink size="sm" to="/topic/1482">
+            Galgame 评论注意事项, 资源失效, 解压密码错误等问题反馈
+          </KunLink>
+          <CommentCommunitySubscribe
+            :thread-id="threadId"
+            :subscription="subscription"
+            :submit="setLevel"
+          />
+        </div>
       </template>
     </KunHeader>
 

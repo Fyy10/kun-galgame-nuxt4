@@ -5,6 +5,9 @@ const props = defineProps<{
 
 const {
   status,
+  threadId,
+  subscription,
+  setLevel,
   seeded,
   locked,
   groups,
@@ -36,8 +39,18 @@ const onPublished = (post: GalgameCommunityComment) => {
       description="聊聊这道题目, 请不要直接剧透答案"
       scale="h2"
     >
-      <template v-if="total > 0 && !locked" #endContent>
-        <span class="text-default-500 text-sm">{{ total }} 条讨论</span>
+      <template #endContent>
+        <div class="flex items-center gap-3">
+          <span v-if="total > 0 && !locked" class="text-default-500 text-sm">
+            {{ total }} 条讨论
+          </span>
+          <CommentCommunitySubscribe
+            v-if="!locked"
+            :thread-id="threadId"
+            :subscription="subscription"
+            :submit="setLevel"
+          />
+        </div>
       </template>
     </KunHeader>
 

@@ -3,7 +3,9 @@ import { SEARCH_CATEGORY_MAP } from './items'
 
 const props = defineProps<{
   type: SearchType
-  total: number
+  // The community lane answers no total, so it prints no count and always
+  // offers the tab — there is no number to compare shown against.
+  total?: number
   shown: number
 }>()
 
@@ -12,7 +14,9 @@ const emit = defineEmits<{
 }>()
 
 const meta = computed(() => SEARCH_CATEGORY_MAP[props.type])
-const hasMore = computed(() => props.total > props.shown)
+const hasMore = computed(() =>
+  props.total === undefined ? true : props.total > props.shown
+)
 </script>
 
 <template>
@@ -20,7 +24,12 @@ const hasMore = computed(() => props.total > props.shown)
     <header class="border-default-200 flex items-center gap-2 border-b pb-2">
       <KunIcon :name="meta.icon" class="text-primary size-4.5 shrink-0" />
       <h2 class="font-medium">{{ meta.textValue }}</h2>
-      <span class="text-default-400 text-sm tabular-nums">{{ total }}</span>
+      <span
+        v-if="total !== undefined"
+        class="text-default-400 text-sm tabular-nums"
+      >
+        {{ total }}
+      </span>
 
       <KunButton
         v-if="hasMore"

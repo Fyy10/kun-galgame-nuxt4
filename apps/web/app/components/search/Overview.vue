@@ -14,12 +14,15 @@ const entityGroups = computed(
   () => props.overview?.entities.filter((group) => group.items.length) ?? []
 )
 
+// The community lane contributes no total, so it has to be counted separately:
+// a keyword that only lives in Galgame comments has every total at zero.
 const isEmpty = computed(() => {
   const totals = props.overview?.totals
   return (
     !props.pending &&
     !!totals &&
-    Object.values(totals).every((value) => value === 0)
+    Object.values(totals).every((value) => value === 0) &&
+    !props.overview?.gal_comments.length
   )
 })
 </script>
@@ -140,6 +143,23 @@ const isEmpty = computed(() => {
           padding="sm"
         >
           <SearchCommentCard :comment="comment" :keywords="keywords" />
+        </KunCard>
+      </div>
+    </SearchSection>
+
+    <SearchSection
+      v-if="overview.gal_comments.length"
+      type="galcomment"
+      :shown="overview.gal_comments.length"
+      @open="emit('open', $event)"
+    >
+      <div class="space-y-2">
+        <KunCard
+          v-for="comment in overview.gal_comments"
+          :key="comment.id"
+          padding="sm"
+        >
+          <SearchGalCommentCard :comment="comment" :keywords="keywords" />
         </KunCard>
       </div>
     </SearchSection>

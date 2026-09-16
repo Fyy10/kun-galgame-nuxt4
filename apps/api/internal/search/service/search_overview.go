@@ -49,6 +49,7 @@ func (s *SearchService) Overview(
 		resources *dto.PaginatedResult[galgameDto.ResourceCard]
 		toolsets  []toolsetDto.ToolsetCard
 		toolsetN  int64
+		galComs   *dto.GalCommentResult
 	)
 	run := func(name string, lane func()) {
 		wg.Add(1)
@@ -72,6 +73,7 @@ func (s *SearchService) Overview(
 	run("user", func() { users, _ = s.SearchUsers(ctx, raw, 1, overviewUserLimit, authenticated) })
 	run("reply", func() { replies, _ = s.SearchReplies(ctx, raw, 1, overviewReplyLimit, authenticated) })
 	run("comment", func() { comments, _ = s.SearchComments(ctx, raw, 1, overviewReplyLimit, authenticated) })
+	run("galcomment", func() { galComs, _ = s.SearchGalComments(ctx, raw, "", overviewReplyLimit) })
 	run("entity", func() {
 		entities, _ = s.SearchEntities(ctx, raw, "", 1, overviewEntityLimit, isSFW)
 	})
@@ -84,14 +86,15 @@ func (s *SearchService) Overview(
 	wg.Wait()
 
 	res := &dto.OverviewResult{
-		Topics:    []dto.TopicItem{},
-		Galgames:  []galgameDto.GalgameCard{},
-		Entities:  []galgameDto.EntitySearchGroup{},
-		Resources: []galgameDto.ResourceCard{},
-		Users:     []dto.UserItem{},
-		Replies:   []dto.ReplyItem{},
-		Comments:  []dto.CommentItem{},
-		Toolsets:  toolsets,
+		Topics:      []dto.TopicItem{},
+		Galgames:    []galgameDto.GalgameCard{},
+		Entities:    []galgameDto.EntitySearchGroup{},
+		Resources:   []galgameDto.ResourceCard{},
+		Users:       []dto.UserItem{},
+		Replies:     []dto.ReplyItem{},
+		Comments:    []dto.CommentItem{},
+		GalComments: []dto.GalCommentItem{},
+		Toolsets:    toolsets,
 	}
 	if topics != nil {
 		res.Topics, res.Totals.Topic = topics.Items, topics.Total
@@ -110,6 +113,9 @@ func (s *SearchService) Overview(
 	}
 	if comments != nil {
 		res.Comments, res.Totals.Comment = comments.Items, comments.Total
+	}
+	if galComs != nil {
+		res.GalComments = galComs.Items
 	}
 	if entities != nil {
 		res.Entities = entities

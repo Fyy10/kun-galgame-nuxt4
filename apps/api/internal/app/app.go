@@ -11,6 +11,9 @@ import (
 	adminHandler "kun-galgame-api/internal/admin/handler"
 	adminRepo "kun-galgame-api/internal/admin/repository"
 	adminService "kun-galgame-api/internal/admin/service"
+	"kun-galgame-api/internal/community/anchor"
+	"kun-galgame-api/internal/community/engagement"
+	communityHandler "kun-galgame-api/internal/community/handler"
 	communitytrust "kun-galgame-api/internal/community/trust"
 	docHandler "kun-galgame-api/internal/doc/handler"
 	docRepo "kun-galgame-api/internal/doc/repository"
@@ -150,6 +153,7 @@ type App struct {
 	ActivityHandler                *activityHandler.ActivityHandler
 	ImageHandler                   *imageHandler.ImageHandler
 	SearchHandler                  *searchHandler.SearchHandler
+	CommunityEngagementHandler     *communityHandler.EngagementHandler
 	ToolsetHandler                 *toolsetHandler.ToolsetHandler
 	ToolsetPracticalityHandler     *toolsetHandler.PracticalityHandler
 	ToolsetResourceHandler         *toolsetHandler.ResourceHandler
@@ -324,6 +328,7 @@ func New(cfg *config.Config) *App {
 	} else {
 		slog.Warn("community comment backend NOT configured; comments degrade (reads empty / writes 503) — set KUN_COMMUNITY_API_BASE + OAuth creds")
 	}
+	anchorResolver := anchor.New(db, gc)
 
 	var storeCli *storeclient.Client
 	if cfg.Dlsite.StoreConfigured() {
@@ -596,8 +601,11 @@ func New(cfg *config.Config) *App {
 		SearchHandler: searchHandler.NewSearchHandler(searchService.NewSearchService(
 			searchRepo.NewSearchRepository(db), gc, galgameEnricher, uc,
 			galgameService.NewEntitySearchService(gc, galgameTagSvc), toolsetCoreSvc,
-			galgameResourceSvc,
+			galgameResourceSvc, communityCli, anchorResolver,
 		)),
+		CommunityEngagementHandler: communityHandler.NewEngagementHandler(
+			engagement.New(communityCli, anchorResolver),
+		),
 		ToolsetHandler:             toolsetHandler.NewToolsetHandler(toolsetCoreSvc),
 		ToolsetPracticalityHandler: toolsetHandler.NewPracticalityHandler(toolsetPracticalitySvc),
 		ToolsetResourceHandler:     toolsetHandler.NewResourceHandler(toolsetResourceSvc),

@@ -14,6 +14,9 @@ const target: CommunityCommentTarget = {
 
 const {
   status,
+  threadId,
+  subscription,
+  setLevel,
   seeded,
   groups,
   isEmpty,
@@ -40,7 +43,15 @@ const onPublished = (post: GalgameCommunityComment) => {
       name="用户评论"
       description="说说你对这个网站的使用体验"
       scale="h2"
-    />
+    >
+      <template #endContent>
+        <CommentCommunitySubscribe
+          :thread-id="threadId"
+          :subscription="subscription"
+          :submit="setLevel"
+        />
+      </template>
+    </KunHeader>
 
     <div class="space-y-5">
       <CommentCommunityComposer :target="target" @submitted="onPublished" />

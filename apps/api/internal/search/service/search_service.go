@@ -11,12 +11,14 @@ import (
 	"sync"
 	"time"
 
+	"kun-galgame-api/internal/community/anchor"
 	"kun-galgame-api/internal/galgame/client"
 	galgameDto "kun-galgame-api/internal/galgame/dto"
 	galgameService "kun-galgame-api/internal/galgame/service"
 	"kun-galgame-api/internal/search/dto"
 	"kun-galgame-api/internal/search/repository"
 	toolsetService "kun-galgame-api/internal/toolset/service"
+	"kun-galgame-api/pkg/communityclient"
 	"kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/role"
 	"kun-galgame-api/pkg/userclient"
@@ -30,6 +32,8 @@ type SearchService struct {
 	entityService *galgameService.EntitySearchService
 	toolset       *toolsetService.ToolsetService
 	resource      *galgameService.ResourceService
+	community     *communityclient.Client
+	anchors       *anchor.Resolver
 }
 
 func NewSearchService(
@@ -40,6 +44,8 @@ func NewSearchService(
 	entityService *galgameService.EntitySearchService,
 	toolset *toolsetService.ToolsetService,
 	resource *galgameService.ResourceService,
+	community *communityclient.Client,
+	anchors *anchor.Resolver,
 ) *SearchService {
 	return &SearchService{
 		repo:          repo,
@@ -49,6 +55,8 @@ func NewSearchService(
 		entityService: entityService,
 		toolset:       toolset,
 		resource:      resource,
+		community:     community,
+		anchors:       anchors,
 	}
 }
 

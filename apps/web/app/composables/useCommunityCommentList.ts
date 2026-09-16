@@ -10,8 +10,13 @@ export const useCommunityCommentList = async (
 ) => {
   const surface = communityCommentSurface(target)
 
+  const { id: viewerId } = usePersistUserStore()
+  const config = useRuntimeConfig()
+
   const posts = ref<GalgameCommunityComment[]>([])
   const total = ref(0)
+  const threadId = ref(0)
+  const subscription = ref<CommunityThreadState | null>(null)
   const nextCursor = ref('')
   const seeded = ref(false)
   const loadingMore = ref(false)
@@ -29,9 +34,53 @@ export const useCommunityCommentList = async (
   const seedFrom = (page: GalgameCommunityCommentPage) => {
     posts.value = [...page.posts]
     total.value = page.total
+    threadId.value = page.thread_id
     nextCursor.value = page.next_cursor
     locked.value = page.locked
     seeded.value = true
+    reportRead()
+  }
+
+  // The read receipt is a POST the reader makes, never something inferred from
+  // the GET above: the community service refuses to treat a read face as a
+  // write, and it answers with the viewer's subscription so the toggle has a
+  // state to render. It creates nothing for a wall the viewer never wrote on.
+  //
+  // Raw $fetch, not kunFetch: nobody asked for this request, so a community
+  // service that blinks must not throw 「网络请求失败，请稍后重试」 at a reader
+  // who only opened a page.
+  const reportRead = async () => {
+    if (!viewerId || !threadId.value || import.meta.server) {
+      return
+    }
+    try {
+      const resp = await $fetch<{ code: number; data?: CommunityThreadState }>(
+        `${config.public.apiBaseUrl}/api/community/thread/${threadId.value}/read`,
+        { method: 'POST', credentials: 'include' }
+      )
+      if (resp?.code === 0 && resp.data) {
+        subscription.value = resp.data
+      }
+    } catch {
+      // A missing receipt costs the reader nothing but an unread badge.
+    }
+  }
+
+  const setLevel = async (level: CommunityNotificationLevel) => {
+    if (!viewerId) {
+      useAuthModal().open()
+      return
+    }
+    if (!threadId.value) {
+      return
+    }
+    const state = await kunFetch<CommunityThreadState>(
+      `/community/thread/${threadId.value}/notification`,
+      { method: 'POST', body: { level } }
+    )
+    if (state) {
+      subscription.value = state
+    }
   }
 
   if (data.value && !seeded.value) {
@@ -100,6 +149,12 @@ export const useCommunityCommentList = async (
     }
     posts.value = [...posts.value, post]
     total.value += 1
+    // Writing subscribes the author upstream, and on an empty wall this comment
+    // is also what created the thread — so the control only becomes real here.
+    if (!threadId.value && post.thread_id) {
+      threadId.value = post.thread_id
+    }
+    reportRead()
   }
 
   const handleUpdated = (updated: GalgameCommunityComment) => {
@@ -142,6 +197,9 @@ export const useCommunityCommentList = async (
     surface,
     posts,
     total,
+    threadId,
+    subscription,
+    setLevel,
     status,
     seeded,
     locked,

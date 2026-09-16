@@ -311,3 +311,37 @@ func TestListPostsQuery(t *testing.T) {
 		}
 	}
 }
+
+func TestSearchPostsAndUnreadQueries(t *testing.T) {
+	var gotPaths, gotQueries []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPaths = append(gotPaths, r.URL.Path)
+		gotQueries = append(gotQueries, r.URL.RawQuery)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0, "message": "成功",
+			"data": map[string]any{"posts": []any{}, "threads": []any{}, "total": 12},
+		})
+	}))
+	defer srv.Close()
+	c := newTestClient(srv.URL)
+
+	// kind 0 is topic, not "unset": dropping it would silently widen the search
+	// to every kind, which is what the community service defaults to.
+	if _, err := c.SearchPosts(context.Background(), "汉化", communityclient.KindTopic, "", 0); err != nil {
+		t.Fatalf("SearchPosts: %v", err)
+	}
+	if gotPaths[0] != "/search/posts" || !strings.Contains(gotQueries[0], "kind=0") {
+		t.Errorf("path = %q query = %q", gotPaths[0], gotQueries[0])
+	}
+
+	unread, err := c.ListUnread(context.Background(), 3, "abc", 10)
+	if err != nil {
+		t.Fatalf("ListUnread: %v", err)
+	}
+	if gotPaths[1] != "/users/3/unread" || !strings.Contains(gotQueries[1], "cursor=abc") {
+		t.Errorf("path = %q query = %q", gotPaths[1], gotQueries[1])
+	}
+	if unread.Total != 12 {
+		t.Errorf("total = %d, want 12", unread.Total)
+	}
+}

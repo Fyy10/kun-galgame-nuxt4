@@ -29,6 +29,8 @@ const contact = computed(
 
     <MessageAsideSystemItem v-if="system" title="通知" :data="system[0]!" />
 
+    <MessageAsideCommentItem />
+
     <MessageAsideMutedItem />
 
     <MessageAsideSystemItem v-if="system" title="系统消息" :data="system[1]!">

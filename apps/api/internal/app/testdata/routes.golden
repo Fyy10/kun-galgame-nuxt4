@@ -48,6 +48,8 @@ GET    /api/admin/user-permissions/:uid               cors.New → middleware.Na
 GET    /api/admin/user/:id/content-stats              cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → PurgeHandler.GetUserContentStats
 GET    /api/auth/me                                   cors.New → middleware.NamePreference → OptionalAuth → Auth → OAuthHandler.Me
 GET    /api/category                                  cors.New → middleware.NamePreference → SectionHandler.GetCategories
+GET    /api/community/unread                          cors.New → middleware.NamePreference → OptionalAuth → Auth → EngagementHandler.Unread
+GET    /api/community/unread/count                    cors.New → middleware.NamePreference → OptionalAuth → Auth → EngagementHandler.UnreadCount
 GET    /api/doc/article                               cors.New → middleware.NamePreference → ArticleHandler.GetArticles
 GET    /api/doc/article/:slug                         cors.New → middleware.NamePreference → ArticleHandler.GetArticleBySlug
 GET    /api/doc/category                              cors.New → middleware.NamePreference → CategoryHandler.GetCategories
@@ -136,6 +138,7 @@ GET    /api/rss/topic                                 cors.New → middleware.Na
 GET    /api/search                                    cors.New → middleware.NamePreference → OptionalAuth → SearchHandler.Search
 GET    /api/search/entity                             cors.New → middleware.NamePreference → OptionalAuth → SearchHandler.SearchEntities
 GET    /api/search/entity/resolve                     cors.New → middleware.NamePreference → OptionalAuth → SearchHandler.ResolveEntities
+GET    /api/search/gal-comment                        cors.New → middleware.NamePreference → OptionalAuth → SearchHandler.SearchGalComments
 GET    /api/search/overview                           cors.New → middleware.NamePreference → OptionalAuth → SearchHandler.Overview
 GET    /api/search/quick                              cors.New → middleware.NamePreference → OptionalAuth → SearchHandler.QuickSearch
 GET    /api/section                                   cors.New → middleware.NamePreference → OptionalAuth → SectionHandler.GetSectionTopics
@@ -193,6 +196,8 @@ POST   /api/admin/trust/review-items/:id/claim        cors.New → middleware.Na
 POST   /api/admin/trust/review-items/:id/decide       cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → TrustHandler.DecideReviewItem
 POST   /api/auth/logout                               cors.New → middleware.NamePreference → OAuthHandler.Logout
 POST   /api/auth/oauth/callback                       cors.New → middleware.NamePreference → OAuthHandler.Callback
+POST   /api/community/thread/:id/notification         cors.New → middleware.NamePreference → OptionalAuth → Auth → EngagementHandler.SetNotification
+POST   /api/community/thread/:id/read                 cors.New → middleware.NamePreference → OptionalAuth → Auth → EngagementHandler.MarkRead
 POST   /api/doc/article                               cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → ArticleHandler.CreateArticle
 POST   /api/doc/category                              cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → CategoryHandler.CreateCategory
 POST   /api/doc/tag                                   cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → TagHandler.CreateTag
