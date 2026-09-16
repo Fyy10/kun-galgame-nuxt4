@@ -5,9 +5,8 @@ const props = defineProps<{
 
 const {
   status,
-  threadId,
-  subscription,
-  setLevel,
+  following,
+  setFollowing,
   seeded,
   groups,
   isEmpty,
@@ -50,9 +49,8 @@ const onPublished = (post: GalgameCommunityComment) => {
             {{ total }} 条评论
           </span>
           <CommentCommunitySubscribe
-            :thread-id="threadId"
-            :subscription="subscription"
-            :submit="setLevel"
+            :following="following"
+            :submit="setFollowing"
           />
         </div>
       </template>

@@ -12,6 +12,7 @@ import (
 	"kun-galgame-api/pkg/communityclient"
 	"kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/perm"
+	"kun-galgame-api/pkg/userclient"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -29,9 +30,14 @@ type LocateResult struct {
 
 func (s *CommunityCommentService) CreateComment(ctx context.Context, userID, galgameID int, content string, replyToPostID *int64) (*CommunityPostItem, *errors.AppError) {
 	content = markdown.NormalizeStoredContent(content)
+	mentions, appErr := s.mentionIDsForCreate(ctx, userID, content)
+	if appErr != nil {
+		return nil, appErr
+	}
 	req := communityclient.CommentRequest{
 		AnchorKind: communityclient.AnchorSiteGame, AnchorID: strconv.Itoa(galgameID),
 		ContentRating: communityclient.RatingAll, AuthorID: int64(userID), Body: content,
+		MentionUserIDs: mentions,
 	}
 	if replyToPostID != nil {
 		req.ReplyToPostID = *replyToPostID
@@ -52,12 +58,6 @@ func (s *CommunityCommentService) CreateComment(ctx context.Context, userID, gal
 }
 
 func (s *CommunityCommentService) afterCreate(userID, galgameID int, content string, post *communityclient.PostView) {
-	root := post.ID
-	if post.RootPostID != 0 {
-		root = post.RootPostID
-	}
-	preview := truncate(markdown.StripReferenceTokens(content), 233)
-	mentionIDs := markdown.ExtractMentionIDs(content)
 	err := s.db.Transaction(func(tx *gorm.DB) error {
 		if e := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&model.GalgameLocal{ID: galgameID}).Error; e != nil {
 			return e
@@ -65,11 +65,6 @@ func (s *CommunityCommentService) afterCreate(userID, galgameID int, content str
 		if e := tx.Model(&model.GalgameLocal{}).Where("id = ?", galgameID).
 			Update("comment_count", gorm.Expr("comment_count + 1")).Error; e != nil {
 			return e
-		}
-		for _, mid := range mentionIDs {
-			if e := s.helpers.CreateGalgameCommentMention(tx, userID, mid, preview, galgameID, int(post.ID), int(root)); e != nil {
-				return e
-			}
 		}
 		return nil
 	})
@@ -82,7 +77,7 @@ func (s *CommunityCommentService) afterCreate(userID, galgameID int, content str
 
 func (s *CommunityCommentService) UpdateComment(ctx context.Context, userID int, roles []string, postID int64, galgameID *int, content string) (*CommunityPostItem, *errors.AppError) {
 	content = markdown.NormalizeStoredContent(content)
-	canModerate := s.resolveModEdit(ctx, userID, roles, postID)
+	canModerate, oldRaw, found := s.resolveModEdit(ctx, userID, roles, postID)
 
 	post, err := s.community.EditPost(ctx, postID, communityclient.EditPostRequest{
 		AuthorID: int64(userID), Body: content, AsModerator: canModerate,
@@ -94,7 +89,9 @@ func (s *CommunityCommentService) UpdateComment(ctx context.Context, userID int,
 	gid := 0
 	if galgameID != nil {
 		gid = *galgameID
-		s.refanMentions(userID, gid, content, post)
+		if found {
+			s.refanMentions(userID, gid, content, post, newlyAddedMentionIDs(oldRaw, content, userID))
+		}
 	}
 
 	author := s.userClient.Hydrate(ctx, []int{int(post.AuthorID)})[int(post.AuthorID)]
@@ -103,37 +100,42 @@ func (s *CommunityCommentService) UpdateComment(ctx context.Context, userID int,
 	return buildCommunityItem(*post, gid, author, lc, liked), nil
 }
 
-func (s *CommunityCommentService) refanMentions(userID, galgameID int, content string, post *communityclient.PostView) {
-	root := post.ID
-	if post.RootPostID != 0 {
-		root = post.RootPostID
+func (s *CommunityCommentService) refanMentions(userID, galgameID int, content string, post *communityclient.PostView, ids []int) {
+	if len(ids) == 0 {
+		return
 	}
 	preview := truncate(markdown.StripReferenceTokens(content), 233)
-	for _, mid := range markdown.ExtractMentionIDs(content) {
-		if err := s.helpers.CreateGalgameCommentMention(s.db, userID, mid, preview, galgameID, int(post.ID), int(root)); err != nil {
+	for _, mid := range ids {
+		if err := s.helpers.CreateGalgameCommentMention(s.db, userID, mid, preview, galgameID, int(post.ID)); err != nil {
 			slog.Warn("mention notification insert failed (best-effort)",
 				"galgame_id", galgameID, "post_id", post.ID, "receiver_id", mid, "error", err)
 		}
 	}
 }
 
-func (s *CommunityCommentService) resolveModEdit(ctx context.Context, userID int, roles []string, postID int64) bool {
-	if resolved, err := s.community.ResolvePosts(ctx, []int64{postID}); err == nil {
-		for _, ap := range resolved.Posts {
-			if ap.Post.ID != postID {
-				continue
-			}
-			if p, ok := commentEditPermForAnchor(ap.Thread.AnchorKind, ap.Thread.AnchorID); ok {
-				return perm.CanUser(userID, roles, p)
-			}
-		}
-	}
-	return perm.CanUser(userID, roles, perm.CommentGalgameEdit) ||
+func (s *CommunityCommentService) resolveModEdit(ctx context.Context, userID int, roles []string, postID int64) (canModerate bool, oldRaw string, found bool) {
+	fallback := perm.CanUser(userID, roles, perm.CommentGalgameEdit) ||
 		perm.CanUser(userID, roles, perm.CommentRatingEdit) ||
 		perm.CanUser(userID, roles, perm.CommentWebsiteEdit) ||
 		perm.CanUser(userID, roles, perm.CommentToolsetEdit) ||
 		perm.CanUser(userID, roles, perm.CommentResourceEdit) ||
 		perm.CanUser(userID, roles, perm.CommentQuizEdit)
+	resolved, err := s.community.ResolvePosts(ctx, []int64{postID})
+	if err != nil {
+		return fallback, "", false
+	}
+	for _, ap := range resolved.Posts {
+		if ap.Post.ID != postID {
+			continue
+		}
+		found = true
+		oldRaw = ap.Post.ContentRaw
+		if p, ok := commentEditPermForAnchor(ap.Thread.AnchorKind, ap.Thread.AnchorID); ok {
+			return perm.CanUser(userID, roles, p), oldRaw, true
+		}
+		break
+	}
+	return fallback, oldRaw, found
 }
 
 func commentEditPermForAnchor(anchorKind int32, anchorID string) (perm.Permission, bool) {
@@ -184,7 +186,7 @@ func (s *CommunityCommentService) ToggleLike(ctx context.Context, userID int, po
 		return nil, mapCommunityError(err)
 	}
 
-	localPresent, awardDelta, notify := likeEffects(res.Added, res.AuthorID, userID)
+	localPresent, awardDelta := likeEffects(res.Added, res.AuthorID, userID)
 
 	if localPresent {
 		if e := s.posts.EnsureLike(postID, userID); e != nil {
@@ -200,39 +202,78 @@ func (s *CommunityCommentService) ToggleLike(ctx context.Context, userID int, po
 		ref := moemoepoint.Ref("galgame_post", int(postID))
 		moemoepoint.Award(int(res.AuthorID), awardDelta, moemoepoint.ReasonLiked, ref, moemoepoint.KeyNonce(moemoepoint.ReasonLiked, ref))
 	}
-	if notify {
-		if gid := parseAnchorGid(res.AnchorID); gid > 0 {
-			if err := s.helpers.CreateGalgameMessageWithContent(s.db, userID, int(res.AuthorID), "liked", "", gid); err != nil {
-				slog.Warn("like notification insert failed (best-effort)",
-					"galgame_id", gid, "post_id", postID, "receiver_id", res.AuthorID, "error", err)
-			}
-		}
-	}
 
 	lc := s.posts.CountLikes([]int64{postID})[postID]
 	return &LikeResult{Liked: res.Added, LikeCount: lc}, nil
 }
 
-func likeEffects(added bool, authorID int64, userID int) (localPresent bool, awardDelta int, notify bool) {
+func likeEffects(added bool, authorID int64, userID int) (localPresent bool, awardDelta int) {
 	self := authorID == int64(userID)
 	if added {
 		if self {
-			return true, 0, false
+			return true, 0
 		}
-		return true, 1, true
+		return true, 1
 	}
 	if self {
-		return false, 0, false
+		return false, 0
 	}
-	return false, -1, false
+	return false, -1
 }
 
-func parseAnchorGid(anchorID string) int {
-	id, err := strconv.Atoi(anchorID)
-	if err != nil || id <= 0 {
-		return 0
+func (s *CommunityCommentService) mentionIDsForCreate(ctx context.Context, authorID int, content string) ([]int64, *errors.AppError) {
+	ids := markdown.ExtractMentionIDs(content)
+	if len(ids) == 0 {
+		return nil, nil
 	}
-	return id
+	known, err := s.userClient.Users(ctx, ids)
+	return prepareMentionIDs(ids, authorID, known, err)
+}
+
+func prepareMentionIDs(ids []int, authorID int, known map[int]userclient.User, lookupErr error) ([]int64, *errors.AppError) {
+	seen := make(map[int]bool, len(ids))
+	kept := make([]int, 0, len(ids))
+	for _, id := range ids {
+		if id <= 0 || id == authorID || seen[id] {
+			continue
+		}
+		seen[id] = true
+		kept = append(kept, id)
+	}
+	if lookupErr == nil {
+		filtered := kept[:0]
+		for _, id := range kept {
+			if _, ok := known[id]; ok {
+				filtered = append(filtered, id)
+			}
+		}
+		kept = filtered
+	}
+	if len(kept) > 20 {
+		return nil, errors.ErrValidation("一条评论最多 @ 20 位用户")
+	}
+	out := make([]int64, len(kept))
+	for i, id := range kept {
+		out[i] = int64(id)
+	}
+	return out, nil
+}
+
+func newlyAddedMentionIDs(oldContent, newContent string, editorID int) []int {
+	old := make(map[int]bool)
+	for _, id := range markdown.ExtractMentionIDs(oldContent) {
+		old[id] = true
+	}
+	var added []int
+	seen := make(map[int]bool)
+	for _, id := range markdown.ExtractMentionIDs(newContent) {
+		if id <= 0 || id == editorID || old[id] || seen[id] {
+			continue
+		}
+		seen[id] = true
+		added = append(added, id)
+	}
+	return added
 }
 
 func (s *CommunityCommentService) FlagComment(ctx context.Context, userID int, postID int64, reason int, note string) *errors.AppError {

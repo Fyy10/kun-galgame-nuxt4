@@ -29,7 +29,7 @@ const contact = computed(
 
     <MessageAsideSystemItem v-if="system" title="通知" :data="system[0]!" />
 
-    <MessageAsideCommentItem />
+    <MessageAsideFollowItem />
 
     <MessageAsideMutedItem />
 

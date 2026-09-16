@@ -18,6 +18,7 @@ const (
 	NotifyFavorite  NotifyKind = "favorite"
 	NotifyReplied   NotifyKind = "replied"
 	NotifyCommented NotifyKind = "commented"
+	NotifyFollowed  NotifyKind = "followed"
 	NotifySolution  NotifyKind = "solution"
 	NotifyPinReply  NotifyKind = "pin-reply"
 	NotifyMentioned NotifyKind = "mentioned"

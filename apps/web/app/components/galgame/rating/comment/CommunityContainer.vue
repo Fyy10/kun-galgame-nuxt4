@@ -6,9 +6,8 @@ const props = defineProps<{
 
 const {
   status,
-  threadId,
-  subscription,
-  setLevel,
+  following,
+  setFollowing,
   seeded,
   groups,
   isEmpty,
@@ -35,9 +34,8 @@ const target: CommunityCommentTarget = {
     >
       <template #endContent>
         <CommentCommunitySubscribe
-          :thread-id="threadId"
-          :subscription="subscription"
-          :submit="setLevel"
+          :following="following"
+          :submit="setFollowing"
         />
       </template>
     </KunHeader>

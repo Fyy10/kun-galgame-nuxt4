@@ -17,7 +17,6 @@ type ResourceCommentService struct {
 	posts      *repository.CommunityPostRepository
 	userClient *userclient.Client
 	db         *gorm.DB
-	helpers    InteractionHelpers
 }
 
 func NewResourceCommentService(
@@ -63,24 +62,26 @@ func (src CommentSource) pageLink(resourceID int) string {
 }
 
 func (s *ResourceCommentService) GetComments(ctx context.Context, src CommentSource, resourceID, viewerID int, cursor string, limit int) (*CommunityCommentPage, *errors.AppError) {
+	kind, id := int32(communityclient.AnchorSiteResource), src.anchorID(resourceID)
 	if s.commentAreaLocked(ctx, src, resourceID, viewerID) {
-		return lockedCommentPage(), nil
+		return lockedCommentPage(kind, id), nil
 	}
 
-	page, err := s.community.GetComments(ctx, communityclient.AnchorSiteResource, src.anchorID(resourceID), cursor, clampReadLimit(limit))
+	page, err := s.community.GetComments(ctx, kind, id, cursor, clampReadLimit(limit))
 	if err != nil {
 		if isCommunityDown(err) {
-			return emptyCommentPage(), nil
+			return emptyCommentPage(kind, id), nil
 		}
 		return nil, mapCommunityError(err)
 	}
 	if page.Thread == nil {
-		return emptyCommentPage(), nil
+		return emptyCommentPage(kind, id), nil
 	}
 
 	items := s.renderPosts(ctx, viewerID, page.Posts)
 	return &CommunityCommentPage{
 		ThreadID: page.Thread.ID, Posts: items, NextCursor: page.NextCursor, Total: int(page.Thread.PostsCount),
+		AnchorKind: kind, AnchorID: id,
 	}, nil
 }
 

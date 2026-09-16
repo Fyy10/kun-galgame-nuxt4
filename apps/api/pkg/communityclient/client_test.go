@@ -244,7 +244,10 @@ func TestAuthorPurge(t *testing.T) {
 			t.Errorf("method/path = %s %q", r.Method, r.URL.Path)
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"code": 0, "data": map[string]any{"posts_purged": 3, "reactions_deleted": 2},
+			"code": 0, "data": map[string]any{
+				"posts_purged": 3, "reactions_deleted": 2,
+				"anchor_subscriptions_deleted": 4, "notifications_deleted": 5,
+			},
 		})
 	}))
 	defer srv.Close()
@@ -253,7 +256,7 @@ func TestAuthorPurge(t *testing.T) {
 	if err != nil {
 		t.Fatalf("AuthorPurge: %v", err)
 	}
-	if out.PostsPurged != 3 || out.ReactionsDeleted != 2 {
+	if out.PostsPurged != 3 || out.ReactionsDeleted != 2 || out.AnchorSubscriptionsDeleted != 4 || out.NotificationsDeleted != 5 {
 		t.Errorf("decoded = %+v", out)
 	}
 }
@@ -312,36 +315,184 @@ func TestListPostsQuery(t *testing.T) {
 	}
 }
 
-func TestSearchPostsAndUnreadQueries(t *testing.T) {
-	var gotPaths, gotQueries []string
+func TestSearchPostsQuery(t *testing.T) {
+	var gotPath, gotQuery string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotPaths = append(gotPaths, r.URL.Path)
-		gotQueries = append(gotQueries, r.URL.RawQuery)
+		gotPath, gotQuery = r.URL.Path, r.URL.RawQuery
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"code": 0, "message": "成功",
-			"data": map[string]any{"posts": []any{}, "threads": []any{}, "total": 12},
+			"data": map[string]any{"posts": []any{}},
 		})
 	}))
 	defer srv.Close()
-	c := newTestClient(srv.URL)
 
 	// kind 0 is topic, not "unset": dropping it would silently widen the search
 	// to every kind, which is what the community service defaults to.
-	if _, err := c.SearchPosts(context.Background(), "汉化", communityclient.KindTopic, "", 0); err != nil {
+	if _, err := newTestClient(srv.URL).SearchPosts(context.Background(), "汉化", communityclient.KindTopic, "", 0); err != nil {
 		t.Fatalf("SearchPosts: %v", err)
 	}
-	if gotPaths[0] != "/search/posts" || !strings.Contains(gotQueries[0], "kind=0") {
-		t.Errorf("path = %q query = %q", gotPaths[0], gotQueries[0])
+	if gotPath != "/search/posts" || !strings.Contains(gotQuery, "kind=0") {
+		t.Errorf("path = %q query = %q", gotPath, gotQuery)
 	}
+}
 
-	unread, err := c.ListUnread(context.Background(), 3, "abc", 10)
+func TestCommentOnAnchorOmitsEmptyMentions(t *testing.T) {
+	var gotBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		gotBody = string(b)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0, "data": map[string]any{"thread": map[string]any{"id": 7}, "post": map[string]any{"id": 1}},
+		})
+	}))
+	defer srv.Close()
+
+	if _, err := newTestClient(srv.URL).CommentOnAnchor(context.Background(), communityclient.CommentRequest{
+		AnchorKind: communityclient.AnchorSiteGame, AnchorID: "42", AuthorID: 3, Body: "hi",
+	}); err != nil {
+		t.Fatalf("CommentOnAnchor: %v", err)
+	}
+	if strings.Contains(gotBody, "mention_user_ids") {
+		t.Errorf("empty mentions were sent: %s", gotBody)
+	}
+}
+
+func TestSetAnchorNotification(t *testing.T) {
+	var gotPath, gotBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		b, _ := io.ReadAll(r.Body)
+		gotBody = string(b)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0, "data": map[string]any{"user_id": 3, "anchor_kind": 1, "anchor_id": "7", "notification_level": 3},
+		})
+	}))
+	defer srv.Close()
+
+	out, err := newTestClient(srv.URL).SetAnchorNotification(context.Background(), 3, communityclient.AnchorSiteGame, "7", communityclient.NotificationWatching)
 	if err != nil {
-		t.Fatalf("ListUnread: %v", err)
+		t.Fatalf("SetAnchorNotification: %v", err)
 	}
-	if gotPaths[1] != "/users/3/unread" || !strings.Contains(gotQueries[1], "cursor=abc") {
-		t.Errorf("path = %q query = %q", gotPaths[1], gotQueries[1])
+	if gotPath != "/anchors/notification" {
+		t.Errorf("path = %q", gotPath)
 	}
-	if unread.Total != 12 {
-		t.Errorf("total = %d, want 12", unread.Total)
+	if !strings.Contains(gotBody, `"user_id":3`) || !strings.Contains(gotBody, `"anchor_kind":1`) || !strings.Contains(gotBody, `"level":3`) {
+		t.Errorf("body = %q", gotBody)
+	}
+	if out.NotificationLevel != 3 {
+		t.Errorf("decoded = %+v", out)
+	}
+}
+
+func TestAnchorStates(t *testing.T) {
+	var gotPath, gotBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		b, _ := io.ReadAll(r.Body)
+		gotBody = string(b)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0, "data": map[string]any{"states": []any{
+				map[string]any{"user_id": 3, "anchor_kind": 1, "anchor_id": "7", "notification_level": 3},
+			}},
+		})
+	}))
+	defer srv.Close()
+
+	out, err := newTestClient(srv.URL).AnchorStates(context.Background(), 3, []communityclient.AnchorRef{
+		{AnchorKind: communityclient.AnchorSiteGame, AnchorID: "7"},
+	})
+	if err != nil {
+		t.Fatalf("AnchorStates: %v", err)
+	}
+	if gotPath != "/anchors/states" {
+		t.Errorf("path = %q", gotPath)
+	}
+	if !strings.Contains(gotBody, `"anchor_id":"7"`) {
+		t.Errorf("body = %q", gotBody)
+	}
+	if len(out.States) != 1 {
+		t.Errorf("decoded = %+v", out)
+	}
+}
+
+func TestListAnchorSubscriptions(t *testing.T) {
+	var gotPath, gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath, gotQuery = r.URL.Path, r.URL.RawQuery
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0, "data": map[string]any{"subscriptions": []any{}, "next_cursor": "9"},
+		})
+	}))
+	defer srv.Close()
+
+	out, err := newTestClient(srv.URL).ListAnchorSubscriptions(context.Background(), 3, -1, "abc", 40)
+	if err != nil {
+		t.Fatalf("ListAnchorSubscriptions: %v", err)
+	}
+	if gotPath != "/users/3/anchor-subscriptions" {
+		t.Errorf("path = %q", gotPath)
+	}
+	for _, want := range []string{"anchor_kind=-1", "cursor=abc", "limit=40"} {
+		if !strings.Contains(gotQuery, want) {
+			t.Errorf("query %q missing %q", gotQuery, want)
+		}
+	}
+	if out.NextCursor != "9" {
+		t.Errorf("decoded = %+v", out)
+	}
+}
+
+func TestNotificationFeed(t *testing.T) {
+	var gotPath, gotQuery string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath, gotQuery = r.URL.Path, r.URL.RawQuery
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0, "data": map[string]any{"notifications": []any{}, "next_after": 12},
+		})
+	}))
+	defer srv.Close()
+
+	out, err := newTestClient(srv.URL).NotificationFeed(context.Background(), 0, 500)
+	if err != nil {
+		t.Fatalf("NotificationFeed: %v", err)
+	}
+	if gotPath != "/notifications/feed" {
+		t.Errorf("path = %q", gotPath)
+	}
+	if !strings.Contains(gotQuery, "after=0") || !strings.Contains(gotQuery, "limit=500") {
+		t.Errorf("query = %q", gotQuery)
+	}
+	if out.NextAfter != 12 {
+		t.Errorf("decoded = %+v", out)
+	}
+}
+
+func TestMarkNotificationsRead(t *testing.T) {
+	var gotPath, gotBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		b, _ := io.ReadAll(r.Body)
+		gotBody = string(b)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"code": 0, "data": map[string]any{"marked": 2, "unread_count": 0},
+		})
+	}))
+	defer srv.Close()
+
+	out, err := newTestClient(srv.URL).MarkNotificationsRead(context.Background(), 3, []int64{11, 12})
+	if err != nil {
+		t.Fatalf("MarkNotificationsRead: %v", err)
+	}
+	if gotPath != "/users/3/notifications/read" {
+		t.Errorf("path = %q", gotPath)
+	}
+	if !strings.Contains(gotBody, `"ids":[11,12]`) {
+		t.Errorf("body = %q", gotBody)
+	}
+	if strings.Contains(gotBody, `"all"`) {
+		t.Errorf("sent all: %s", gotBody)
+	}
+	if out.Marked != 2 {
+		t.Errorf("decoded = %+v", out)
 	}
 }

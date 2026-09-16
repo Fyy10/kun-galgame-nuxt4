@@ -32,6 +32,7 @@ export const notificationCategoryGroups: NotificationCategoryGroup[] = [
     items: [
       { key: 'replied', label: '收到回复' },
       { key: 'commented', label: '收到评论' },
+      { key: 'followed', label: '关注的评论区有新评论' },
       { key: 'solution', label: '回复被采纳为最佳答案' },
       { key: 'pin-reply', label: '回复被置顶' },
       { key: 'quiz-answered', label: '题目被回答' }

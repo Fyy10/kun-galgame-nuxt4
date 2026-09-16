@@ -1,11 +1,9 @@
 package handler
 
 import (
-	"strconv"
-
+	"kun-galgame-api/internal/community/anchor"
 	"kun-galgame-api/internal/community/engagement"
 	"kun-galgame-api/internal/middleware"
-	"kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/response"
 	"kun-galgame-api/pkg/utils"
 
@@ -20,47 +18,49 @@ func NewEngagementHandler(service *engagement.Service) *EngagementHandler {
 	return &EngagementHandler{service: service}
 }
 
-func (h *EngagementHandler) MarkRead(c fiber.Ctx) error {
+func (h *EngagementHandler) WallRead(c fiber.Ctx) error {
 	user, appErr := middleware.MustGetUser(c)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	threadID, appErr := threadIDParam(c)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	state, appErr := h.service.MarkRead(c.Context(), user.ID, threadID)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	return response.OK(c, state)
-}
-
-func (h *EngagementHandler) SetNotification(c fiber.Ctx) error {
-	user, appErr := middleware.MustGetUser(c)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	threadID, appErr := threadIDParam(c)
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
 	var req struct {
-		Level int32 `json:"level" validate:"min=0,max=3"`
+		AnchorKind int32  `json:"anchor_kind" validate:"min=0,max=4"`
+		AnchorID   string `json:"anchor_id" validate:"required,max=64"`
+		ThreadID   int64  `json:"thread_id"`
 	}
 	if appErr := utils.ParseAndValidate(c, &req); appErr != nil {
 		return response.Error(c, appErr)
 	}
 
-	state, appErr := h.service.SetLevel(c.Context(), user.ID, threadID, req.Level)
+	state, appErr := h.service.WallRead(c.Context(), user.ID, anchor.Ref{Kind: req.AnchorKind, ID: req.AnchorID}, req.ThreadID)
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
 	return response.OK(c, state)
 }
 
-func (h *EngagementHandler) Unread(c fiber.Ctx) error {
+func (h *EngagementHandler) WallFollow(c fiber.Ctx) error {
+	user, appErr := middleware.MustGetUser(c)
+	if appErr != nil {
+		return response.Error(c, appErr)
+	}
+	var req struct {
+		AnchorKind int32  `json:"anchor_kind" validate:"min=0,max=4"`
+		AnchorID   string `json:"anchor_id" validate:"required,max=64"`
+		Following  bool   `json:"following"`
+	}
+	if appErr := utils.ParseAndValidate(c, &req); appErr != nil {
+		return response.Error(c, appErr)
+	}
+
+	state, appErr := h.service.WallFollow(c.Context(), user.ID, anchor.Ref{Kind: req.AnchorKind, ID: req.AnchorID}, req.Following)
+	if appErr != nil {
+		return response.Error(c, appErr)
+	}
+	return response.OK(c, state)
+}
+
+func (h *EngagementHandler) Following(c fiber.Ctx) error {
 	user, appErr := middleware.MustGetUser(c)
 	if appErr != nil {
 		return response.Error(c, appErr)
@@ -72,26 +72,13 @@ func (h *EngagementHandler) Unread(c fiber.Ctx) error {
 	if appErr := utils.ParseQueryAndValidate(c, &req); appErr != nil {
 		return response.Error(c, appErr)
 	}
+	if req.Limit == 0 {
+		req.Limit = 30
+	}
 
-	res, appErr := h.service.Unread(c.Context(), user.ID, req.Cursor, req.Limit)
+	res, appErr := h.service.Following(c.Context(), user.ID, req.Cursor, req.Limit)
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
 	return response.OK(c, res)
-}
-
-func (h *EngagementHandler) UnreadCount(c fiber.Ctx) error {
-	user, appErr := middleware.MustGetUser(c)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-	return response.OK(c, fiber.Map{"total": h.service.Count(c.Context(), user.ID)})
-}
-
-func threadIDParam(c fiber.Ctx) (int64, *errors.AppError) {
-	id, err := strconv.ParseInt(c.Params("id"), 10, 64)
-	if err != nil || id <= 0 {
-		return 0, errors.ErrBadRequest("评论区 ID 不正确")
-	}
-	return id, nil
 }

@@ -16,7 +16,9 @@ export const useCommunityCommentList = async (
   const posts = ref<GalgameCommunityComment[]>([])
   const total = ref(0)
   const threadId = ref(0)
-  const subscription = ref<CommunityThreadState | null>(null)
+  const anchorKind = ref(0)
+  const anchorId = ref('')
+  const following = ref(false)
   const nextCursor = ref('')
   const seeded = ref(false)
   const loadingMore = ref(false)
@@ -35,6 +37,8 @@ export const useCommunityCommentList = async (
     posts.value = [...page.posts]
     total.value = page.total
     threadId.value = page.thread_id
+    anchorKind.value = page.anchor_kind
+    anchorId.value = page.anchor_id
     nextCursor.value = page.next_cursor
     locked.value = page.locked
     seeded.value = true
@@ -43,43 +47,53 @@ export const useCommunityCommentList = async (
 
   // The read receipt is a POST the reader makes, never something inferred from
   // the GET above: the community service refuses to treat a read face as a
-  // write, and it answers with the viewer's subscription so the toggle has a
-  // state to render. It creates nothing for a wall the viewer never wrote on.
+  // write, and it answers with the viewer's follow state so the toggle has a
+  // state to render. It creates nothing for a wall the viewer neither wrote on
+  // nor follows.
   //
   // Raw $fetch, not kunFetch: nobody asked for this request, so a community
   // service that blinks must not throw 「网络请求失败，请稍后重试」 at a reader
   // who only opened a page.
   const reportRead = async () => {
-    if (!viewerId || !threadId.value || import.meta.server) {
+    if (!viewerId || import.meta.server || locked.value) {
       return
     }
     try {
-      const resp = await $fetch<{ code: number; data?: CommunityThreadState }>(
-        `${config.public.apiBaseUrl}/api/community/thread/${threadId.value}/read`,
-        { method: 'POST', credentials: 'include' }
+      const resp = await $fetch<{ code: number; data?: CommunityWallState }>(
+        `${config.public.apiBaseUrl}/api/community/wall/read`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          body: {
+            anchor_kind: anchorKind.value,
+            anchor_id: anchorId.value,
+            thread_id: threadId.value
+          }
+        }
       )
       if (resp?.code === 0 && resp.data) {
-        subscription.value = resp.data
+        following.value = resp.data.following
       }
     } catch {
-      // A missing receipt costs the reader nothing but an unread badge.
+      // A missing receipt costs the reader a stale follow state and an unread notification.
     }
   }
 
-  const setLevel = async (level: CommunityNotificationLevel) => {
+  const setFollowing = async (next: boolean) => {
     if (!viewerId) {
       useAuthModal().open()
       return
     }
-    if (!threadId.value) {
-      return
-    }
-    const state = await kunFetch<CommunityThreadState>(
-      `/community/thread/${threadId.value}/notification`,
-      { method: 'POST', body: { level } }
-    )
+    const state = await kunFetch<CommunityWallState>('/community/wall/follow', {
+      method: 'POST',
+      body: {
+        anchor_kind: anchorKind.value,
+        anchor_id: anchorId.value,
+        following: next
+      }
+    })
     if (state) {
-      subscription.value = state
+      following.value = state.following
     }
   }
 
@@ -198,8 +212,8 @@ export const useCommunityCommentList = async (
     posts,
     total,
     threadId,
-    subscription,
-    setLevel,
+    following,
+    setFollowing,
     status,
     seeded,
     locked,

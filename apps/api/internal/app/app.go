@@ -14,6 +14,7 @@ import (
 	"kun-galgame-api/internal/community/anchor"
 	"kun-galgame-api/internal/community/engagement"
 	communityHandler "kun-galgame-api/internal/community/handler"
+	communitynotify "kun-galgame-api/internal/community/notify"
 	communitytrust "kun-galgame-api/internal/community/trust"
 	docHandler "kun-galgame-api/internal/doc/handler"
 	docRepo "kun-galgame-api/internal/doc/repository"
@@ -161,6 +162,7 @@ type App struct {
 	CronStop                       func()
 	RolePermStop                   func()
 	StoreLinkStop                  func()
+	CommunityNotifyStop            func()
 }
 
 func New(cfg *config.Config) *App {
@@ -376,7 +378,7 @@ func New(cfg *config.Config) *App {
 	authService := service.NewAuthService(userStateRepo, rdb, oauthClient, uc)
 	userService := service.NewUserService(userStateRepo, userStatsRepo, rdb, gc, galgameUserStatsSvc, uc, communityCli)
 	userContentService := service.NewUserContentService(userContentRepo, gc, galgameUserStatsSvc, uc, communityCli)
-	messageSvc := msgService.NewMessageService(messageRepository, userStateRepo, uc)
+	messageSvc := msgService.NewMessageService(messageRepository, userStateRepo, uc, communityCli)
 	chatSvc := msgService.NewChatService(chatRepository, uc)
 	notifier := msgService.NewNotifier(messageRepository)
 
@@ -604,7 +606,7 @@ func New(cfg *config.Config) *App {
 			galgameResourceSvc, communityCli, anchorResolver,
 		)),
 		CommunityEngagementHandler: communityHandler.NewEngagementHandler(
-			engagement.New(communityCli, anchorResolver),
+			engagement.New(communityCli, anchorResolver, messageRepository),
 		),
 		ToolsetHandler:             toolsetHandler.NewToolsetHandler(toolsetCoreSvc),
 		ToolsetPracticalityHandler: toolsetHandler.NewPracticalityHandler(toolsetPracticalitySvc),
@@ -620,7 +622,8 @@ func New(cfg *config.Config) *App {
 			DlsiteCampaignRefresh:    storeLinks.RefreshCampaign,
 			TopicMiniAppDeadlines:    lotteryDrawer.Run,
 		}),
-		StoreLinkStop: storeLinks.Start(),
+		StoreLinkStop:       storeLinks.Start(),
+		CommunityNotifyStop: communitynotify.New(communityCli, messageRepository, anchorResolver, rdb).Start(),
 	}
 
 	if err := adminPermSync.Load(context.Background()); err != nil {

@@ -11,6 +11,7 @@ const messageTemplates: Partial<Record<MessageType, string>> = {
   declined: ' 拒绝了您的更新请求！',
   admin: '系统消息',
   mentioned: ' 提到了您！',
+  followed: ' 在您关注的评论区发表了新评论',
   'quiz-answered': ' 回答了您的题目!',
   'lottery-won': ' 的抽奖开奖了, 您中奖了!',
   'lottery-closed': ' 的抽奖开奖了',
@@ -19,8 +20,23 @@ const messageTemplates: Partial<Record<MessageType, string>> = {
 }
 
 export const getMessageI18n = (message: Message) => {
-  if (message.type === 'mentioned' && message.content?.trim()) {
+  if (
+    message.type === 'mentioned' &&
+    message.content?.trim() &&
+    !message.community
+  ) {
     return messageTemplates.replied ?? ''
+  }
+  if (message.actor_count > 1) {
+    if (message.type === 'liked') {
+      return ` 等 ${message.actor_count} 人点赞了您!`
+    }
+    if (message.type === 'followed') {
+      return ` 等 ${message.actor_count} 人在您关注的评论区发表了 ${message.item_count} 条新评论`
+    }
+  }
+  if (message.type === 'followed' && message.item_count > 1) {
+    return ` 在您关注的评论区发表了 ${message.item_count} 条新评论`
   }
   return messageTemplates[message.type] ?? ''
 }

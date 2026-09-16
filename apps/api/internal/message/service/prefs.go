@@ -7,6 +7,7 @@ const KeyChat = "chat"
 var LocalNotificationTypes = []string{
 	string(NotifyUpvoted), string(NotifyLiked), string(NotifyFavorite),
 	string(NotifyReplied), string(NotifyCommented), string(NotifyMentioned),
+	string(NotifyFollowed),
 	string(NotifySolution), string(NotifyPinReply), string(NotifyExpired),
 	string(NotifyRequested), string(NotifyMerged), string(NotifyDeclined),
 	string(NotifyLotteryWon), string(NotifyLotteryClosed),

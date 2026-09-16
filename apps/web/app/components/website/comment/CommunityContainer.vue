@@ -14,9 +14,8 @@ const target: CommunityCommentTarget = {
 
 const {
   status,
-  threadId,
-  subscription,
-  setLevel,
+  following,
+  setFollowing,
   seeded,
   groups,
   isEmpty,
@@ -46,9 +45,8 @@ const onPublished = (post: GalgameCommunityComment) => {
     >
       <template #endContent>
         <CommentCommunitySubscribe
-          :thread-id="threadId"
-          :subscription="subscription"
-          :submit="setLevel"
+          :following="following"
+          :submit="setFollowing"
         />
       </template>
     </KunHeader>

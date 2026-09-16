@@ -11,6 +11,7 @@ export type MessageType =
   | 'merged'
   | 'declined'
   | 'mentioned'
+  | 'followed'
   | 'admin'
   | 'quiz-answered'
   | 'lottery-won'
@@ -33,6 +34,9 @@ export interface Message {
   status: MessageStatus
   type: MessageType
   created: Date | string
+  item_count: number
+  actor_count: number
+  community: boolean
 }
 
 export interface MessageList {

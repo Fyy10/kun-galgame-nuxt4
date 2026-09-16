@@ -14,9 +14,8 @@ const galgame = inject<GalgameDetail>('galgame')
 const {
   posts,
   status,
-  threadId,
-  subscription,
-  setLevel,
+  following,
+  setFollowing,
   seeded,
   groups,
   isEmpty,
@@ -115,9 +114,8 @@ onMounted(() => {
             Galgame 评论注意事项, 资源失效, 解压密码错误等问题反馈
           </KunLink>
           <CommentCommunitySubscribe
-            :thread-id="threadId"
-            :subscription="subscription"
-            :submit="setLevel"
+            :following="following"
+            :submit="setFollowing"
           />
         </div>
       </template>

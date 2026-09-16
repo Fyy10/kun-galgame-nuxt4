@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"kun-galgame-api/internal/community/anchor"
+	msgRepo "kun-galgame-api/internal/message/repository"
 	"kun-galgame-api/pkg/communityclient"
 	"kun-galgame-api/pkg/errors"
 )
@@ -15,111 +16,170 @@ import (
 type Service struct {
 	community *communityclient.Client
 	anchors   *anchor.Resolver
+	messages  *msgRepo.MessageRepository
 }
 
-func New(community *communityclient.Client, anchors *anchor.Resolver) *Service {
-	return &Service{community: community, anchors: anchors}
+func New(community *communityclient.Client, anchors *anchor.Resolver, messages *msgRepo.MessageRepository) *Service {
+	return &Service{community: community, anchors: anchors, messages: messages}
 }
 
-// State is a viewer's standing on one comment wall. Subscribed is false for a
-// wall they have never written on or followed, which is the common case: the
-// community service keeps no row until someone interacts.
-type State struct {
-	ThreadID          int64 `json:"thread_id"`
-	Subscribed        bool  `json:"subscribed"`
-	NotificationLevel int32 `json:"notification_level"`
-	UnreadCount       int32 `json:"unread_count"`
-}
-
-type UnreadItem struct {
+type WallState struct {
+	AnchorKind        int32  `json:"anchor_kind"`
+	AnchorID          string `json:"anchor_id"`
 	ThreadID          int64  `json:"thread_id"`
-	Link              string `json:"link"`
-	Title             string `json:"title"`
-	Label             string `json:"label"`
-	GalgameID         int    `json:"galgame_id,omitempty"`
-	UnreadCount       int32  `json:"unread_count"`
+	Following         bool   `json:"following"`
 	NotificationLevel int32  `json:"notification_level"`
-	LastPostedAt      string `json:"last_posted_at"`
 }
 
-type UnreadResult struct {
-	Items      []UnreadItem `json:"items"`
+type FollowItem struct {
+	AnchorKind int32  `json:"anchor_kind"`
+	AnchorID   string `json:"anchor_id"`
+	Link       string `json:"link"`
+	Title      string `json:"title"`
+	Label      string `json:"label"`
+	GalgameID  int    `json:"galgame_id,omitempty"`
+}
+
+type FollowList struct {
+	Items      []FollowItem `json:"items"`
 	NextCursor string       `json:"next_cursor"`
-	Total      int64        `json:"total"`
 }
 
-// MarkRead reports a read receipt for a wall the viewer already follows, and
-// deliberately does not create the row for one they do not.
-//
-// The community service's POST /threads/{id}/read inserts at notification level
-// normal, and its unread listing counts every level except muted. Reporting a
-// receipt for every wall a reader merely opened would therefore enrol them in
-// every game page they ever visited, and the red dot would light up for a game
-// they glanced at once.
-func (s *Service) MarkRead(ctx context.Context, userID int, threadID int64) (*State, *errors.AppError) {
-	if !s.community.Configured() || threadID <= 0 {
-		return &State{ThreadID: threadID}, nil
+func (s *Service) WallRead(ctx context.Context, userID int, ref anchor.Ref, threadID int64) (*WallState, *errors.AppError) {
+	if _, ok := s.anchors.Resolve([]anchor.Ref{ref})[ref]; !ok {
+		return nil, errors.ErrBadRequest("评论区不存在")
 	}
-	existing, err := s.community.ThreadStates(ctx, int64(userID), []int64{threadID})
-	if err != nil {
-		slog.Warn("community engagement: thread state lookup failed", "thread_id", threadID, "error", err)
-		return &State{ThreadID: threadID}, nil
+	idle := &WallState{
+		AnchorKind:        ref.Kind,
+		AnchorID:          ref.ID,
+		ThreadID:          threadID,
+		NotificationLevel: communityclient.NotificationNormal,
 	}
-	if len(existing.States) == 0 {
-		return &State{ThreadID: threadID}, nil
+	if !s.community.Configured() {
+		return idle, nil
 	}
-	// The community service clamps to the thread's highest post number, so this
-	// means "all of it" without the caller having to know what that number is.
-	view, err := s.community.MarkThreadRead(ctx, threadID, int64(userID), math.MaxInt32)
-	if err != nil {
-		slog.Warn("community engagement: mark read failed", "thread_id", threadID, "error", err)
-		return toState(threadID, &existing.States[0]), nil
+
+	var threadRow *communityclient.ThreadUserView
+	var anchorRow *communityclient.AnchorSubscriptionView
+	if threadID > 0 {
+		existing, err := s.community.ThreadStates(ctx, int64(userID), []int64{threadID})
+		if err != nil {
+			slog.Warn("community engagement: thread state lookup failed", "thread_id", threadID, "error", err)
+			return idle, nil
+		}
+		if len(existing.States) > 0 {
+			threadRow = &existing.States[0]
+		}
 	}
-	return toState(threadID, view), nil
+	if threadRow == nil {
+		states, err := s.community.AnchorStates(ctx, int64(userID), []communityclient.AnchorRef{
+			{AnchorKind: ref.Kind, AnchorID: ref.ID},
+		})
+		if err != nil {
+			slog.Warn("community engagement: anchor state lookup failed", "anchor_id", ref.ID, "error", err)
+			return idle, nil
+		}
+		if len(states.States) > 0 {
+			anchorRow = &states.States[0]
+		}
+	}
+
+	watchingAnchor := anchorRow != nil && anchorRow.NotificationLevel == communityclient.NotificationWatching
+	if threadID > 0 && (threadRow != nil || watchingAnchor) {
+		view, err := s.community.MarkThreadRead(ctx, threadID, int64(userID), math.MaxInt32)
+		if err != nil {
+			slog.Warn("community engagement: mark read failed", "thread_id", threadID, "error", err)
+		} else {
+			threadRow = view
+			if s.messages != nil {
+				if mErr := s.messages.MarkCommunityThreadRead(userID, threadID, view.LastReadPostNumber); mErr != nil {
+					slog.Warn("community engagement: local thread read sync failed", "thread_id", threadID, "error", mErr)
+				}
+			}
+		}
+	}
+
+	level := int32(communityclient.NotificationNormal)
+	if threadRow != nil {
+		level = threadRow.NotificationLevel
+	} else if anchorRow != nil {
+		level = anchorRow.NotificationLevel
+	}
+	return &WallState{
+		AnchorKind:        ref.Kind,
+		AnchorID:          ref.ID,
+		ThreadID:          threadID,
+		Following:         level == communityclient.NotificationWatching,
+		NotificationLevel: level,
+	}, nil
 }
 
-// SetLevel follows or mutes a wall. Following it also clears its backlog: the
-// upsert behind the level starts a fresh row at post 0, so without the receipt
-// the reader would subscribe and immediately owe themselves every post on the
-// wall as unread.
-func (s *Service) SetLevel(ctx context.Context, userID int, threadID int64, level int32) (*State, *errors.AppError) {
-	if level < communityclient.NotificationMuted || level > communityclient.NotificationWatching {
-		return nil, errors.ErrBadRequest("订阅级别不正确")
+func (s *Service) WallFollow(ctx context.Context, userID int, ref anchor.Ref, following bool) (*WallState, *errors.AppError) {
+	if _, ok := s.anchors.Resolve([]anchor.Ref{ref})[ref]; !ok {
+		return nil, errors.ErrBadRequest("评论区不存在")
 	}
 	if !s.community.Configured() {
 		return nil, errors.ErrInternal("评论服务未配置")
 	}
-	view, err := s.community.SetThreadNotification(ctx, threadID, int64(userID), level)
+
+	page, err := s.community.GetComments(ctx, ref.Kind, ref.ID, "", "1")
 	if err != nil {
-		return nil, mapErr(err, "设置订阅失败")
+		return nil, mapErr(err, "设置关注失败")
 	}
-	if level != communityclient.NotificationMuted {
-		if read, rerr := s.community.MarkThreadRead(ctx, threadID, int64(userID), math.MaxInt32); rerr == nil {
-			view = read
+
+	// Unfollow writes normal (1), never muted (0): muted also silences replies
+	// and mentions addressed to this user.
+	level := int32(communityclient.NotificationNormal)
+	if following {
+		level = communityclient.NotificationWatching
+	}
+
+	if _, err := s.community.SetAnchorNotification(ctx, int64(userID), ref.Kind, ref.ID, level); err != nil {
+		return nil, mapErr(err, "设置关注失败")
+	}
+
+	var threadID int64
+	if page.Thread != nil {
+		threadID = page.Thread.ID
+		if _, err := s.community.SetThreadNotification(ctx, threadID, int64(userID), level); err != nil {
+			return nil, mapErr(err, "设置关注失败")
 		}
 	}
-	return toState(threadID, view), nil
+
+	return &WallState{
+		AnchorKind:        ref.Kind,
+		AnchorID:          ref.ID,
+		ThreadID:          threadID,
+		Following:         following,
+		NotificationLevel: level,
+	}, nil
 }
 
-func (s *Service) Unread(ctx context.Context, userID int, cursor string, limit int) (*UnreadResult, *errors.AppError) {
-	empty := &UnreadResult{Items: []UnreadItem{}}
+func (s *Service) Following(ctx context.Context, userID int, cursor string, limit int) (*FollowList, *errors.AppError) {
+	empty := &FollowList{Items: []FollowItem{}}
 	if !s.community.Configured() {
 		return empty, nil
 	}
-	page, err := s.community.ListUnread(ctx, int64(userID), cursor, limit)
+	page, err := s.community.ListAnchorSubscriptions(ctx, int64(userID), -1, cursor, limit)
 	if err != nil {
-		return nil, mapErr(err, "获取未读评论失败")
+		return nil, mapErr(err, "获取关注列表失败")
 	}
 
-	refs := make([]anchor.Ref, 0, len(page.Threads))
-	for _, row := range page.Threads {
-		refs = append(refs, anchor.Ref{Kind: row.Thread.AnchorKind, ID: row.Thread.AnchorID})
+	refs := make([]anchor.Ref, 0, len(page.Subscriptions))
+	for _, row := range page.Subscriptions {
+		if row.NotificationLevel != communityclient.NotificationWatching {
+			continue
+		}
+		refs = append(refs, anchor.Ref{Kind: row.AnchorKind, ID: row.AnchorID})
 	}
 	targets := s.anchors.ResolveNamed(ctx, refs)
 
-	items := make([]UnreadItem, 0, len(page.Threads))
-	for _, row := range page.Threads {
-		target, ok := targets[anchor.Ref{Kind: row.Thread.AnchorKind, ID: row.Thread.AnchorID}]
+	items := make([]FollowItem, 0, len(page.Subscriptions))
+	for _, row := range page.Subscriptions {
+		if row.NotificationLevel != communityclient.NotificationWatching {
+			continue
+		}
+		target, ok := targets[anchor.Ref{Kind: row.AnchorKind, ID: row.AnchorID}]
 		if !ok {
 			continue
 		}
@@ -127,44 +187,16 @@ func (s *Service) Unread(ctx context.Context, userID int, cursor string, limit i
 		if title == "" {
 			title = target.Label
 		}
-		items = append(items, UnreadItem{
-			ThreadID:          row.Thread.ID,
-			Link:              target.Link,
-			Title:             title,
-			Label:             target.Label,
-			GalgameID:         target.GalgameID,
-			UnreadCount:       row.State.UnreadCount,
-			NotificationLevel: row.State.NotificationLevel,
-			LastPostedAt:      row.Thread.LastPostedAt,
+		items = append(items, FollowItem{
+			AnchorKind: row.AnchorKind,
+			AnchorID:   row.AnchorID,
+			Link:       target.Link,
+			Title:      title,
+			Label:      target.Label,
+			GalgameID:  target.GalgameID,
 		})
 	}
-	return &UnreadResult{Items: items, NextCursor: page.NextCursor, Total: page.Total}, nil
-}
-
-// Count is the red dot. It is best-effort: a community service that is down
-// must not blank the notification bell the rest of the forum fills.
-func (s *Service) Count(ctx context.Context, userID int) int64 {
-	if !s.community.Configured() {
-		return 0
-	}
-	page, err := s.community.ListUnread(ctx, int64(userID), "", 1)
-	if err != nil {
-		slog.Warn("community engagement: unread count failed (best-effort)", "user_id", userID, "error", err)
-		return 0
-	}
-	return page.Total
-}
-
-func toState(threadID int64, view *communityclient.ThreadUserView) *State {
-	if view == nil {
-		return &State{ThreadID: threadID}
-	}
-	return &State{
-		ThreadID:          threadID,
-		Subscribed:        view.NotificationLevel > communityclient.NotificationMuted,
-		NotificationLevel: view.NotificationLevel,
-		UnreadCount:       view.UnreadCount,
-	}
+	return &FollowList{Items: items, NextCursor: page.NextCursor}, nil
 }
 
 func mapErr(err error, fallback string) *errors.AppError {

@@ -66,23 +66,27 @@ type CommunityCommentPage struct {
 	NextCursor string               `json:"next_cursor"`
 	Total      int                  `json:"total"`
 	Locked     bool                 `json:"locked"`
+	AnchorKind int32                `json:"anchor_kind"`
+	AnchorID   string               `json:"anchor_id"`
 }
 
 func (s *CommunityCommentService) GetComments(ctx context.Context, galgameID, viewerID int, cursor string, limit int) (*CommunityCommentPage, *errors.AppError) {
-	page, err := s.community.GetComments(ctx, communityclient.AnchorSiteGame, strconv.Itoa(galgameID), cursor, clampReadLimit(limit))
+	kind, id := int32(communityclient.AnchorSiteGame), strconv.Itoa(galgameID)
+	page, err := s.community.GetComments(ctx, kind, id, cursor, clampReadLimit(limit))
 	if err != nil {
 		if isCommunityDown(err) {
-			return emptyCommentPage(), nil
+			return emptyCommentPage(kind, id), nil
 		}
 		return nil, mapCommunityError(err)
 	}
 	if page.Thread == nil {
-		return emptyCommentPage(), nil
+		return emptyCommentPage(kind, id), nil
 	}
 
 	items := s.renderPosts(ctx, galgameID, viewerID, page.Posts)
 	return &CommunityCommentPage{
 		ThreadID: page.Thread.ID, Posts: items, NextCursor: page.NextCursor, Total: int(page.Thread.PostsCount),
+		AnchorKind: kind, AnchorID: id,
 	}, nil
 }
 
@@ -182,12 +186,12 @@ func nzPtr64(id int64) *int64 {
 	return &id
 }
 
-func emptyCommentPage() *CommunityCommentPage {
-	return &CommunityCommentPage{Posts: []*CommunityPostItem{}}
+func emptyCommentPage(kind int32, id string) *CommunityCommentPage {
+	return &CommunityCommentPage{Posts: []*CommunityPostItem{}, AnchorKind: kind, AnchorID: id}
 }
 
-func lockedCommentPage() *CommunityCommentPage {
-	return &CommunityCommentPage{Posts: []*CommunityPostItem{}, Locked: true}
+func lockedCommentPage(kind int32, id string) *CommunityCommentPage {
+	return &CommunityCommentPage{Posts: []*CommunityPostItem{}, Locked: true, AnchorKind: kind, AnchorID: id}
 }
 
 func truncate(s string, maxLen int) string {

@@ -24,31 +24,28 @@ export interface GalgameCommunityCommentPage {
   next_cursor: string
   total: number
   locked: boolean
+  anchor_kind: number
+  anchor_id: string
 }
 
-/** 0=muted 1=normal 2=tracking 3=watching, as the community service numbers them. */
-export type CommunityNotificationLevel = 0 | 1 | 2 | 3
-
-export interface CommunityThreadState {
+export interface CommunityWallState {
+  anchor_kind: number
+  anchor_id: string
   thread_id: number
-  subscribed: boolean
-  notification_level: CommunityNotificationLevel
-  unread_count: number
+  following: boolean
+  notification_level: number
 }
 
-export interface CommunityUnreadItem {
-  thread_id: number
+export interface CommunityFollowItem {
+  anchor_kind: number
+  anchor_id: string
   link: string
   title: string
   label: string
   galgame_id?: number
-  unread_count: number
-  notification_level: CommunityNotificationLevel
-  last_posted_at: string
 }
 
-export interface CommunityUnreadResult {
-  items: CommunityUnreadItem[]
+export interface CommunityFollowList {
+  items: CommunityFollowItem[]
   next_cursor: string
-  total: number
 }

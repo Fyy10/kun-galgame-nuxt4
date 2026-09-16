@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"database/sql"
 	"errors"
 
 	"kun-galgame-api/internal/message/model"
@@ -29,6 +30,9 @@ type MessageRow struct {
 	Status     string
 	Type       string
 	CreatedAt  string
+	ItemCount  int
+	ActorCount int
+	Community  bool
 }
 
 func (r *MessageRepository) FindMessages(
@@ -42,7 +46,8 @@ func (r *MessageRepository) FindMessages(
 
 	query := r.db.Table("message m").
 		Select(`m.id, m.sender_id,
-			m.receiver_id, m.link, m.content, m.status, m.type, m.created AS created_at`).
+			m.receiver_id, m.link, m.content, m.status, m.type, m.created AS created_at,
+			m.item_count, m.actor_count, (m.community_notification_id IS NOT NULL) AS community`).
 		Where("m.receiver_id = ?", receiverID)
 
 	if len(onlyTypes) > 0 {
@@ -63,15 +68,59 @@ func (r *MessageRepository) FindMessages(
 	return rows, total, err
 }
 
-func (r *MessageRepository) DeleteByIDAndReceiver(id, receiverID int) error {
-	return r.db.Where("id = ? AND receiver_id = ?", id, receiverID).
-		Delete(&model.Message{}).Error
+func (r *MessageRepository) DeleteByIDAndReceiver(id, receiverID int) (*model.Message, error) {
+	var row model.Message
+	err := r.db.Where("id = ? AND receiver_id = ?", id, receiverID).First(&row).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if err := r.db.Delete(&row).Error; err != nil {
+		return nil, err
+	}
+	return &row, nil
 }
 
-func (r *MessageRepository) MarkAllRead(receiverID int) error {
-	return r.db.Model(&model.Message{}).
-		Where("receiver_id = ? AND status = 'unread'", receiverID).
-		Update("status", "read").Error
+// Rows, not Scan: gorm's Scan into []*int64 fails after the UPDATE has already
+// committed, so the request reported 标记已读失败 and the ids were never
+// forwarded, leaving the upstream fold open.
+func (r *MessageRepository) MarkAllRead(receiverID int) ([]int64, error) {
+	rows, err := r.db.Raw(`
+		UPDATE message
+		SET status = 'read', updated = now()
+		WHERE receiver_id = ? AND status = 'unread'
+		RETURNING community_notification_id
+	`, receiverID).Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := []int64{}
+	for rows.Next() {
+		var id sql.NullInt64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		if id.Valid && id.Int64 > 0 {
+			out = append(out, id.Int64)
+		}
+	}
+	return out, rows.Err()
+}
+
+func (r *MessageRepository) MarkCommunityThreadRead(receiverID int, threadID int64, lastRead int32) error {
+	return r.db.Exec(`
+		UPDATE message
+		SET status = 'read', updated = now()
+		WHERE receiver_id = ?
+		  AND community_thread_id = ?
+		  AND status = 'unread'
+		  AND type IN ('replied', 'commented', 'mentioned', 'followed')
+		  AND community_post_number <= ?
+	`, receiverID, threadID, lastRead).Error
 }
 
 type SystemMessageRow struct {

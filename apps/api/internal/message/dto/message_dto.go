@@ -22,6 +22,9 @@ type MessageResponse struct {
 	Status     string  `json:"status"`
 	Type       string  `json:"type"`
 	Created    string  `json:"created"`
+	ItemCount  int     `json:"item_count"`
+	ActorCount int     `json:"actor_count"`
+	Community  bool    `json:"community"`
 }
 
 type MessageListResponse struct {

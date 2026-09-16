@@ -45,7 +45,7 @@ func (s *ResourceCommentService) CreateComment(ctx context.Context, src CommentS
 	}
 	post := &res.Post
 
-	s.afterCreate(src, resourceID, cc, userID, content, post)
+	s.afterCreate(ctx, src, resourceID, cc, userID, content, post)
 
 	items := s.renderPosts(ctx, userID, []communityclient.PostView{*post})
 	if len(items) == 0 {
@@ -85,78 +85,78 @@ func (s *ResourceCommentService) resolveCreateCtx(src CommentSource, resourceID 
 	}
 }
 
-type notifyPlan struct {
-	receiver int
-	msgType  string
-}
-
-func resourceNotifyPlan(src CommentSource, senderID int, post *communityclient.PostView, ownerID int) (notifyPlan, bool) {
-	var p notifyPlan
+func shouldNotifyOwner(src CommentSource, senderID, ownerID int, isReply, hasPref, lookupFailed bool) bool {
 	switch src.key {
-	case sourceRating.key:
-		p = notifyPlan{receiver: int(post.TargetUserID), msgType: "commented"}
-	case sourceWebsite.key:
-		if post.ReplyToPostID == 0 || post.TargetUserID == 0 {
-			return notifyPlan{}, false
-		}
-		p = notifyPlan{receiver: int(post.TargetUserID), msgType: "commented"}
 	case sourceToolset.key, sourceResource.key, sourceQuiz.key:
-		if post.ReplyToPostID != 0 && post.TargetUserID != 0 {
-			p = notifyPlan{receiver: int(post.TargetUserID), msgType: "replied"}
-		} else {
-			p = notifyPlan{receiver: ownerID, msgType: "commented"}
-		}
+	default:
+		return false
 	}
-	if p.receiver <= 0 || p.receiver == senderID {
-		return notifyPlan{}, false
+	if isReply || ownerID <= 0 || ownerID == senderID {
+		return false
 	}
-	return p, true
+	if lookupFailed {
+		return true
+	}
+	return !hasPref
 }
 
-func (s *ResourceCommentService) afterCreate(src CommentSource, resourceID int, cc createCtx, userID int, content string, post *communityclient.PostView) {
-	plan, notify := resourceNotifyPlan(src, userID, post, cc.ownerID)
+func (s *ResourceCommentService) ownerHasPreference(ctx context.Context, ownerID int, threadID int64, src CommentSource, resourceID int) (has bool, failed bool) {
+	if threadID > 0 {
+		st, err := s.community.ThreadStates(ctx, int64(ownerID), []int64{threadID})
+		if err != nil {
+			return false, true
+		}
+		if len(st.States) > 0 {
+			return true, false
+		}
+	}
+	as, err := s.community.AnchorStates(ctx, int64(ownerID), []communityclient.AnchorRef{{
+		AnchorKind: communityclient.AnchorSiteResource,
+		AnchorID:   src.anchorID(resourceID),
+	}})
+	if err != nil {
+		return false, true
+	}
+	return len(as.States) > 0, false
+}
+
+func (s *ResourceCommentService) afterCreate(ctx context.Context, src CommentSource, resourceID int, cc createCtx, userID int, content string, post *communityclient.PostView) {
 	switch src.key {
 	case sourceRating.key:
-		if notify {
-			if err := s.helpers.CreateGalgameMessageWithContent(s.db, userID, plan.receiver, plan.msgType, truncate(content, constants.TextPreviewLength), cc.galgameID); err != nil {
-				slog.Warn("notification insert failed (best-effort)",
-					"type", plan.msgType, "receiver_id", plan.receiver, "galgame_id", cc.galgameID, "error", err)
-			}
-		}
 		s.feedUpsert(src.feedType, post.ID, userID, content, src.pageLink(resourceID), false, post.CreatedAt)
 
 	case sourceWebsite.key:
 		s.bumpWebsiteCommentCount(resourceID, 1)
 		slug, nsfw := s.websiteMeta(resourceID)
-		if notify {
-			s.notifyWebsiteReply(userID, plan.receiver, content, slug)
-		}
 		s.feedUpsert(src.feedType, post.ID, userID, content, "/website/"+slug, nsfw, post.CreatedAt)
 
 	case sourceToolset.key:
 		s.bumpToolsetCommentCount(resourceID, 1)
-		link := src.pageLink(resourceID)
-		if notify {
-			s.notifyToolset(userID, plan.receiver, plan.msgType, content, link)
-		}
-		s.feedUpsert(src.feedType, post.ID, userID, content, link, false, post.CreatedAt)
+		s.notifyOwnerIfNeeded(ctx, src, resourceID, cc.ownerID, userID, content, post)
+		s.feedUpsert(src.feedType, post.ID, userID, content, src.pageLink(resourceID), false, post.CreatedAt)
 
 	case sourceResource.key:
 		s.bumpCountColumn("galgame_resource", resourceID, 1)
-		link := src.pageLink(resourceID)
-		if notify {
-			s.notifyDeduped(userID, plan.receiver, plan.msgType, content, link)
-		}
-		s.feedUpsert(src.feedType, post.ID, userID, content, link, false, post.CreatedAt)
+		s.notifyOwnerIfNeeded(ctx, src, resourceID, cc.ownerID, userID, content, post)
+		s.feedUpsert(src.feedType, post.ID, userID, content, src.pageLink(resourceID), false, post.CreatedAt)
 
 	case sourceQuiz.key:
 		s.bumpCountColumn("galgame_quiz", resourceID, 1)
-		link := src.pageLink(resourceID)
-		if notify {
-			s.notifyDeduped(userID, plan.receiver, plan.msgType, content, link)
-		}
-		s.feedUpsert(src.feedType, post.ID, userID, content, link, false, post.CreatedAt)
+		s.notifyOwnerIfNeeded(ctx, src, resourceID, cc.ownerID, userID, content, post)
+		s.feedUpsert(src.feedType, post.ID, userID, content, src.pageLink(resourceID), false, post.CreatedAt)
 	}
+}
+
+func (s *ResourceCommentService) notifyOwnerIfNeeded(ctx context.Context, src CommentSource, resourceID, ownerID, userID int, content string, post *communityclient.PostView) {
+	isReply := post.ReplyToPostID != 0
+	if !shouldNotifyOwner(src, userID, ownerID, isReply, false, false) {
+		return
+	}
+	hasPref, failed := s.ownerHasPreference(ctx, ownerID, post.ThreadID, src, resourceID)
+	if !shouldNotifyOwner(src, userID, ownerID, isReply, hasPref, failed) {
+		return
+	}
+	s.notifyDeduped(userID, ownerID, "commented", content, src.pageLink(resourceID))
 }
 
 func (s *ResourceCommentService) DeleteComment(ctx context.Context, src CommentSource, resourceID, userID int, canModerate bool, postID int64) *errors.AppError {
@@ -305,23 +305,6 @@ func (s *ResourceCommentService) bumpCountColumn(table string, resourceID, delta
 	}
 }
 
-func (s *ResourceCommentService) notifyWebsiteReply(senderID, receiverID int, content, slug string) {
-	link := "/website/" + slug
-	preview := markdown.ToPlainText(content, constants.TextPreviewLength)
-	var count int64
-	s.db.Model(&msgModel.Message{}).
-		Where("sender_id = ? AND receiver_id = ? AND type = ? AND content = ? AND link = ?",
-			senderID, receiverID, "commented", preview, link).
-		Count(&count)
-	if count > 0 {
-		return
-	}
-	s.notifyCreate(&msgModel.Message{
-		SenderID: senderID, ReceiverID: receiverID,
-		Type: "commented", Content: preview, Link: link, Status: "unread",
-	})
-}
-
 func (s *ResourceCommentService) notifyDeduped(senderID, receiverID int, msgType, content, link string) {
 	preview := markdown.ToPlainText(content, constants.TextPreviewLength)
 	var count int64
@@ -338,19 +321,9 @@ func (s *ResourceCommentService) notifyDeduped(senderID, receiverID int, msgType
 	})
 }
 
-func (s *ResourceCommentService) notifyToolset(senderID, receiverID int, msgType, content, link string) {
-	s.notifyCreate(&msgModel.Message{
-		SenderID: senderID, ReceiverID: receiverID,
-		Type:    msgType,
-		Content: markdown.ToPlainText(content, 100),
-		Link:    link,
-		Status:  "unread",
-	})
-}
-
-// afterCreate runs once the comment is already committed upstream, so a lost
-// notification must not fail the request — but it must not be invisible either.
 func (s *ResourceCommentService) notifyCreate(msg *msgModel.Message) {
+	// afterCreate runs once the comment is already committed upstream, so a lost
+	// notification must not fail the request — but it must not be invisible either.
 	if err := s.db.Create(msg).Error; err != nil {
 		slog.Warn("notification insert failed (best-effort)",
 			"type", msg.Type, "receiver_id", msg.ReceiverID, "link", msg.Link, "error", err)

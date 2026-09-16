@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"testing"
 
 	"kun-galgame-api/pkg/communityclient"
@@ -78,27 +79,90 @@ func TestBuildCommunityItemPointers(t *testing.T) {
 
 func TestLikeEffects(t *testing.T) {
 	cases := []struct {
-		name       string
-		added      bool
-		authorID   int64
-		userID     int
-		wantLocal  bool
-		wantDelta  int
-		wantNotify bool
+		name      string
+		added     bool
+		authorID  int64
+		userID    int
+		wantLocal bool
+		wantDelta int
 	}{
-		{"add, other", true, 7, 9, true, 1, true},
-		{"add, self", true, 9, 9, true, 0, false},
-		{"remove, other", false, 7, 9, false, -1, false},
-		{"remove, self", false, 9, 9, false, 0, false},
+		{"add, other", true, 7, 9, true, 1},
+		{"add, self", true, 9, 9, true, 0},
+		{"remove, other", false, 7, 9, false, -1},
+		{"remove, self", false, 9, 9, false, 0},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			local, delta, notify := likeEffects(tc.added, tc.authorID, tc.userID)
-			if local != tc.wantLocal || delta != tc.wantDelta || notify != tc.wantNotify {
-				t.Errorf("likeEffects(%v,%d,%d) = (%v,%d,%v), want (%v,%d,%v)",
-					tc.added, tc.authorID, tc.userID, local, delta, notify, tc.wantLocal, tc.wantDelta, tc.wantNotify)
+			local, delta := likeEffects(tc.added, tc.authorID, tc.userID)
+			if local != tc.wantLocal || delta != tc.wantDelta {
+				t.Errorf("likeEffects(%v,%d,%d) = (%v,%d), want (%v,%d)",
+					tc.added, tc.authorID, tc.userID, local, delta, tc.wantLocal, tc.wantDelta)
 			}
 		})
+	}
+}
+
+func TestPrepareMentionIDs(t *testing.T) {
+	known := map[int]userclient.User{2: {ID: 2}, 3: {ID: 3}}
+	t.Run("self dropped", func(t *testing.T) {
+		got, err := prepareMentionIDs([]int{1, 2}, 1, known, nil)
+		if err != nil {
+			t.Fatalf("err = %v", err)
+		}
+		if len(got) != 1 || got[0] != 2 {
+			t.Errorf("got %v, want [2]", got)
+		}
+	})
+	t.Run("duplicates dropped", func(t *testing.T) {
+		got, err := prepareMentionIDs([]int{2, 2, 3, 2}, 1, known, nil)
+		if err != nil {
+			t.Fatalf("err = %v", err)
+		}
+		if len(got) != 2 || got[0] != 2 || got[1] != 3 {
+			t.Errorf("got %v, want [2 3]", got)
+		}
+	})
+	t.Run("lookup error keeps ids", func(t *testing.T) {
+		got, err := prepareMentionIDs([]int{2, 99}, 1, known, context.Canceled)
+		if err != nil {
+			t.Fatalf("err = %v", err)
+		}
+		if len(got) != 2 || got[0] != 2 || got[1] != 99 {
+			t.Errorf("got %v, want [2 99]", got)
+		}
+	})
+	t.Run("unknown ids dropped on success", func(t *testing.T) {
+		got, err := prepareMentionIDs([]int{2, 99}, 1, known, nil)
+		if err != nil {
+			t.Fatalf("err = %v", err)
+		}
+		if len(got) != 1 || got[0] != 2 {
+			t.Errorf("got %v, want [2]", got)
+		}
+	})
+	t.Run("more than 20 rejected", func(t *testing.T) {
+		ids := make([]int, 21)
+		knownAll := map[int]userclient.User{}
+		for i := range ids {
+			ids[i] = i + 1
+			knownAll[i+1] = userclient.User{ID: i + 1}
+		}
+		_, err := prepareMentionIDs(ids, 0, knownAll, nil)
+		if err == nil {
+			t.Fatal("want validation error")
+		}
+	})
+}
+
+func TestNewlyAddedMentionIDs(t *testing.T) {
+	old := "[@a](kungal-user:2) hi"
+	newBody := "[@a](kungal-user:2) [@b](kungal-user:3) [@me](kungal-user:9)"
+	got := newlyAddedMentionIDs(old, newBody, 9)
+	if len(got) != 1 || got[0] != 3 {
+		t.Errorf("got %v, want [3]", got)
+	}
+	if got := newlyAddedMentionIDs("", newBody, 9); len(got) != 2 {
+		t.Errorf("empty old = %v, want two new ids", got)
 	}
 }
 
@@ -107,15 +171,6 @@ func TestClampReadLimit(t *testing.T) {
 	for in, want := range cases {
 		if got := clampReadLimit(in); got != want {
 			t.Errorf("clampReadLimit(%d) = %q, want %q", in, got, want)
-		}
-	}
-}
-
-func TestParseAnchorGid(t *testing.T) {
-	cases := map[string]int{"42": 42, "": 0, "abc": 0, "0": 0, "-5": 0}
-	for in, want := range cases {
-		if got := parseAnchorGid(in); got != want {
-			t.Errorf("parseAnchorGid(%q) = %d, want %d", in, got, want)
 		}
 	}
 }

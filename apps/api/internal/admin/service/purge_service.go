@@ -90,7 +90,9 @@ func (s *PurgeService) PurgeUserContent(ctx context.Context, operatorID, userID 
 		"operator_id", operatorID, "target_id", userID,
 		"local_total", stats.Total,
 		"community_posts_purged", purged.PostsPurged,
-		"community_reactions_deleted", purged.ReactionsDeleted)
+		"community_reactions_deleted", purged.ReactionsDeleted,
+		"community_anchor_subscriptions_deleted", purged.AnchorSubscriptionsDeleted,
+		"community_notifications_deleted", purged.NotificationsDeleted)
 
 	return dto.PurgeResult{
 		UserContentStats:          stats,

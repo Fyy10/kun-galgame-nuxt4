@@ -71,12 +71,14 @@ func (InteractionHelpers) CreateGalgameCommentMention(
 	tx *gorm.DB,
 	senderID, receiverID int,
 	content string,
-	galgameID, commentID, rootID int,
+	galgameID, commentID int,
 ) error {
 	if senderID == receiverID || receiverID <= 0 {
 		return nil
 	}
-	link := fmt.Sprintf("/galgame/%d?comment=%d&thread=%d", galgameID, commentID, rootID)
+	// `thread` makes CommunityContainer treat `comment` as a legacy id and
+	// resolve it through /comments/locate, so a community post id never scrolls.
+	link := fmt.Sprintf("/galgame/%d?comment=%d", galgameID, commentID)
 
 	var count int64
 	tx.Model(&msgModel.Message{}).

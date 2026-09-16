@@ -5,9 +5,8 @@ const props = defineProps<{
 
 const {
   status,
-  threadId,
-  subscription,
-  setLevel,
+  following,
+  setFollowing,
   seeded,
   locked,
   groups,
@@ -46,9 +45,8 @@ const onPublished = (post: GalgameCommunityComment) => {
           </span>
           <CommentCommunitySubscribe
             v-if="!locked"
-            :thread-id="threadId"
-            :subscription="subscription"
-            :submit="setLevel"
+            :following="following"
+            :submit="setFollowing"
           />
         </div>
       </template>
