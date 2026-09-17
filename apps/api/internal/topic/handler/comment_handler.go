@@ -56,7 +56,7 @@ func (h *CommentHandler) UpdateComment(c fiber.Ctx) error {
 	}
 
 	updated, appErr := h.commentService.UpdateComment(c.Context(), user.ID,
-		perm.CanUser(user.ID, user.Roles, perm.CommentTopicEdit), &req)
+		user.Can(perm.CommentTopicEdit), &req)
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
@@ -93,7 +93,7 @@ func (h *CommentHandler) DeleteComment(c fiber.Ctx) error {
 		return response.Error(c, errors.ErrBadRequest("无效的评论 ID"))
 	}
 
-	if appErr := h.commentService.DeleteComment(c.Context(), user.ID, perm.CanUser(user.ID, user.Roles, perm.CommentTopicDelete), commentID); appErr != nil {
+	if appErr := h.commentService.DeleteComment(c.Context(), user.ID, user.Can(perm.CommentTopicDelete), commentID); appErr != nil {
 		return response.Error(c, appErr)
 	}
 

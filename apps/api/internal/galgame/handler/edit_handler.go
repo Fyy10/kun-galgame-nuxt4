@@ -17,7 +17,6 @@ import (
 	"kun-galgame-api/pkg/catalogclient"
 	"kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/response"
-	"kun-galgame-api/pkg/role"
 	"kun-galgame-api/pkg/userclient"
 
 	"github.com/gofiber/fiber/v3"
@@ -680,7 +679,7 @@ func (h *EditHandler) reviewEntry(c fiber.Ctx, token string, id int64) (*catalog
 	if user == nil {
 		return nil, &catalogclient.UserAPIError{Status: http.StatusForbidden, Message: "review entry denied"}
 	}
-	if !role.CanModerate(user.Roles) && !h.isGameOwner(ctx, prop.EntityID, int64(user.ID)) {
+	if !user.CanModerate() && !h.isGameOwner(ctx, prop.EntityID, int64(user.ID)) {
 		return nil, &catalogclient.UserAPIError{Status: http.StatusForbidden, Message: "review entry denied"}
 	}
 	return prop, nil

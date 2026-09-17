@@ -8,6 +8,7 @@ import (
 
 	"kun-galgame-api/internal/user/oauth"
 	"kun-galgame-api/pkg/errors"
+	"kun-galgame-api/pkg/perm"
 	"kun-galgame-api/pkg/response"
 	"kun-galgame-api/pkg/role"
 
@@ -39,6 +40,26 @@ type UserInfo struct {
 	Name  string   `json:"name"`
 	Email string   `json:"email"`
 	Roles []string `json:"roles"`
+
+	viaBearer bool
+}
+
+// Staff powers are never reachable through the Bearer channel, whatever the
+// token's roles or the user's permission overrides say. Check capabilities
+// through these methods, not perm.CanUser / role.Can* on u.Roles, or that
+// guarantee is lost; bearer_guard_test.go enforces it.
+func (u *UserInfo) ViaBearer() bool { return u.viaBearer }
+
+func (u *UserInfo) Can(p perm.Permission) bool {
+	return !u.viaBearer && perm.CanUser(u.ID, u.Roles, p)
+}
+
+func (u *UserInfo) CanModerate() bool {
+	return !u.viaBearer && role.CanModerate(u.Roles)
+}
+
+func (u *UserInfo) CanAdminister() bool {
+	return !u.viaBearer && role.CanAdminister(u.Roles)
 }
 
 type SessionData struct {
@@ -48,8 +69,23 @@ type SessionData struct {
 	OAuthExpiresAt    int64  `json:"oauth_expires_at"`
 }
 
-func Auth(rdb *redis.Client, oauthClient *oauth.Client) fiber.Handler {
+type Authenticator struct {
+	rdb         *redis.Client
+	oauthClient *oauth.Client
+	bearer      *Bearer
+}
+
+func NewAuthenticator(rdb *redis.Client, oauthClient *oauth.Client, bearer *Bearer) *Authenticator {
+	return &Authenticator{rdb: rdb, oauthClient: oauthClient, bearer: bearer}
+}
+
+func (a *Authenticator) Auth() fiber.Handler {
 	return func(c fiber.Ctx) error {
+		if token, ok := bearerToken(c); ok {
+			return a.bearer.authenticate(c, token)
+		}
+		rdb, oauthClient := a.rdb, a.oauthClient
+
 		token := c.Cookies(SessionCookieName)
 		if token == "" {
 			return response.Error(c, errors.ErrAuthExpired())
@@ -93,8 +129,15 @@ func Auth(rdb *redis.Client, oauthClient *oauth.Client) fiber.Handler {
 	}
 }
 
-func OptionalAuth(rdb *redis.Client, oauthClient *oauth.Client) fiber.Handler {
+// A Bearer that fails verification is refused even here: dropping to anonymous
+// would hide the expiry from the App, which only refreshes on a 401.
+func (a *Authenticator) OptionalAuth() fiber.Handler {
 	return func(c fiber.Ctx) error {
+		if token, ok := bearerToken(c); ok {
+			return a.bearer.authenticate(c, token)
+		}
+		rdb, oauthClient := a.rdb, a.oauthClient
+
 		token := c.Cookies(SessionCookieName)
 		if token == "" {
 			return c.Next()

@@ -51,6 +51,16 @@ x-kungal-api-env: &kungal-api-env
   OAUTH_CLIENT_ID: 4ed9bc99ec0a789a4796b83e22bd84c5
   OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET:?set OAUTH_CLIENT_SECRET in Dokploy (论坛 client 注册时的明文)}
   OAUTH_REDIRECT_URI: https://www.kungal.com/auth/callback
+  # ── App direct access (docs/proj/app-direct-api.md) ──
+  # A first-party client's user access token (ES256 JWT) may call /api/* as
+  # `Authorization: Bearer`. ISSUER must be the OP's PUBLIC origin — that is what
+  # it stamps into `iss`; deriving it from OAUTH_SERVER_URL above would give
+  # http://oauth:9277 and 401 every App request. JWKS is fetched in-network.
+  # CLIENT_IDS is the allow-list (comma separated); empty keeps the channel
+  # closed. Set it to the kungal-app client_id once infra registers it.
+  KUN_OIDC_ISSUER: https://account.nextmoe.com
+  KUN_OIDC_JWKS_URL: http://oauth:9277/oauth/jwks
+  KUN_BEARER_CLIENT_IDS: ${KUN_BEARER_CLIENT_IDS:-}
   # ── comment areas on the community primitive (track 03) ──
   # Community is now the UNCONDITIONAL backend for the galgame + resource
   # (rating / website / toolset) comment areas: the legacy in-forum comment
@@ -163,6 +173,20 @@ x-kungal-api-env: &kungal-api-env
   # mints kungal's S2S client + registers the forum_topic/forum_reply kinds.
   KUN_TRUST_CHECK_ENABLED: ${KUN_TRUST_CHECK_ENABLED:-false}
   KUN_TRUST_SCAN_ENABLED: ${KUN_TRUST_SCAN_ENABLED:-false}
+  # ── App version gate: GET /api/app/version ──
+  # The App force-updates every install below MIN_VERSION, so this pair is the
+  # kill switch for the direct-download channel. Versions are MAJOR.MINOR.PATCH;
+  # a malformed value or MIN above LATEST fails the boot rather than stranding
+  # users on a build that does not exist. An unset download falls back to the
+  # https://www.kungal.com/app page, which then shows that platform as 即将推出.
+  # Changing any of these needs a kungal-api restart.
+  KUN_APP_MIN_VERSION: ${KUN_APP_MIN_VERSION:-0.1.0}
+  KUN_APP_LATEST_VERSION: ${KUN_APP_LATEST_VERSION:-0.1.0}
+  KUN_APP_RELEASE_NOTES: ${KUN_APP_RELEASE_NOTES:-}
+  KUN_APP_DOWNLOAD_ANDROID: ${KUN_APP_DOWNLOAD_ANDROID:-}
+  KUN_APP_DOWNLOAD_IOS: ${KUN_APP_DOWNLOAD_IOS:-}
+  KUN_APP_DOWNLOAD_WINDOWS: ${KUN_APP_DOWNLOAD_WINDOWS:-}
+  KUN_APP_DOWNLOAD_LINUX: ${KUN_APP_DOWNLOAD_LINUX:-}
 
 services:
   # ───────────────────────────── Go API (distroless) ─────────────────────────

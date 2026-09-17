@@ -3,7 +3,10 @@ package config
 import (
 	"fmt"
 	"os"
+	"regexp"
+	"slices"
 	"strconv"
+	"strings"
 )
 
 type Config struct {
@@ -23,6 +26,34 @@ type Config struct {
 	Community      CommunityConfig
 	Dlsite         DlsiteConfig
 	Lottery        LotteryConfig
+	Bearer         BearerConfig
+	AppRelease     AppReleaseConfig
+}
+
+// ClientIDs is the allow-list of OAuth clients whose user access tokens may
+// call this API directly; empty closes the Bearer channel. JWKSURL defaults to
+// the OP's internal address, while Issuer must be the OP's PUBLIC origin: that
+// is what it stamps into iss.
+type BearerConfig struct {
+	Issuer    string
+	JWKSURL   string
+	ClientIDs []string
+}
+
+func (c BearerConfig) Enabled() bool { return len(c.ClientIDs) > 0 }
+
+type AppReleaseConfig struct {
+	MinVersion    string
+	LatestVersion string
+	Notes         string
+	Downloads     AppDownloads
+}
+
+type AppDownloads struct {
+	Android string
+	IOS     string
+	Windows string
+	Linux   string
 }
 
 // CodeKey seals the escrowed lottery activation codes (AES-256-GCM, 64 hex
@@ -181,6 +212,13 @@ func Load() (*Config, error) {
 		)
 	}
 
+	oauthOrigin := oauthOriginOf(oauthServerURL)
+
+	appRelease, err := loadAppRelease()
+	if err != nil {
+		return nil, err
+	}
+
 	return &Config{
 		Server: ServerConfig{
 			Port: envOrDefault("SERVER_PORT", "2334"),
@@ -267,7 +305,82 @@ func Load() (*Config, error) {
 			StoreAPIBase: envOrDefault("KUN_STORE_API_BASE", nextMoeBase),
 			StoreAPIKey:  envOrDefault("KUN_STORE_API_KEY", ""),
 		},
+		Bearer: BearerConfig{
+			Issuer:    envOrDefault("KUN_OIDC_ISSUER", oauthOrigin),
+			JWKSURL:   envOrDefault("KUN_OIDC_JWKS_URL", oauthOrigin+"/oauth/jwks"),
+			ClientIDs: splitCSV(os.Getenv("KUN_BEARER_CLIENT_IDS")),
+		},
+		AppRelease: appRelease,
 	}, nil
+}
+
+func oauthOriginOf(serverURL string) string {
+	s := strings.TrimRight(serverURL, "/")
+	for _, suffix := range []string{"/api/v1", "/api"} {
+		if base, ok := strings.CutSuffix(s, suffix); ok {
+			return base
+		}
+	}
+	return s
+}
+
+const appDownloadPage = "https://www.kungal.com/app"
+
+var releaseVersionRe = regexp.MustCompile(`^(\d+)\.(\d+)\.(\d+)$`)
+
+// A malformed or inverted pair is refused at boot: the App force-updates any
+// install below min_version, so min above latest would send every user to a
+// build that does not exist.
+func loadAppRelease() (AppReleaseConfig, error) {
+	cfg := AppReleaseConfig{
+		MinVersion:    envOrDefault("KUN_APP_MIN_VERSION", "0.1.0"),
+		LatestVersion: envOrDefault("KUN_APP_LATEST_VERSION", "0.1.0"),
+		Notes:         envOrDefault("KUN_APP_RELEASE_NOTES", ""),
+		Downloads: AppDownloads{
+			Android: envOrDefault("KUN_APP_DOWNLOAD_ANDROID", appDownloadPage),
+			IOS:     envOrDefault("KUN_APP_DOWNLOAD_IOS", appDownloadPage),
+			Windows: envOrDefault("KUN_APP_DOWNLOAD_WINDOWS", appDownloadPage),
+			Linux:   envOrDefault("KUN_APP_DOWNLOAD_LINUX", appDownloadPage),
+		},
+	}
+	minV, err := parseReleaseVersion("KUN_APP_MIN_VERSION", cfg.MinVersion)
+	if err != nil {
+		return cfg, err
+	}
+	latestV, err := parseReleaseVersion("KUN_APP_LATEST_VERSION", cfg.LatestVersion)
+	if err != nil {
+		return cfg, err
+	}
+	if slices.Compare(minV, latestV) > 0 {
+		return cfg, fmt.Errorf("KUN_APP_MIN_VERSION=%s 高于 KUN_APP_LATEST_VERSION=%s", cfg.MinVersion, cfg.LatestVersion)
+	}
+	return cfg, nil
+}
+
+func parseReleaseVersion(key, v string) ([]int, error) {
+	m := releaseVersionRe.FindStringSubmatch(v)
+	if m == nil {
+		return nil, fmt.Errorf("%s=%q 不是 MAJOR.MINOR.PATCH 形式的版本号", key, v)
+	}
+	out := make([]int, 3)
+	for i, part := range m[1:] {
+		n, err := strconv.Atoi(part)
+		if err != nil {
+			return nil, fmt.Errorf("%s=%q: %w", key, v, err)
+		}
+		out[i] = n
+	}
+	return out, nil
+}
+
+func splitCSV(s string) []string {
+	var out []string
+	for part := range strings.SplitSeq(s, ",") {
+		if t := strings.TrimSpace(part); t != "" {
+			out = append(out, t)
+		}
+	}
+	return out
 }
 
 func requireEnv(key string) (string, error) {

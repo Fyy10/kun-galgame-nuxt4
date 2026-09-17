@@ -64,7 +64,7 @@ func (h *ResourceCommentHandler) remove(c fiber.Ctx, src service.CommentSource, 
 	if !ok {
 		return response.Error(c, errors.ErrBadRequest("非法的评论 ID"))
 	}
-	if appErr := h.service.DeleteComment(c.Context(), src, resourceID, user.ID, perm.CanUser(user.ID, user.Roles, modPerm), postID); appErr != nil {
+	if appErr := h.service.DeleteComment(c.Context(), src, resourceID, user.ID, user.Can(modPerm), postID); appErr != nil {
 		return response.Error(c, appErr)
 	}
 	return response.OKMessage(c, "评论已删除")

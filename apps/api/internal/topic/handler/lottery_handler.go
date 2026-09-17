@@ -58,7 +58,7 @@ func (h *LotteryHandler) CreateLottery(c fiber.Ctx) error {
 		return response.Error(c, appErr)
 	}
 
-	canModerate := perm.CanUser(user.ID, user.Roles, perm.LotteryCreateAny)
+	canModerate := user.Can(perm.LotteryCreateAny)
 	if appErr := h.lotteryService.CreateLottery(c.Context(), user.ID, canModerate, &req); appErr != nil {
 		return response.Error(c, appErr)
 	}
@@ -76,7 +76,7 @@ func (h *LotteryHandler) UpdateLottery(c fiber.Ctx) error {
 		return response.Error(c, appErr)
 	}
 
-	canModerate := perm.CanUser(user.ID, user.Roles, perm.LotteryManageAny)
+	canModerate := user.Can(perm.LotteryManageAny)
 	if appErr := h.lotteryService.UpdateLottery(c.Context(), user.ID, canModerate, &req); appErr != nil {
 		return response.Error(c, appErr)
 	}
@@ -96,7 +96,7 @@ func (h *LotteryHandler) DeleteLottery(c fiber.Ctx) error {
 		return response.Error(c, appErr)
 	}
 
-	canModerate := perm.CanUser(user.ID, user.Roles, perm.LotteryManageAny)
+	canModerate := user.Can(perm.LotteryManageAny)
 	if appErr := h.lotteryService.DeleteLottery(user.ID, canModerate, req.LotteryID); appErr != nil {
 		return response.Error(c, appErr)
 	}
@@ -148,7 +148,7 @@ func (h *LotteryHandler) Draw(c fiber.Ctx) error {
 		return response.Error(c, appErr)
 	}
 
-	canModerate := perm.CanUser(user.ID, user.Roles, perm.LotteryManageAny)
+	canModerate := user.Can(perm.LotteryManageAny)
 	if appErr := h.lotteryService.DrawNow(c.Context(), user.ID, canModerate, req.LotteryID); appErr != nil {
 		return response.Error(c, appErr)
 	}
@@ -166,7 +166,7 @@ func (h *LotteryHandler) Cancel(c fiber.Ctx) error {
 		return response.Error(c, appErr)
 	}
 
-	canModerate := perm.CanUser(user.ID, user.Roles, perm.LotteryManageAny)
+	canModerate := user.Can(perm.LotteryManageAny)
 	if appErr := h.lotteryService.Cancel(user.ID, canModerate, req.LotteryID); appErr != nil {
 		return response.Error(c, appErr)
 	}
@@ -205,7 +205,7 @@ func (h *LotteryHandler) SetFulfillment(c fiber.Ctx) error {
 		return response.Error(c, appErr)
 	}
 
-	canModerate := perm.CanUser(user.ID, user.Roles, perm.LotteryManageAny)
+	canModerate := user.Can(perm.LotteryManageAny)
 	if appErr := h.lotteryService.SetFulfillment(user.ID, canModerate, &req); appErr != nil {
 		return response.Error(c, appErr)
 	}

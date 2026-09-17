@@ -95,7 +95,7 @@ func (h *RatingHandler) DeleteRating(c fiber.Ctx) error {
 	if appErr := utils.ParseQueryAndValidate(c, &req); appErr != nil {
 		return response.Error(c, appErr)
 	}
-	if appErr := h.ratingService.DeleteRating(user.ID, perm.CanUser(user.ID, user.Roles, perm.RatingDeleteAny), req.GalgameRatingID); appErr != nil {
+	if appErr := h.ratingService.DeleteRating(user.ID, user.Can(perm.RatingDeleteAny), req.GalgameRatingID); appErr != nil {
 		return response.Error(c, appErr)
 	}
 	return response.OKMessage(c, "评分已删除")

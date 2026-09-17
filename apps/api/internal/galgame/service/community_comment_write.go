@@ -75,9 +75,9 @@ func (s *CommunityCommentService) afterCreate(userID, galgameID int, content str
 		content, "/galgame/"+strconv.Itoa(galgameID), false, post.CreatedAt)
 }
 
-func (s *CommunityCommentService) UpdateComment(ctx context.Context, userID int, roles []string, postID int64, galgameID *int, content string) (*CommunityPostItem, *errors.AppError) {
+func (s *CommunityCommentService) UpdateComment(ctx context.Context, userID int, can func(perm.Permission) bool, postID int64, galgameID *int, content string) (*CommunityPostItem, *errors.AppError) {
 	content = markdown.NormalizeStoredContent(content)
-	canModerate, oldRaw, found := s.resolveModEdit(ctx, userID, roles, postID)
+	canModerate, oldRaw, found := s.resolveModEdit(ctx, can, postID)
 
 	post, err := s.community.EditPost(ctx, postID, communityclient.EditPostRequest{
 		AuthorID: int64(userID), Body: content, AsModerator: canModerate,
@@ -113,13 +113,13 @@ func (s *CommunityCommentService) refanMentions(userID, galgameID int, content s
 	}
 }
 
-func (s *CommunityCommentService) resolveModEdit(ctx context.Context, userID int, roles []string, postID int64) (canModerate bool, oldRaw string, found bool) {
-	fallback := perm.CanUser(userID, roles, perm.CommentGalgameEdit) ||
-		perm.CanUser(userID, roles, perm.CommentRatingEdit) ||
-		perm.CanUser(userID, roles, perm.CommentWebsiteEdit) ||
-		perm.CanUser(userID, roles, perm.CommentToolsetEdit) ||
-		perm.CanUser(userID, roles, perm.CommentResourceEdit) ||
-		perm.CanUser(userID, roles, perm.CommentQuizEdit)
+func (s *CommunityCommentService) resolveModEdit(ctx context.Context, can func(perm.Permission) bool, postID int64) (canModerate bool, oldRaw string, found bool) {
+	fallback := can(perm.CommentGalgameEdit) ||
+		can(perm.CommentRatingEdit) ||
+		can(perm.CommentWebsiteEdit) ||
+		can(perm.CommentToolsetEdit) ||
+		can(perm.CommentResourceEdit) ||
+		can(perm.CommentQuizEdit)
 	resolved, err := s.community.ResolvePosts(ctx, []int64{postID})
 	if err != nil {
 		return fallback, "", false
@@ -131,7 +131,7 @@ func (s *CommunityCommentService) resolveModEdit(ctx context.Context, userID int
 		found = true
 		oldRaw = ap.Post.ContentRaw
 		if p, ok := commentEditPermForAnchor(ap.Thread.AnchorKind, ap.Thread.AnchorID); ok {
-			return perm.CanUser(userID, roles, p), oldRaw, true
+			return can(p), oldRaw, true
 		}
 		break
 	}

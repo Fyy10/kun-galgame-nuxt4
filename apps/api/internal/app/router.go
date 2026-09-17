@@ -35,7 +35,7 @@ func (a *App) setupRoutes() {
 	auth.Post("/oauth/callback", a.OAuthHandler.Callback)
 	auth.Post("/logout", a.OAuthHandler.Logout)
 
-	userAuth := middleware.Auth(a.Redis, a.OAuthClient)
+	userAuth := a.Authn.Auth()
 	// No rate limiter on purpose. The once-per-day gate is the `daily_check_in`
 	// flag reset at calendar midnight by the daily cron. A 24h-rolling limiter
 	// spilled past midnight, blocked legitimate next-day check-ins, and masked
@@ -60,7 +60,7 @@ func (a *App) setupRoutes() {
 	api.Get("/user/:id", a.UserHandler.GetProfile)
 	api.Get("/user/:id/galgames", a.UserHandler.GetUserGalgames)
 	api.Get("/user/:id/galgame-comments", a.UserHandler.GetUserGalgameComments)
-	api.Get("/user/:id/topics", middleware.OptionalAuth(a.Redis, a.OAuthClient), a.UserHandler.GetUserTopics)
+	api.Get("/user/:id/topics", a.Authn.OptionalAuth(), a.UserHandler.GetUserTopics)
 	api.Get("/user/:id/replies", a.UserHandler.GetUserReplies)
 	api.Get("/user/:id/comments", a.UserHandler.GetUserComments)
 	api.Get("/user/:id/resources", a.UserHandler.GetUserResources)
@@ -71,7 +71,7 @@ func (a *App) setupRoutes() {
 	api.Get("/ranking/topic", a.RankingHandler.GetTopicRanking)
 	api.Get("/ranking/user", a.RankingHandler.GetUserRanking)
 
-	api.Get("/section", middleware.OptionalAuth(a.Redis, a.OAuthClient), a.SectionHandler.GetSectionTopics)
+	api.Get("/section", a.Authn.OptionalAuth(), a.SectionHandler.GetSectionTopics)
 	api.Get("/category", a.SectionHandler.GetCategories)
 
 	api.Get("/doc/article", a.DocArticleHandler.GetArticles)
@@ -90,6 +90,8 @@ func (a *App) setupRoutes() {
 
 	api.Get("/friend-link", a.FriendLinkHandler.List)
 
+	api.Get("/app/version", a.AppReleaseHandler.GetVersion)
+
 	api.Get("/perm/bundles", a.AdminRolePermissionHandler.GetBundles)
 
 	api.Get("/activity", a.ActivityHandler.GetActivity)
@@ -101,14 +103,14 @@ func (a *App) setupRoutes() {
 	api.Get("/news/archive", a.NewsHandler.GetArchive)
 	api.Get("/news/month", a.NewsHandler.GetMonth)
 
-	api.Get("/resource", middleware.OptionalAuth(a.Redis, a.OAuthClient), a.TopicHandler.GetResourceList)
+	api.Get("/resource", a.Authn.OptionalAuth(), a.TopicHandler.GetResourceList)
 
-	api.Get("/search", middleware.OptionalAuth(a.Redis, a.OAuthClient), a.SearchHandler.Search)
-	api.Get("/search/quick", middleware.OptionalAuth(a.Redis, a.OAuthClient), a.SearchHandler.QuickSearch)
-	api.Get("/search/overview", middleware.OptionalAuth(a.Redis, a.OAuthClient), a.SearchHandler.Overview)
-	api.Get("/search/gal-comment", middleware.OptionalAuth(a.Redis, a.OAuthClient), a.SearchHandler.SearchGalComments)
-	api.Get("/search/entity", middleware.OptionalAuth(a.Redis, a.OAuthClient), a.SearchHandler.SearchEntities)
-	api.Get("/search/entity/resolve", middleware.OptionalAuth(a.Redis, a.OAuthClient), a.SearchHandler.ResolveEntities)
+	api.Get("/search", a.Authn.OptionalAuth(), a.SearchHandler.Search)
+	api.Get("/search/quick", a.Authn.OptionalAuth(), a.SearchHandler.QuickSearch)
+	api.Get("/search/overview", a.Authn.OptionalAuth(), a.SearchHandler.Overview)
+	api.Get("/search/gal-comment", a.Authn.OptionalAuth(), a.SearchHandler.SearchGalComments)
+	api.Get("/search/entity", a.Authn.OptionalAuth(), a.SearchHandler.SearchEntities)
+	api.Get("/search/entity/resolve", a.Authn.OptionalAuth(), a.SearchHandler.ResolveEntities)
 
 	api.Get("/rss/topic", a.RSSHandler.GetTopicRSS)
 	api.Get("/rss/galgame", a.RSSHandler.GetGalgameRSS)
@@ -162,11 +164,11 @@ func (a *App) setupRoutes() {
 	api.Get("/galgame-rating/all", a.GalgameRatingHandler.GetAllRatings)
 	api.Get(
 		"/galgame-quiz/:id/answers",
-		middleware.OptionalAuth(a.Redis, a.OAuthClient),
+		a.Authn.OptionalAuth(),
 		a.GalgameQuizHandler.GetQuizAnswers,
 	)
 
-	optAuth := api.Group("", middleware.OptionalAuth(a.Redis, a.OAuthClient))
+	optAuth := api.Group("", a.Authn.OptionalAuth())
 	// The rating and resource families sit here, not in the public group above:
 	// leaving them there made optionalUID return 0 unconditionally and silently
 	// broke the FindLikedSet batch fix, so every row rendered as not-liked for
@@ -182,7 +184,7 @@ func (a *App) setupRoutes() {
 
 	// On `api` with an explicit middleware, and BEFORE /topic/:tid: a later
 	// static /topic/draft is captured by the earlier param route (tid="draft").
-	topicDraftAuth := middleware.Auth(a.Redis, a.OAuthClient)
+	topicDraftAuth := a.Authn.Auth()
 	api.Get("/topic/draft", topicDraftAuth, a.TopicDraftHandler.List)
 	api.Post("/topic/draft", topicDraftAuth, a.TopicDraftHandler.Save)
 	api.Get("/topic/draft/:id", topicDraftAuth, a.TopicDraftHandler.Get)
@@ -223,13 +225,13 @@ func (a *App) setupRoutes() {
 	// THE AUTH BOUNDARY. This empty-prefix group registers Auth as Use() on
 	// "/api", so it applies to EVERY route below this line. Nothing public or
 	// optAuth may be registered after this point.
-	authed := api.Group("", middleware.Auth(a.Redis, a.OAuthClient))
+	authed := api.Group("", a.Authn.Auth())
 	authed.Get("/auth/me", a.OAuthHandler.Me)
 
 	authed.Get("/perm/mine", a.AdminUserPermissionHandler.GetMine)
 
 	authed.Get("/topic/interactions/mine", a.TopicHandler.MyInteractions)
-	authed.Post("/topic", a.TopicHandler.Create)
+	authed.Post("/topic", middleware.Idempotent(a.Redis, "topic.create"), a.TopicHandler.Create)
 	authed.Put("/topic/:tid", a.TopicHandler.Update)
 	authed.Put("/topic/:tid/like", a.TopicHandler.ToggleLike)
 	authed.Put("/topic/:tid/dislike", a.TopicHandler.ToggleDislike)
@@ -239,7 +241,7 @@ func (a *App) setupRoutes() {
 	authed.Put("/topic/:tid/hide", a.TopicHandler.ToggleHide)
 	authed.Put("/topic/:tid/best-answer", a.TopicHandler.SetBestAnswer)
 
-	authed.Post("/topic/:tid/reply", a.ReplyHandler.CreateReply)
+	authed.Post("/topic/:tid/reply", middleware.Idempotent(a.Redis, "topic.reply.create"), a.ReplyHandler.CreateReply)
 	authed.Put("/topic/:tid/reply", a.ReplyHandler.UpdateReply)
 	authed.Delete("/topic/:tid/reply", a.ReplyHandler.DeleteReply)
 	authed.Put("/topic/:tid/reply/like", a.ReplyHandler.ToggleReplyLike)

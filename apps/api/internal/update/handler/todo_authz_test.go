@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	adminModel "kun-galgame-api/internal/admin/model"
+	"kun-galgame-api/internal/middleware"
 )
 
 func TestCanEndClaimedTodo(t *testing.T) {
@@ -26,7 +27,7 @@ func TestCanEndClaimedTodo(t *testing.T) {
 		{"stranger on a row with no claimer", unclaimed, 202, []string{"user"}, false},
 	}
 	for _, c := range cases {
-		if got := canEndClaimedTodo(c.todo, c.uid, c.roles); got != c.want {
+		if got := canEndClaimedTodo(c.todo, &middleware.UserInfo{ID: c.uid, Roles: c.roles}); got != c.want {
 			t.Errorf("%s: canEndClaimedTodo = %v, want %v", c.name, got, c.want)
 		}
 	}

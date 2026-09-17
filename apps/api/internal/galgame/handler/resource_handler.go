@@ -112,7 +112,7 @@ func (h *ResourceHandler) UpdateResource(c fiber.Ctx) error {
 	if appErr := utils.ParseAndValidate(c, &req); appErr != nil {
 		return response.Error(c, appErr)
 	}
-	if appErr := h.resourceService.UpdateResource(c.Context(), user.ID, perm.CanUser(user.ID, user.Roles, perm.ResourceEditAny), &req); appErr != nil {
+	if appErr := h.resourceService.UpdateResource(c.Context(), user.ID, user.Can(perm.ResourceEditAny), &req); appErr != nil {
 		return response.Error(c, appErr)
 	}
 	return response.OKMessage(c, "资源更新成功")
@@ -127,7 +127,7 @@ func (h *ResourceHandler) DeleteResource(c fiber.Ctx) error {
 	if appErr := utils.ParseQueryAndValidate(c, &req); appErr != nil {
 		return response.Error(c, appErr)
 	}
-	if appErr := h.resourceService.DeleteResource(user.ID, perm.CanUser(user.ID, user.Roles, perm.ResourceDeleteAny), req.GalgameResourceID); appErr != nil {
+	if appErr := h.resourceService.DeleteResource(user.ID, user.Can(perm.ResourceDeleteAny), req.GalgameResourceID); appErr != nil {
 		return response.Error(c, appErr)
 	}
 	return response.OKMessage(c, "资源已删除")
@@ -179,7 +179,7 @@ func (h *ResourceHandler) MarkValid(c fiber.Ctx) error {
 	if appErr := utils.ParseAndValidate(c, &req); appErr != nil {
 		return response.Error(c, appErr)
 	}
-	canEditAny := perm.CanUser(user.ID, user.Roles, perm.ResourceEditAny)
+	canEditAny := user.Can(perm.ResourceEditAny)
 	if appErr := h.resourceService.MarkValid(user.ID, canEditAny, req.GalgameResourceID); appErr != nil {
 		return response.Error(c, appErr)
 	}

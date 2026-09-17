@@ -60,7 +60,7 @@ func (h *GalgameCollectionHandler) Update(c fiber.Ctx) error {
 		return response.Error(c, appErr)
 	}
 	if appErr := h.collectionService.Update(c.Context(), user.ID, token,
-		perm.CanUser(user.ID, user.Roles, perm.CollectionEditAny), cid, &req); appErr != nil {
+		user.Can(perm.CollectionEditAny), cid, &req); appErr != nil {
 		return response.Error(c, appErr)
 	}
 	return response.OKMessage(c, "收藏夹已更新")
@@ -80,7 +80,7 @@ func (h *GalgameCollectionHandler) Delete(c fiber.Ctx) error {
 		return response.Error(c, appErr)
 	}
 	if appErr := h.collectionService.Delete(c.Context(), user.ID, token,
-		perm.CanUser(user.ID, user.Roles, perm.CollectionDeleteAny), cid); appErr != nil {
+		user.Can(perm.CollectionDeleteAny), cid); appErr != nil {
 		return response.Error(c, appErr)
 	}
 	return response.OKMessage(c, "收藏夹已删除")

@@ -25,6 +25,12 @@ func IsCreator(roles []string) bool {
 	return Has(roles, Creator)
 }
 
+func WithoutStaff(roles []string) []string {
+	return slices.DeleteFunc(slices.Clone(roles), func(r string) bool {
+		return r == Moderator || r == Admin || r == Ren
+	})
+}
+
 func Union(roles, siteRoles []string) []string {
 	if len(siteRoles) == 0 {
 		return roles

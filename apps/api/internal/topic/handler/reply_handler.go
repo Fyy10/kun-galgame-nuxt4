@@ -103,7 +103,7 @@ func (h *ReplyHandler) UpdateReply(c fiber.Ctx) error {
 		return response.Error(c, appErr)
 	}
 	if appErr := h.replyService.UpdateReply(c.Context(), user.ID,
-		perm.CanUser(user.ID, user.Roles, perm.ReplyEditAny), &req); appErr != nil {
+		user.Can(perm.ReplyEditAny), &req); appErr != nil {
 		return response.Error(c, appErr)
 	}
 
@@ -121,7 +121,7 @@ func (h *ReplyHandler) DeleteReply(c fiber.Ctx) error {
 		return response.Error(c, errors.ErrBadRequest("无效的回复 ID"))
 	}
 
-	if appErr := h.replyService.DeleteReply(c.Context(), user.ID, perm.CanUser(user.ID, user.Roles, perm.ReplyDeleteAny), replyID); appErr != nil {
+	if appErr := h.replyService.DeleteReply(c.Context(), user.ID, user.Can(perm.ReplyDeleteAny), replyID); appErr != nil {
 		return response.Error(c, appErr)
 	}
 
@@ -212,7 +212,7 @@ func (h *ReplyHandler) PinReply(c fiber.Ctx) error {
 		return response.Error(c, appErr)
 	}
 
-	if appErr := h.replyService.PinReply(c.Context(), user.ID, perm.CanUser(user.ID, user.Roles, perm.ReplyPin), tid, req.ReplyID); appErr != nil {
+	if appErr := h.replyService.PinReply(c.Context(), user.ID, user.Can(perm.ReplyPin), tid, req.ReplyID); appErr != nil {
 		return response.Error(c, appErr)
 	}
 

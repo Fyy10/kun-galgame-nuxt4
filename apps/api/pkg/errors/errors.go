@@ -53,7 +53,9 @@ const (
 	// same request with confirm_duplicates mints anyway — so the client has to
 	// be able to tell this refusal apart from every other 409 and offer that
 	// choice. Without its own code it read as a dead end in English.
-	CodeDuplicateSuspects = 236
+	CodeDuplicateSuspects   = 236
+	CodeIdempotencyInFlight = 237
+	CodeIdempotencyMismatch = 238
 )
 
 func ErrUnauthorized(msg string) *AppError {
@@ -74,6 +76,14 @@ func ErrReauthRequired(msg string) *AppError {
 
 func ErrForbidden(msg string) *AppError {
 	return New(CodeBiz, msg, 403)
+}
+
+func ErrIdempotencyInFlight() *AppError {
+	return New(CodeIdempotencyInFlight, "相同的请求正在处理中, 请稍后重试", 409)
+}
+
+func ErrIdempotencyMismatch() *AppError {
+	return New(CodeIdempotencyMismatch, "Idempotency-Key 已用于另一份请求内容", 422)
 }
 
 func ErrBadRequest(msg string) *AppError {

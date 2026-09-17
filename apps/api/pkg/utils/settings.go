@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"net/url"
+	"strconv"
 
 	"github.com/gofiber/fiber/v3"
 )
@@ -33,7 +34,12 @@ func readSettings(c fiber.Ctx) kunSettings {
 	return settings
 }
 
+const NSFWHeader = "X-Kungal-Nsfw"
+
 func IsSFW(c fiber.Ctx) bool {
+	if nsfw, err := strconv.ParseBool(c.Get(NSFWHeader)); err == nil {
+		return !nsfw
+	}
 	limit := readSettings(c).ShowKUNGalgameContentLimit
 	return limit != "nsfw" && limit != "all"
 }

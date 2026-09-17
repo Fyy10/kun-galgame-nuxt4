@@ -27,7 +27,7 @@ func (s *LotteryService) GetEntrants(
 	viewerID := 0
 	if userInfo != nil {
 		viewerID = userInfo.ID
-		canModerate = perm.CanUser(userInfo.ID, userInfo.Roles, perm.LotteryViewRestricted)
+		canModerate = userInfo.Can(perm.LotteryViewRestricted)
 	}
 	if !lottery.ShowEntrants && lottery.UserID != viewerID && !canModerate {
 		return []dto.LotteryEntrantResponse{}, nil

@@ -57,6 +57,9 @@ func (h *UserPermissionHandler) GetMine(c fiber.Ctx) error {
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
+	if user.ViaBearer() {
+		return response.OK(c, dto.MyPermissionsResponse{Permissions: []string{}})
+	}
 	return response.OK(c, h.svc.MyPermissions(user.ID, user.Roles))
 }
 

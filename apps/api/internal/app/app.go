@@ -11,6 +11,7 @@ import (
 	adminHandler "kun-galgame-api/internal/admin/handler"
 	adminRepo "kun-galgame-api/internal/admin/repository"
 	adminService "kun-galgame-api/internal/admin/service"
+	appReleaseHandler "kun-galgame-api/internal/apprelease/handler"
 	"kun-galgame-api/internal/community/anchor"
 	"kun-galgame-api/internal/community/engagement"
 	communityHandler "kun-galgame-api/internal/community/handler"
@@ -40,6 +41,7 @@ import (
 	msgHandler "kun-galgame-api/internal/message/handler"
 	msgRepo "kun-galgame-api/internal/message/repository"
 	msgService "kun-galgame-api/internal/message/service"
+	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/internal/moemoepoint"
 	newsHandler "kun-galgame-api/internal/news/handler"
 	rankingHandler "kun-galgame-api/internal/ranking/handler"
@@ -101,6 +103,7 @@ type App struct {
 	OAuthClient *oauth.Client
 	UserState   *repository.StateRepository
 	UserClient  *userclient.Client
+	Authn       *middleware.Authenticator
 
 	OAuthHandler                   *handler.OAuthHandler
 	UserHandler                    *handler.UserHandler
@@ -130,6 +133,7 @@ type App struct {
 	WebsiteTagHandler              *websiteHandler.TagHandler
 	WebsiteTagGroupHandler         *websiteHandler.TagGroupHandler
 	UpdateHandler                  *updateHandler.UpdateHandler
+	AppReleaseHandler              *appReleaseHandler.ReleaseHandler
 	FriendLinkHandler              *friendHandler.FriendLinkHandler
 	TrustHandler                   *trustHandler.TrustHandler
 	RSSHandler                     *rssHandler.RSSHandler
@@ -356,6 +360,24 @@ func New(cfg *config.Config) *App {
 	}
 	communityBooster := communitytrust.New(communityCli, rdb, db)
 
+	var bearerVerifier middleware.AccessTokenVerifier
+	if cfg.Bearer.Enabled() {
+		bearerVerifier = oauth.NewAccessTokenVerifier(
+			oauth.NewJWKS(cfg.Bearer.JWKSURL), cfg.Bearer.Issuer, cfg.Bearer.ClientIDs,
+		)
+		slog.Info("Bearer 直连已开启", "issuer", cfg.Bearer.Issuer, "clients", cfg.Bearer.ClientIDs)
+	}
+	authn := middleware.NewAuthenticator(rdb, oauthClient, middleware.NewBearer(
+		bearerVerifier, rdb,
+		func(userID int, roles []string) error {
+			if err := userStateRepo.Ensure(userID); err != nil {
+				return err
+			}
+			communityBooster.Boost(userID, roles)
+			return nil
+		},
+	))
+
 	var linkChecker *linkcheck.Client
 	if cfg.LinkChecker.BaseURL != "" && cfg.LinkChecker.APIKey != "" {
 		linkChecker = linkcheck.New(linkcheck.Config{
@@ -546,6 +568,7 @@ func New(cfg *config.Config) *App {
 		DB: db, Redis: rdb, Config: cfg, OAuthClient: oauthClient,
 		UserState:                      userStateRepo,
 		UserClient:                     uc,
+		Authn:                          authn,
 		OAuthHandler:                   handler.NewOAuthHandler(authService, cfg.Server.Mode == "prod", communityBooster),
 		UserHandler:                    handler.NewUserHandler(userService, userContentService),
 		UserProfileHandler:             handler.NewProfileHandler(oauthClient, uc),
@@ -574,6 +597,7 @@ func New(cfg *config.Config) *App {
 		WebsiteTagHandler:              websiteHandler.NewTagHandler(websiteTagSvc),
 		WebsiteTagGroupHandler:         websiteHandler.NewTagGroupHandler(websiteTagGroupSvc),
 		UpdateHandler:                  updateHandler.NewUpdateHandler(updateRepo.NewUpdateRepository(db), uc, trustCheck, trustScan),
+		AppReleaseHandler:              appReleaseHandler.NewReleaseHandler(cfg.AppRelease),
 		FriendLinkHandler:              friendHandler.NewFriendLinkHandler(friendRepo.NewFriendLinkRepository(db), cfg.NextMoeAPI.ImageCDNBase),
 		TrustHandler:                   trustHandler.NewTrustHandler(trustService.NewTrustService(trustCli, cfg.Trust.Site), trustEnforce, cfg.Trust.CallbackSecret),
 		RSSHandler:                     rssHandler.NewRSSHandler(rssRepo.NewRSSRepository(db), gc, uc),

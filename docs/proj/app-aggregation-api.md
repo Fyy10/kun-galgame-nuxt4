@@ -1,5 +1,11 @@
 # App 聚合 API 设计备忘（2026-07-01）
 
+> **已被取代（2026-09-17）**：App 直接复用论坛现有 `/api/*` 与 `{code,message,data}` 信封，
+> Bearer 鉴权已落地。现行契约见 [app-direct-api.md](./app-direct-api.md)。
+> 下文另起 `/app/v1` + problem+json 的方向**不再采用**：App 消费的就是论坛现有面，
+> 另起一套会让同一数据两种信封并存；将来真出现负载分叉，归宿是 mobile BFF，而不是平行 API 面。
+> 以下内容仅作历史记录保留。
+
 > 本仓自有工程笔记（**非** infra 镜像）。记录「鲲 Galgame」Flutter App / 开发者平台
 > 对外 API 的架构决策，便于依赖就绪后直接开工。
 > **当前状态：方向与工具链已确认可行，落地 gated 于身份层的第三方 token 鉴权。**

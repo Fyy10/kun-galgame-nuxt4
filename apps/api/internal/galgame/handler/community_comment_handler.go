@@ -91,7 +91,7 @@ func (h *CommunityCommentHandler) Update(c fiber.Ctx) error {
 	if appErr := utils.ParseAndValidate(c, &req); appErr != nil {
 		return response.Error(c, appErr)
 	}
-	item, appErr := h.service.UpdateComment(c.Context(), user.ID, user.Roles, postID, optionalGid(c), req.Content)
+	item, appErr := h.service.UpdateComment(c.Context(), user.ID, user.Can, postID, optionalGid(c), req.Content)
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
@@ -107,7 +107,7 @@ func (h *CommunityCommentHandler) Delete(c fiber.Ctx) error {
 	if !ok {
 		return response.Error(c, errors.ErrBadRequest("非法的评论 ID"))
 	}
-	if appErr := h.service.DeleteComment(c.Context(), user.ID, perm.CanUser(user.ID, user.Roles, perm.CommentGalgameDelete), postID, optionalGid(c)); appErr != nil {
+	if appErr := h.service.DeleteComment(c.Context(), user.ID, user.Can(perm.CommentGalgameDelete), postID, optionalGid(c)); appErr != nil {
 		return response.Error(c, appErr)
 	}
 	return response.OKMessage(c, "评论已删除")

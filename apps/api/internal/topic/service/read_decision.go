@@ -53,8 +53,8 @@ func requireTopicRead(repo *repository.TopicRepository, topic *topicModel.Topic,
 	viewer := topicViewer{}
 	if user != nil {
 		viewer = topicViewer{ID: user.ID, Roles: user.Roles, Authenticated: true,
-			ViewHidden:     perm.CanUser(user.ID, user.Roles, perm.TopicViewHidden),
-			ViewRestricted: perm.CanUser(user.ID, user.Roles, perm.TopicViewRestricted)}
+			ViewHidden:     user.Can(perm.TopicViewHidden),
+			ViewRestricted: user.Can(perm.TopicViewRestricted)}
 	}
 	if topic.Status == 1 && !(viewer.Authenticated && (viewer.ID == topic.UserID || viewer.ViewHidden)) {
 		return nil, errors.ErrNotFound("未找到该话题")
@@ -74,7 +74,7 @@ func requireTopicRead(repo *repository.TopicRepository, topic *topicModel.Topic,
 }
 
 func topicDetailGrants(topic *topicModel.Topic, user *middleware.UserInfo, grants []topicModel.TopicAccessGrant) *dto.TopicAccessGrants {
-	if user == nil || (user.ID != topic.UserID && !perm.CanUser(user.ID, user.Roles, perm.TopicEditAny)) {
+	if user == nil || (user.ID != topic.UserID && !user.Can(perm.TopicEditAny)) {
 		return nil
 	}
 	out := &dto.TopicAccessGrants{Roles: []string{}, UserIDs: []int{}}

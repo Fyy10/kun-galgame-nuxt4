@@ -127,6 +127,7 @@ export default defineNuxtConfig({
     exclude: [
       '/admin',
       '/admin/**',
+      '/app/oauth/**',
       '/auth/**',
       '/edit/**',
       '/message',

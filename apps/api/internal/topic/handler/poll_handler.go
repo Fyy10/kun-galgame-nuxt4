@@ -30,7 +30,7 @@ func (h *PollHandler) CreatePoll(c fiber.Ctx) error {
 		return response.Error(c, appErr)
 	}
 
-	if appErr := h.pollService.CreatePoll(c.Context(), user.ID, perm.CanUser(user.ID, user.Roles, perm.PollCreateAny), &req); appErr != nil {
+	if appErr := h.pollService.CreatePoll(c.Context(), user.ID, user.Can(perm.PollCreateAny), &req); appErr != nil {
 		return response.Error(c, appErr)
 	}
 
@@ -48,7 +48,7 @@ func (h *PollHandler) UpdatePoll(c fiber.Ctx) error {
 		return response.Error(c, appErr)
 	}
 
-	if appErr := h.pollService.UpdatePoll(c.Context(), user.ID, perm.CanUser(user.ID, user.Roles, perm.PollEditAny), &req); appErr != nil {
+	if appErr := h.pollService.UpdatePoll(c.Context(), user.ID, user.Can(perm.PollEditAny), &req); appErr != nil {
 		return response.Error(c, appErr)
 	}
 
@@ -103,7 +103,7 @@ func (h *PollHandler) DeletePoll(c fiber.Ctx) error {
 		return response.Error(c, appErr)
 	}
 
-	if appErr := h.pollService.DeletePoll(c.Context(), user.ID, perm.CanUser(user.ID, user.Roles, perm.PollDeleteAny), req.PollID); appErr != nil {
+	if appErr := h.pollService.DeletePoll(c.Context(), user.ID, user.Can(perm.PollDeleteAny), req.PollID); appErr != nil {
 		return response.Error(c, appErr)
 	}
 

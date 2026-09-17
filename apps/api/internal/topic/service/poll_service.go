@@ -149,7 +149,7 @@ func (s *PollService) GetPollsByTopic(
 	canModerate := false
 	if userInfo != nil {
 		userID = userInfo.ID
-		canModerate = perm.CanUser(userInfo.ID, userInfo.Roles, perm.PollViewRestricted)
+		canModerate = userInfo.Can(perm.PollViewRestricted)
 	}
 
 	responses := make([]dto.TopicPollResponse, 0, len(polls))
@@ -410,7 +410,7 @@ func (s *PollService) GetVoteLog(
 	canModerate := false
 	if userInfo != nil {
 		userID = userInfo.ID
-		canModerate = perm.CanUser(userInfo.ID, userInfo.Roles, perm.PollViewRestricted)
+		canModerate = userInfo.Can(perm.PollViewRestricted)
 	}
 
 	hasVoted, _ := s.pollRepo.HasUserVoted(pollID, userID)
