@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"mime"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -343,9 +345,6 @@ type topicsListBody struct {
 		ID       string `json:"id"`
 		Category string `json:"category"`
 		IsNSFW   bool   `json:"is_nsfw"`
-		User     struct {
-			ID string `json:"id"`
-		} `json:"user"`
 	} `json:"items"`
 	NextCursor *string `json:"next_cursor"`
 }
@@ -686,11 +685,27 @@ func TestV1TopicsItemFields(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("%d %s", resp.StatusCode, body)
 	}
+	var envelope map[string]json.RawMessage
+	if err := json.Unmarshal(body, &envelope); err != nil {
+		t.Fatal(err)
+	}
+	if keys := slices.Sorted(maps.Keys(envelope)); !slices.Equal(keys, []string{"items", "object"}) {
+		t.Errorf("last page keys %v, want [items object]", keys)
+	}
 	var list struct {
 		Items []map[string]json.RawMessage `json:"items"`
 	}
 	if err := json.Unmarshal(body, &list); err != nil {
 		t.Fatal(err)
+	}
+	itemKeys := []string{
+		"author", "bumped_at", "category", "comment_count", "cover_images", "created_at", "has_best_answer", "id",
+		"is_nsfw", "like_count", "mini_apps", "object", "reply_count", "sections", "state", "title", "upvoted_at", "view_count",
+	}
+	for _, it := range list.Items {
+		if keys := slices.Sorted(maps.Keys(it)); !slices.Equal(keys, itemKeys) {
+			t.Errorf("topic %s keys %v, want %v", it["id"], keys, itemKeys)
+		}
 	}
 	byID := map[string]map[string]json.RawMessage{}
 	for _, it := range list.Items {
@@ -706,7 +721,7 @@ func TestV1TopicsItemFields(t *testing.T) {
 		"910000201": {
 			"object": `"topic"`, "title": `"v1-topic-910000201"`, "state": `"published"`, "category": `"galgame"`,
 			"sections": `["g-walkthrough"]`, "cover_images": cover, "mini_apps": `["poll"]`,
-			"user":       `{"object":"user","id":"910000001","name":"alice","avatar":null}`,
+			"author":     `{"object":"user","id":"910000001","name":"alice","avatar":null}`,
 			"view_count": `10`, "like_count": `1`, "reply_count": `0`, "comment_count": `0`,
 			"has_best_answer": `false`, "is_nsfw": `false`,
 			"bumped_at": `"2026-01-15T15:00:00Z"`, "created_at": `"2026-01-15T12:00:00Z"`, "upvoted_at": `"2026-01-15T12:00:00Z"`,
@@ -718,8 +733,8 @@ func TestV1TopicsItemFields(t *testing.T) {
 				`","width":null,"height":null,"thumbhash":null,"sexual":null}]`,
 		},
 		"910000204": {"category": `"others"`, "view_count": `30`},
-		"910000213": {"user": `{"object":"user","id":"910000003","name":"bob","avatar":null}`},
-		"910000217": {"user": `{"object":"user","id":"910000004","name":null,"avatar":null}`},
+		"910000213": {"author": `{"object":"user","id":"910000003","name":"bob","avatar":null}`},
+		"910000217": {"author": `{"object":"user","id":"910000004","name":null,"avatar":null}`},
 	} {
 		item, ok := byID[id]
 		if !ok {

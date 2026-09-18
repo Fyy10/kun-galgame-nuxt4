@@ -21,7 +21,7 @@ const topic = (id: string, over: Partial<TopicSummary> = {}): TopicSummary => ({
   category: 'galgame',
   sections: ['g-chatting'],
   cover_images: [],
-  user: user(),
+  author: user(),
   view_count: 10,
   like_count: 0,
   reply_count: 0,

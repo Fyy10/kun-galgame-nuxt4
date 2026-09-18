@@ -190,12 +190,6 @@
             "maxLength": 4,
             "type": "string",
             "x-vocabulary-closed": true
-          },
-          "total": {
-            "description": "Present only when include_total=true. Same visibility gate as items.",
-            "format": "int64",
-            "minimum": 0,
-            "type": "integer"
           }
         },
         "required": [
@@ -227,12 +221,6 @@
             "maxLength": 4,
             "type": "string",
             "x-vocabulary-closed": true
-          },
-          "total": {
-            "description": "Present only when include_total=true. Same visibility gate as items.",
-            "format": "int64",
-            "minimum": 0,
-            "type": "integer"
           }
         },
         "required": [
@@ -264,12 +252,6 @@
             "maxLength": 4,
             "type": "string",
             "x-vocabulary-closed": true
-          },
-          "total": {
-            "description": "Present only when include_total=true. Same visibility gate as items.",
-            "format": "int64",
-            "minimum": 0,
-            "type": "integer"
           }
         },
         "required": [
@@ -460,6 +442,10 @@
       },
       "TopicSummary": {
         "properties": {
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Topic author."
+          },
           "bumped_at": {
             "description": "Bump time. Replies, comments, poll votes and lottery events set it to now, but only for topics created within the last 3 months. It is not a last-activity time.",
             "format": "date-time",
@@ -618,10 +604,6 @@
               "null"
             ]
           },
-          "user": {
-            "$ref": "#/components/schemas/UserRef",
-            "description": "Author."
-          },
           "view_count": {
             "description": "Lifetime view count.",
             "format": "int64",
@@ -637,7 +619,7 @@
           "category",
           "sections",
           "cover_images",
-          "user",
+          "author",
           "view_count",
           "like_count",
           "reply_count",

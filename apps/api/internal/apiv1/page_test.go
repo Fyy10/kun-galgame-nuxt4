@@ -21,7 +21,7 @@ type pageIn struct {
 }
 
 type pageOut struct {
-	Body repr.List[string]
+	Body repr.CountedList[string]
 }
 
 func registerPage(api huma.API) {
@@ -36,7 +36,7 @@ func registerPage(api huma.API) {
 		if _, err := collect.DecodeCursor(in.Cursor, in.Sort, fp); err != nil {
 			return nil, err
 		}
-		return &pageOut{Body: repr.NewList([]string{strconv.Itoa(in.Limit)}, nil)}, nil
+		return &pageOut{Body: repr.NewCountedList([]string{strconv.Itoa(in.Limit)}, nil, nil)}, nil
 	})
 }
 

@@ -6,7 +6,7 @@ const props = defineProps<{
   topic: TopicSummary
 }>()
 
-const author = computed(() => toKunUser(props.topic.user))
+const author = computed(() => toKunUser(props.topic.author))
 const actionsCount = computed(
   () => props.topic.reply_count + props.topic.comment_count
 )

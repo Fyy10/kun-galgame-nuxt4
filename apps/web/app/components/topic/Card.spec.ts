@@ -27,7 +27,7 @@ const topic = (over: Partial<TopicSummary> = {}): TopicSummary => ({
   category: 'galgame',
   sections: ['g-chatting'],
   cover_images: [],
-  user: user(),
+  author: user(),
   view_count: 12345,
   like_count: 0,
   reply_count: 1,
@@ -45,7 +45,7 @@ describe('TopicCard', () => {
   it('renders a deleted author as 已注销用户, the formatted view count, and section badges', async () => {
     const wrapper = await mountSuspended(TopicCard, {
       props: {
-        topic: topic({ user: user({ name: null, avatar: null }) })
+        topic: topic({ author: user({ name: null, avatar: null }) })
       }
     })
     expect(wrapper.text()).toContain('已注销用户')

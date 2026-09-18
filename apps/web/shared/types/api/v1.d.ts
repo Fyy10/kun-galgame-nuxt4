@@ -152,11 +152,6 @@ export interface components {
              * @enum {string}
              */
             object: "list";
-            /**
-             * Format: int64
-             * @description Present only when include_total=true. Same visibility gate as items.
-             */
-            total?: number;
         };
         ListProblemType: {
             /** @description Members of this page. Empty array, never null. */
@@ -168,11 +163,6 @@ export interface components {
              * @enum {string}
              */
             object: "list";
-            /**
-             * Format: int64
-             * @description Present only when include_total=true. Same visibility gate as items.
-             */
-            total?: number;
         };
         ListTopicSummary: {
             /** @description Members of this page. Empty array, never null. */
@@ -184,11 +174,6 @@ export interface components {
              * @enum {string}
              */
             object: "list";
-            /**
-             * Format: int64
-             * @description Present only when include_total=true. Same visibility gate as items.
-             */
-            total?: number;
         };
         Problem: {
             /** @description Top-level error code. UPPER_SNAKE. */
@@ -258,6 +243,8 @@ export interface components {
             type: string;
         };
         TopicSummary: {
+            /** @description Topic author. */
+            author: components["schemas"]["UserRef"];
             /**
              * Format: date-time
              * @description Bump time. Replies, comments, poll votes and lottery events set it to now, but only for topics created within the last 3 months. It is not a last-activity time.
@@ -317,8 +304,6 @@ export interface components {
              * @description Time of the latest upvote. null when the topic has never been upvoted.
              */
             upvoted_at: string | null;
-            /** @description Author. */
-            user: components["schemas"]["UserRef"];
             /**
              * Format: int64
              * @description Lifetime view count.

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"kun-galgame-api/internal/apiv1"
+	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/gates"
 	"kun-galgame-api/internal/apiv1/repr"
 
@@ -177,6 +178,12 @@ func TestG8ForbiddenName(t *testing.T) {
 	expect(t, gates.CheckG8(spec(t, get[struct {
 		Gid repr.DecimalID `json:"gid" doc:"Galgame."`
 	}]("/x"))), ".gid is a forbidden name")
+}
+
+func TestG8UserIsAForbiddenName(t *testing.T) {
+	expect(t, gates.CheckG8(spec(t, get[struct {
+		User repr.UserRef `json:"user" doc:"Author."`
+	}]("/x"))), ".user is a forbidden name")
 }
 
 func TestG8SameNameDifferentObject(t *testing.T) {
@@ -361,6 +368,34 @@ func TestF1AcceptsAnIncludeFlag(t *testing.T) {
 	})
 	if errs := gates.CheckF1(doc); len(errs) > 0 {
 		t.Fatal(errs)
+	}
+}
+
+type countedIn struct {
+	collect.Total
+}
+
+func listing[In, B any](api huma.API) {
+	huma.Register(api, apiv1.Public(huma.Operation{OperationID: "listThings", Method: http.MethodGet, Path: "/things", Summary: "Things"}),
+		func(context.Context, *In) (*struct{ Body B }, error) { return nil, nil })
+}
+
+func TestF9TotalWithoutIncludeTotal(t *testing.T) {
+	expect(t, gates.CheckF9(spec(t, listing[struct{}, repr.CountedList[repr.UserRef]])),
+		"GET /things 200 application/json declares total but the operation has no include_total parameter")
+}
+
+func TestF9IncludeTotalWithoutTotal(t *testing.T) {
+	expect(t, gates.CheckF9(spec(t, listing[countedIn, repr.List[repr.UserRef]])),
+		"GET /things 200 application/json does not declare total but the operation accepts include_total")
+}
+
+func TestF9PairedTotalPasses(t *testing.T) {
+	if errs := gates.CheckAll(spec(t, listing[countedIn, repr.CountedList[repr.UserRef]])); len(errs) > 0 {
+		t.Fatalf("a counted collection failed:\n%s", strings.Join(errs, "\n"))
+	}
+	if errs := gates.CheckAll(spec(t, listing[struct{}, repr.List[repr.UserRef]])); len(errs) > 0 {
+		t.Fatalf("an uncounted collection failed:\n%s", strings.Join(errs, "\n"))
 	}
 }
 

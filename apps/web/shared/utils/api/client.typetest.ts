@@ -8,6 +8,7 @@ type Equal<A, B> =
 
 declare const api: ReturnType<typeof createApiClient>
 declare const topic: components['schemas']['TopicSummary']
+declare const page: components['schemas']['ListTopicSummary']
 
 // @ts-expect-error no such path
 api.GET('/topic')
@@ -21,6 +22,10 @@ api.GET('/topics', { params: { query: { sort: 'bumped' } } })
 // @ts-expect-error misspelled field
 const _titel = topic.titel
 void _titel
+
+// @ts-expect-error the topic list offers no include_total
+const _total = page.total
+void _total
 
 const _assertGetTopics = async () => {
   const client = createApiClient({ origin: 'https://www.kungal.com' })

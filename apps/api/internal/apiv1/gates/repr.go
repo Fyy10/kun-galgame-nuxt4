@@ -19,7 +19,7 @@ var g8Allow = map[string]bool{
 
 var g8Forbidden = []string{
 	"kind", "gid", "tid", "uid", "rid", "pid", "cid",
-	"created", "updated", "edited", "view", "status_update_time",
+	"created", "updated", "edited", "view", "status_update_time", "user",
 }
 
 var g6Banned = []string{"code", "message", "data", "success", "status", "timestamp", "error"}
@@ -303,6 +303,37 @@ func CheckF1(doc *huma.OpenAPI) []string {
 			}
 		}
 	})
+	return errs
+}
+
+func CheckF9(doc *huma.OpenAPI) []string {
+	var errs []string
+	for path, item := range doc.Paths {
+		for _, op := range pathOps(item) {
+			accepts := slices.ContainsFunc(op.Parameters, func(p *huma.Param) bool {
+				return p.In == "query" && p.Name == "include_total"
+			})
+			for status, resp := range op.Responses {
+				if !isSuccess(status) {
+					continue
+				}
+				for mt, content := range resp.Content {
+					s := deref(doc, content.Schema)
+					if s == nil {
+						continue
+					}
+					at := fmt.Sprintf("%s %s %s %s", opMethod(op), path, status, mt)
+					_, declares := s.Properties["total"]
+					switch {
+					case declares && !accepts:
+						errs = append(errs, "F9: "+at+" declares total but the operation has no include_total parameter")
+					case accepts && !declares:
+						errs = append(errs, "F9: "+at+" does not declare total but the operation accepts include_total")
+					}
+				}
+			}
+		}
+	}
 	return errs
 }
 

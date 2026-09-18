@@ -57,7 +57,7 @@ type TopicSummary struct {
 	Category      string         `json:"category" enum:"galgame,technique,others" maxLength:"9" doc:"Topic category."`
 	Sections      []SectionSlug  `json:"sections" maxItems:"3" doc:"Section slugs, in stored order. Empty array if none. Hyphenated URL segments of /section/{key}."`
 	CoverImages   []repr.Image   `json:"cover_images" maxItems:"9" doc:"Cover images in stored token order. Tokens that do not parse are skipped. Empty array if none."`
-	User          repr.UserRef   `json:"user" doc:"Author."`
+	Author        repr.UserRef   `json:"author" doc:"Topic author."`
 	ViewCount     int            `json:"view_count" minimum:"0" doc:"Lifetime view count."`
 	LikeCount     int            `json:"like_count" minimum:"0" doc:"Like count."`
 	ReplyCount    int            `json:"reply_count" minimum:"0" doc:"Reply count."`
@@ -94,7 +94,7 @@ func mapSummary(cdn string, row repository.TopicKeysetRow, author repr.UserRef, 
 		Category:      row.Category,
 		Sections:      toSectionSlugs(sections),
 		CoverImages:   coverImages(cdn, row.CoverImages),
-		User:          author,
+		Author:        author,
 		ViewCount:     row.View,
 		LikeCount:     row.LikeCount,
 		ReplyCount:    row.ReplyCount,

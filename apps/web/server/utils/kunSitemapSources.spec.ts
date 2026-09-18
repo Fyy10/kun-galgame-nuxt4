@@ -16,7 +16,7 @@ const topicItem = (id: string, bumpedAt: string) => ({
   category: 'galgame',
   sections: [],
   cover_images: [],
-  user: { object: 'user', id: '1', name: 'n', avatar: null },
+  author: { object: 'user', id: '1', name: 'n', avatar: null },
   view_count: 0,
   like_count: 0,
   reply_count: 0,

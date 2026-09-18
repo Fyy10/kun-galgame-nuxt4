@@ -95,18 +95,22 @@ func TestListOmitsNextCursorOnLastPage(t *testing.T) {
 		t.Fatalf("nil items marshalled null: %s", raw)
 	}
 	cur := "cur_abc"
+	raw, _ = json.Marshal(NewList([]int{1}, &cur))
+	if string(raw) != `{"object":"list","items":[1],"next_cursor":"cur_abc"}` {
+		t.Errorf("List with a cursor = %s", raw)
+	}
+}
+
+func TestCountedListMarshalsTotalOnlyWhenSet(t *testing.T) {
 	n := 3
-	page := NewList([]int{1}, &cur)
-	page.Total = &n
-	raw, _ = json.Marshal(page)
-	if err := json.Unmarshal(raw, &m); err != nil {
-		t.Fatal(err)
+	if raw, _ := json.Marshal(NewCountedList([]int{1}, nil, &n)); string(raw) != `{"object":"list","items":[1],"total":3}` {
+		t.Errorf("counted = %s", raw)
 	}
-	if m["next_cursor"] != cur {
-		t.Errorf("next_cursor %v", m["next_cursor"])
+	if raw, _ := json.Marshal(NewCountedList[int](nil, nil, nil)); string(raw) != `{"object":"list","items":[]}` {
+		t.Errorf("uncounted = %s", raw)
 	}
-	if m["total"] != float64(3) {
-		t.Errorf("total %v", m["total"])
+	if raw, _ := json.Marshal(CountedList[int]{}); string(raw) != `{"object":"list","items":[]}` {
+		t.Errorf("zero CountedList = %s", raw)
 	}
 }
 

@@ -6,7 +6,6 @@ type List[T any] struct {
 	Object     string  `json:"object" enum:"list" maxLength:"4" doc:"Type discriminant. Always list."`
 	Items      []T     `json:"items" doc:"Members of this page. Empty array, never null."`
 	NextCursor *string `json:"next_cursor,omitempty" pattern:"^cur_[A-Za-z0-9_-]+$" maxLength:"512" doc:"Opaque keyset cursor. Omitted on the last page."`
-	Total      *int    `json:"total,omitempty" minimum:"0" doc:"Present only when include_total=true. Same visibility gate as items."`
 }
 
 func NewList[T any](items []T, nextCursor *string) List[T] {
@@ -17,6 +16,33 @@ func NewList[T any](items []T, nextCursor *string) List[T] {
 }
 
 func (l List[T]) MarshalJSON() ([]byte, error) {
+	items := l.Items
+	if items == nil {
+		items = []T{}
+	}
+	type wire struct {
+		Object     string  `json:"object"`
+		Items      []T     `json:"items"`
+		NextCursor *string `json:"next_cursor,omitempty"`
+	}
+	return json.Marshal(wire{"list", items, l.NextCursor})
+}
+
+// CountedList is the body of a collection that embeds collect.Total; gate F9
+// holds the two together.
+type CountedList[T any] struct {
+	Object     string  `json:"object" enum:"list" maxLength:"4" doc:"Type discriminant. Always list."`
+	Items      []T     `json:"items" doc:"Members of this page. Empty array, never null."`
+	NextCursor *string `json:"next_cursor,omitempty" pattern:"^cur_[A-Za-z0-9_-]+$" maxLength:"512" doc:"Opaque keyset cursor. Omitted on the last page."`
+	Total      *int    `json:"total,omitempty" minimum:"0" doc:"Present only when include_total=true. Same visibility gate as items."`
+}
+
+func NewCountedList[T any](items []T, nextCursor *string, total *int) CountedList[T] {
+	l := NewList(items, nextCursor)
+	return CountedList[T]{Object: l.Object, Items: l.Items, NextCursor: l.NextCursor, Total: total}
+}
+
+func (l CountedList[T]) MarshalJSON() ([]byte, error) {
 	items := l.Items
 	if items == nil {
 		items = []T{}
