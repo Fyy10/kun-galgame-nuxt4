@@ -73,6 +73,7 @@ type Authenticator struct {
 	rdb         *redis.Client
 	oauthClient *oauth.Client
 	bearer      *Bearer
+	marshal     func(any) ([]byte, error)
 }
 
 func NewAuthenticator(rdb *redis.Client, oauthClient *oauth.Client, bearer *Bearer) *Authenticator {
@@ -81,51 +82,12 @@ func NewAuthenticator(rdb *redis.Client, oauthClient *oauth.Client, bearer *Bear
 
 func (a *Authenticator) Auth() fiber.Handler {
 	return func(c fiber.Ctx) error {
-		if token, ok := bearerToken(c); ok {
-			return a.bearer.authenticate(c, token)
+		id := a.ResolveIdentity(c)
+		if id.OK() {
+			AttachIdentity(c, id)
+			return c.Next()
 		}
-		rdb, oauthClient := a.rdb, a.oauthClient
-
-		token := c.Cookies(SessionCookieName)
-		if token == "" {
-			return response.Error(c, errors.ErrAuthExpired())
-		}
-
-		ctx := c.Context()
-		val, err := rdb.Get(ctx, SessionKey(token)).Result()
-		if err != nil {
-			return response.Error(c, errors.ErrAuthExpired())
-		}
-
-		var session SessionData
-		if err := json.Unmarshal([]byte(val), &session); err != nil {
-			return response.Error(c, errors.ErrAuthExpired())
-		}
-
-		const refreshSkew = 30 * time.Second
-		needsRefresh := session.OAuthExpiresAt > 0 &&
-			time.Now().Add(refreshSkew).Unix() > session.OAuthExpiresAt
-		if needsRefresh {
-			lockKey := "refresh_lock:" + token
-			locked, _ := rdb.SetNX(ctx, lockKey, "1", 15*time.Second).Result()
-			if locked {
-				if err := refreshSession(ctx, rdb, oauthClient, token, &session); err != nil {
-					rdb.Del(ctx, lockKey)
-					return response.Error(c, err)
-				}
-				rdb.Del(ctx, lockKey)
-			} else {
-				if err := waitForRefresh(ctx, rdb, lockKey, token, &session); err != nil {
-					return response.Error(c, err)
-				}
-			}
-		}
-
-		renewSlidingSession(c, rdb, token)
-
-		c.Locals(string(UserInfoKey), &session.UserInfo)
-		c.Locals(string(OAuthAccessTokenKey), session.OAuthAccessToken)
-		return c.Next()
+		return response.Error(c, id.legacyError())
 	}
 }
 
@@ -133,48 +95,16 @@ func (a *Authenticator) Auth() fiber.Handler {
 // would hide the expiry from the App, which only refreshes on a 401.
 func (a *Authenticator) OptionalAuth() fiber.Handler {
 	return func(c fiber.Ctx) error {
-		if token, ok := bearerToken(c); ok {
-			return a.bearer.authenticate(c, token)
-		}
-		rdb, oauthClient := a.rdb, a.oauthClient
-
-		token := c.Cookies(SessionCookieName)
-		if token == "" {
+		id := a.ResolveIdentity(c)
+		switch id.Outcome {
+		case IdentitySessionOK, IdentityBearerOK:
+			AttachIdentity(c, id)
+			return c.Next()
+		case IdentityBearerInvalid, IdentityBearerKeysUnavailable, IdentityBearerProvisioningFailed:
+			return response.Error(c, id.legacyError())
+		default:
 			return c.Next()
 		}
-
-		ctx := c.Context()
-		val, err := rdb.Get(ctx, SessionKey(token)).Result()
-		if err != nil {
-			return c.Next()
-		}
-
-		var session SessionData
-		if err := json.Unmarshal([]byte(val), &session); err != nil {
-			return c.Next()
-		}
-
-		const refreshSkew = 30 * time.Second
-		if session.OAuthExpiresAt > 0 &&
-			time.Now().Add(refreshSkew).Unix() > session.OAuthExpiresAt {
-			var refreshErr *errors.AppError
-			lockKey := "refresh_lock:" + token
-			if locked, _ := rdb.SetNX(ctx, lockKey, "1", 15*time.Second).Result(); locked {
-				refreshErr = refreshSession(ctx, rdb, oauthClient, token, &session)
-				rdb.Del(ctx, lockKey)
-			} else {
-				refreshErr = waitForRefresh(ctx, rdb, lockKey, token, &session)
-			}
-			if refreshErr != nil {
-				return c.Next()
-			}
-		}
-
-		renewSlidingSession(c, rdb, token)
-
-		c.Locals(string(UserInfoKey), &session.UserInfo)
-		c.Locals(string(OAuthAccessTokenKey), session.OAuthAccessToken)
-		return c.Next()
 	}
 }
 
@@ -212,22 +142,23 @@ func refreshSession(
 	oauthClient *oauth.Client,
 	token string,
 	session *SessionData,
-) *errors.AppError {
+	marshal func(any) ([]byte, error),
+) (IdentityOutcome, error) {
 	refreshed, err := oauthClient.RefreshOAuthToken(session.OAuthRefreshToken)
 	if err != nil {
 		switch {
 		case oauth.IsBanned(err):
 			slog.Warn("OAuth 刷新返回账号封禁", "error", err)
 			rdb.Del(ctx, SessionKey(token))
-			return errors.ErrAccountBanned()
+			return IdentityBanned, err
 		case oauth.IsRefreshTokenDead(err):
 			slog.Warn("OAuth refresh_token 不可恢复, 清除 session", "error", err)
 			rdb.Del(ctx, SessionKey(token))
-			return errors.ErrAuthExpired()
+			return IdentitySessionRefreshDead, err
 		default:
 			slog.Warn("OAuth token 刷新失败 (保留 session, 留给下次请求重试)",
 				"error", err)
-			return errors.ErrAuthExpired()
+			return IdentitySessionRefreshTransient, err
 		}
 	}
 	session.OAuthAccessToken = refreshed.AccessToken
@@ -239,18 +170,21 @@ func refreshSession(
 	} else if oauth.IsBanned(uErr) {
 		slog.Warn("刷新后 userinfo 返回账号封禁, 清除 session", "error", uErr)
 		rdb.Del(ctx, SessionKey(token))
-		return errors.ErrAccountBanned()
+		return IdentityBanned, uErr
 	} else {
 		slog.Warn("刷新后拉取 userinfo 失败, 保留旧 roles", "error", uErr)
 	}
 
-	data, mErr := json.Marshal(session)
+	if marshal == nil {
+		marshal = json.Marshal
+	}
+	data, mErr := marshal(session)
 	if mErr != nil {
 		slog.Error("序列化 session 失败", "error", mErr)
-		return errors.ErrInternal("服务器内部错误")
+		return IdentitySessionInternalError, mErr
 	}
 	rdb.Set(ctx, SessionKey(token), data, SessionTTL)
-	return nil
+	return IdentitySessionOK, nil
 }
 
 func renewSlidingSession(c fiber.Ctx, rdb *redis.Client, token string) {

@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"kun-galgame-api/internal/user/oauth"
-	"kun-galgame-api/pkg/errors"
-	"kun-galgame-api/pkg/response"
 	"kun-galgame-api/pkg/role"
 
 	"github.com/gofiber/fiber/v3"
@@ -49,12 +47,16 @@ func bearerToken(c fiber.Ctx) (string, bool) {
 	return strings.TrimSpace(token), true
 }
 
-func (b *Bearer) authenticate(c fiber.Ctx, token string) error {
+func (b *Bearer) resolve(c fiber.Ctx, token string) Identity {
 	if u := GetUser(c); u != nil && u.viaBearer {
-		return c.Next()
+		return Identity{
+			Outcome:     IdentityBearerOK,
+			User:        u,
+			AccessToken: GetAccessToken(c),
+		}
 	}
 	if b == nil || b.verifier == nil {
-		return response.Error(c, errors.ErrAuthExpired())
+		return Identity{Outcome: IdentityBearerInvalid}
 	}
 
 	ctx := c.Context()
@@ -62,27 +64,29 @@ func (b *Bearer) authenticate(c fiber.Ctx, token string) error {
 	if err != nil {
 		if stderrors.Is(err, oauth.ErrKeysUnavailable) {
 			slog.Error("Bearer 校验拉取 JWKS 失败", "error", err)
-			return response.Error(c, errors.ErrInternal("认证服务暂不可用, 请稍后重试"))
+			return Identity{Outcome: IdentityBearerKeysUnavailable, Err: err}
 		}
-		return response.Error(c, errors.ErrAuthExpired())
+		return Identity{Outcome: IdentityBearerInvalid, Err: err}
 	}
 
 	roles := role.Union(claims.Roles, claims.SiteRoles)
 	if err := b.markSeen(ctx, claims.ID, roles); err != nil {
 		slog.Error("Bearer 首见用户初始化失败", "user_id", claims.ID, "error", err)
-		return response.Error(c, errors.ErrInternal("初始化用户状态失败"))
+		return Identity{Outcome: IdentityBearerProvisioningFailed, Err: err}
 	}
 
-	c.Locals(string(UserInfoKey), &UserInfo{
-		ID:        claims.ID,
-		Sub:       claims.Subject,
-		Name:      claims.Name,
-		Email:     claims.Email,
-		Roles:     role.WithoutStaff(roles),
-		viaBearer: true,
-	})
-	c.Locals(string(OAuthAccessTokenKey), token)
-	return c.Next()
+	return Identity{
+		Outcome: IdentityBearerOK,
+		User: &UserInfo{
+			ID:        claims.ID,
+			Sub:       claims.Subject,
+			Name:      claims.Name,
+			Email:     claims.Email,
+			Roles:     role.WithoutStaff(roles),
+			viaBearer: true,
+		},
+		AccessToken: token,
+	}
 }
 
 // The trust boost gets the unstripped roles on purpose: it is declared once per
