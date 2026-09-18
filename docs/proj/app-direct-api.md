@@ -3,6 +3,8 @@
 > 本仓自有工程笔记（**非** infra 镜像）。kungal-apps 工单 02「App 直连论坛 API 的四项前置」的论坛侧交付与契约。
 > 取代 [app-aggregation-api.md](./app-aggregation-api.md) 的方向。
 >
+> **⚠️ 2026-09-18 方向变更：裁决 1 与 3 已被 [api-v1](./api-v1/README.md) 取代。** App 只绑定 `/api/v1`（problem+json、生成的 spec、字符串 id、游标分页、结构化正文），不再消费本文列出的 `/api/*` 旧端点，也不再用 `X-Kungal-Nsfw` 请求头（v1 改为显式查询参数 `nsfw=`）。幂等回放头在 v1 叫 `Idempotency-Replayed`。本文的 Bearer 校验（§1）、staff 能力拒绝、版本闸（§4）、assetlinks（§5）仍然有效；这几项迁到 v1 时以 `api-v1/CHANGELOG.md` 为准。
+>
 > **工单 02 回报对照**：① 放行端点与 curl 示例在 §1「放行范围」；② 幂等键在 §2；③ 版本闸在 §4；④ assetlinks 在 §5；⑤ galgame 供数结论在 §1「galgame 供数」。infra 工单 01 裁决要求通知、未读、下载也走论坛，这三面在 §1「放行范围」逐条列出，已全部确认可用 Bearer 访问。
 
 ## 裁决（2026-09-17，App 侧拍板）
