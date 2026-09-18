@@ -11,6 +11,7 @@ import (
 	adminHandler "kun-galgame-api/internal/admin/handler"
 	adminRepo "kun-galgame-api/internal/admin/repository"
 	adminService "kun-galgame-api/internal/admin/service"
+	"kun-galgame-api/internal/apiv1"
 	appReleaseHandler "kun-galgame-api/internal/apprelease/handler"
 	"kun-galgame-api/internal/community/anchor"
 	"kun-galgame-api/internal/community/engagement"
@@ -89,6 +90,7 @@ import (
 	"kun-galgame-api/pkg/trustclient"
 	"kun-galgame-api/pkg/userclient"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/redis/go-redis/v9"
@@ -167,6 +169,7 @@ type App struct {
 	RolePermStop                   func()
 	StoreLinkStop                  func()
 	CommunityNotifyStop            func()
+	APIv1                          huma.API
 }
 
 func New(cfg *config.Config) *App {
@@ -655,19 +658,26 @@ func New(cfg *config.Config) *App {
 	}
 	app.RolePermStop = adminPermSync.StartRefresher(60 * time.Second)
 
-	fiberApp := fiber.New(fiber.Config{
-		ErrorHandler:   globalErrorHandler,
-		BodyLimit:      10 * 1024 * 1024,
-		ReadBufferSize: 16 * 1024,
-	})
-	fiberApp.Use(recover.New())
-	app.Fiber = fiberApp
+	app.Fiber = newFiber()
 
 	app.setupRoutes()
 	return app
 }
 
+func newFiber() *fiber.App {
+	f := fiber.New(fiber.Config{
+		ErrorHandler:   globalErrorHandler,
+		BodyLimit:      10 * 1024 * 1024,
+		ReadBufferSize: 16 * 1024,
+	})
+	f.Use(recover.New())
+	return f
+}
+
 func globalErrorHandler(c fiber.Ctx, err error) error {
+	if apiv1.IsV1Path(c.Path()) {
+		return apiv1.WriteFiberError(c, err)
+	}
 	if appErr, ok := err.(*errors.AppError); ok {
 		return response.Error(c, appErr)
 	}

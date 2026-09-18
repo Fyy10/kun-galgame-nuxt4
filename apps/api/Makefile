@@ -1,4 +1,4 @@
-.PHONY: dev build run lint migrate migrate-down migrate-status clean tools
+.PHONY: dev build run lint migrate migrate-down migrate-status clean tools openapi
 
 # Development with hot reload (requires air: go install github.com/air-verse/air@latest)
 dev:
@@ -17,6 +17,9 @@ run: build
 lint:
 	go vet ./...
 	go run github.com/kisielk/errcheck@v1.9.0 -exclude .errcheck-exclude ./...
+
+openapi:
+	go run ./cmd/openapi
 
 # Run all pending up migrations
 migrate:

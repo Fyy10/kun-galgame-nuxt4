@@ -1,19 +1,24 @@
 package app
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
 	"runtime"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
+	"kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/pkg/config"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/gofiber/fiber/v3"
 )
 
@@ -40,9 +45,18 @@ type route struct {
 
 func resolveRoutes(t *testing.T) []route {
 	t.Helper()
+	return routesOf(t, boot(t))
+}
 
+func boot(t *testing.T) *App {
+	t.Helper()
 	a := &App{Fiber: fiber.New(), Config: testConfig()}
 	a.setupRoutes()
+	return a
+}
+
+func routesOf(t *testing.T, a *App) []route {
+	t.Helper()
 
 	all, endpoints := a.Fiber.GetRoutes(), a.Fiber.GetRoutes(true)
 
@@ -114,7 +128,7 @@ func handlerName(h fiber.Handler) string {
 	// A closure is named after wherever its constructor was inlined: Go 1.26
 	// (CI) called Idempotent's "setupRoutes.Idempotent", Go 1.27 (local)
 	// "middleware.Idempotent", and the golden only ever matched one of them.
-	if strings.HasPrefix(last, "Require") || slices.Contains([]string{"Auth", "OptionalAuth", "Idempotent"}, last) {
+	if strings.HasPrefix(last, "Require") || slices.Contains([]string{"Auth", "OptionalAuth", "Idempotent", "v1Headers"}, last) {
 		return last
 	}
 	if len(parts) > 2 {
@@ -231,18 +245,75 @@ var publicWrites = map[string]string{
 // the 2026-07 leak, and the dangerous direction — fails here even though it
 // looks perfectly ordinary in the source.
 func TestEveryWriteIsAuthenticated(t *testing.T) {
-	for _, r := range resolveRoutes(t) {
-		if r.Method == fiber.MethodGet || !strings.HasPrefix(r.Path, "/api") {
+	for _, v := range unauthenticatedWrites(t, boot(t)) {
+		t.Error(v)
+	}
+}
+
+func TestAnOptionalV1WriteFailsTheAuthCheck(t *testing.T) {
+	a := boot(t)
+	huma.Register(a.APIv1, apiv1.Optional(huma.Operation{
+		OperationID: "testOptionalWrite",
+		Method:      http.MethodPost,
+		Path:        "/_test/optional-write",
+		Summary:     "Test-only optional write",
+		Description: "A non-GET v1 operation that is not required.",
+	}), func(context.Context, *struct{}) (*struct{}, error) {
+		return nil, nil
+	})
+	flagged := slices.ContainsFunc(unauthenticatedWrites(t, a), func(v string) bool {
+		return strings.HasPrefix(v, "POST /api/v1/_test/optional-write ")
+	})
+	if !flagged {
+		t.Fatal("an optional v1 POST passed the write-authentication check")
+	}
+}
+
+func unauthenticatedWrites(t *testing.T, a *App) []string {
+	t.Helper()
+	var bad []string
+	for _, r := range routesOf(t, a) {
+		if r.Method == fiber.MethodGet || r.Method == fiber.MethodOptions {
+			continue
+		}
+		if apiv1.IsV1Path(r.Path) {
+			if apiv1.TierOf(a.APIv1, r.Method, r.Path) != apiv1.TierRequired {
+				bad = append(bad, fmt.Sprintf("%s %s mutates without the required v1 tier", r.Method, r.Path))
+			}
+			continue
+		}
+		if !strings.HasPrefix(r.Path, "/api") {
 			continue
 		}
 		if _, ok := publicWrites[r.Method+" "+r.Path]; ok {
 			continue
 		}
 		if !slices.Contains(r.chain, "Auth") {
-			t.Errorf("%s %s mutates without authentication: %s\n"+
+			bad = append(bad, fmt.Sprintf("%s %s mutates without authentication: %s\n"+
 				"If that is deliberate, add it to publicWrites with the reason.",
-				r.Method, r.Path, strings.Join(r.chain, " → "))
+				r.Method, r.Path, strings.Join(r.chain, " → ")))
 		}
+	}
+	return bad
+}
+
+func TestLegacyRouteCountRatchet(t *testing.T) {
+	raw, err := os.ReadFile("testdata/legacy_route_baseline")
+	if err != nil {
+		t.Fatalf("read baseline: %v", err)
+	}
+	baseline, err := strconv.Atoi(strings.TrimSpace(string(raw)))
+	if err != nil {
+		t.Fatalf("parse baseline: %v", err)
+	}
+	n := 0
+	for _, r := range resolveRoutes(t) {
+		if !strings.HasPrefix(r.Path, "/api/v1") {
+			n++
+		}
+	}
+	if n > baseline {
+		t.Fatalf("legacy route count %d exceeds baseline %d", n, baseline)
 	}
 }
 

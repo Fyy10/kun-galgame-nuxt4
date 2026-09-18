@@ -1,6 +1,7 @@
 package app
 
 import (
+	"kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/pkg/perm"
 
@@ -16,6 +17,12 @@ func (a *App) setupRoutes() {
 	middleware.SecureCookies = a.Config.Server.Mode == "prod"
 
 	a.Fiber.Use(fiberCors.New(middleware.CORS(a.Config.CORS.AllowOrigins)))
+
+	deps := apiv1.Deps{Redis: a.Redis}
+	if a.Authn != nil {
+		deps.Resolver = a.Authn
+	}
+	a.APIv1 = apiv1.Setup(a.Fiber, deps)
 
 	// Deliberately touches neither DB nor Redis: the container HEALTHCHECK reads
 	// this, and a transient backing-store blip must not flap the container.

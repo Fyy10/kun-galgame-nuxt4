@@ -1,0 +1,279 @@
+{
+  "codes": [
+    {
+      "object": "problem_type",
+      "code": "IDEMPOTENCY_KEY_REUSED",
+      "domain": "platform",
+      "status": 409,
+      "type": "https://developer.nextmoe.dev/problems/platform/idempotency-key-reused",
+      "title": "Idempotency key reused",
+      "description": "The same Idempotency-Key was sent with a different request body."
+    },
+    {
+      "object": "problem_type",
+      "code": "INTERNAL_ERROR",
+      "domain": "platform",
+      "status": 500,
+      "type": "https://developer.nextmoe.dev/problems/platform/internal-error",
+      "title": "Internal error",
+      "description": "A bug on our side, including the output of panic recovery."
+    },
+    {
+      "object": "problem_type",
+      "code": "INVALID_CREDENTIAL",
+      "domain": "platform",
+      "status": 401,
+      "type": "https://developer.nextmoe.dev/problems/platform/invalid-credential",
+      "title": "Invalid credential",
+      "description": "A credential was sent but it is invalid, expired, or revoked."
+    },
+    {
+      "object": "problem_type",
+      "code": "INVALID_CURSOR",
+      "domain": "platform",
+      "status": 400,
+      "type": "https://developer.nextmoe.dev/problems/platform/invalid-cursor",
+      "title": "Invalid cursor",
+      "description": "The cursor cannot be parsed or is no longer valid."
+    },
+    {
+      "object": "problem_type",
+      "code": "INVALID_PARAMETER",
+      "domain": "platform",
+      "status": 400,
+      "type": "https://developer.nextmoe.dev/problems/platform/invalid-parameter",
+      "title": "Invalid parameter",
+      "description": "A parameter is syntactically wrong: a boolean that is not true/false, an integer that is not an integer, a date that is not YYYY-MM-DD."
+    },
+    {
+      "object": "problem_type",
+      "code": "LIMIT_TOO_LARGE",
+      "domain": "platform",
+      "status": 400,
+      "type": "https://developer.nextmoe.dev/problems/platform/limit-too-large",
+      "title": "Limit too large",
+      "description": "limit is greater than 100. The value is not clamped."
+    },
+    {
+      "object": "problem_type",
+      "code": "MALFORMED_BODY",
+      "domain": "platform",
+      "status": 400,
+      "type": "https://developer.nextmoe.dev/problems/platform/malformed-body",
+      "title": "Malformed body",
+      "description": "Request body is not valid JSON, or is not a valid instance of the declared media type."
+    },
+    {
+      "object": "problem_type",
+      "code": "METHOD_NOT_ALLOWED",
+      "domain": "platform",
+      "status": 405,
+      "type": "https://developer.nextmoe.dev/problems/platform/method-not-allowed",
+      "title": "Method not allowed",
+      "description": "The path exists but this method does not."
+    },
+    {
+      "object": "problem_type",
+      "code": "MISSING_CREDENTIAL",
+      "domain": "platform",
+      "status": 401,
+      "type": "https://developer.nextmoe.dev/problems/platform/missing-credential",
+      "title": "Missing credential",
+      "description": "The request has no Authorization header."
+    },
+    {
+      "object": "problem_type",
+      "code": "NOT_FOUND",
+      "domain": "platform",
+      "status": 404,
+      "type": "https://developer.nextmoe.dev/problems/platform/not-found",
+      "title": "Not found",
+      "description": "Nothing visible exists at this URL."
+    },
+    {
+      "object": "problem_type",
+      "code": "SCOPE_REQUIRED",
+      "domain": "platform",
+      "status": 403,
+      "type": "https://developer.nextmoe.dev/problems/platform/scope-required",
+      "title": "Scope required",
+      "description": "The credential is valid but lacks the scope this operation needs."
+    },
+    {
+      "object": "problem_type",
+      "code": "SERVICE_UNAVAILABLE",
+      "domain": "platform",
+      "status": 503,
+      "type": "https://developer.nextmoe.dev/problems/platform/service-unavailable",
+      "title": "Service unavailable",
+      "description": "A dependency is unavailable. The request may be retried."
+    },
+    {
+      "object": "problem_type",
+      "code": "UNKNOWN_ENUM_VALUE",
+      "domain": "platform",
+      "status": 400,
+      "type": "https://developer.nextmoe.dev/problems/platform/unknown-enum-value",
+      "title": "Unknown enum value",
+      "description": "A closed vocabulary received an unknown token at parse time."
+    },
+    {
+      "object": "problem_type",
+      "code": "UNKNOWN_SORT",
+      "domain": "platform",
+      "status": 400,
+      "type": "https://developer.nextmoe.dev/problems/platform/unknown-sort",
+      "title": "Unknown sort",
+      "description": "sort= received a key this collection has not declared."
+    },
+    {
+      "object": "problem_type",
+      "code": "UNSUPPORTED_MEDIA_TYPE",
+      "domain": "platform",
+      "status": 415,
+      "type": "https://developer.nextmoe.dev/problems/platform/unsupported-media-type",
+      "title": "Unsupported media type",
+      "description": "The request body media type is not supported."
+    },
+    {
+      "object": "problem_type",
+      "code": "VALIDATION_FAILED",
+      "domain": "platform",
+      "status": 422,
+      "type": "https://developer.nextmoe.dev/problems/platform/validation-failed",
+      "title": "Validation failed",
+      "description": "The request is syntactically valid but semantically not. errors[] is present and non-empty."
+    },
+    {
+      "object": "problem_type",
+      "code": "ACCOUNT_BANNED",
+      "domain": "kungal",
+      "status": 403,
+      "type": "https://developer.nextmoe.dev/problems/kungal/account-banned",
+      "title": "Account banned",
+      "description": "The signed-in user's account is banned."
+    },
+    {
+      "object": "problem_type",
+      "code": "IDEMPOTENCY_REQUEST_IN_PROGRESS",
+      "domain": "kungal",
+      "status": 409,
+      "type": "https://developer.nextmoe.dev/problems/kungal/idempotency-request-in-progress",
+      "title": "Idempotency request in progress",
+      "description": "A request with the same Idempotency-Key is still being processed. Retry after it completes."
+    }
+  ],
+  "reasons": [
+    {
+      "object": "problem_reason",
+      "reason": "DUPLICATE_ITEM",
+      "title": "Duplicate item",
+      "description": "An array that must be unique contains a duplicate.",
+      "params": []
+    },
+    {
+      "object": "problem_reason",
+      "reason": "IMMUTABLE",
+      "title": "Immutable",
+      "description": "This field cannot be changed in the current state.",
+      "params": []
+    },
+    {
+      "object": "problem_reason",
+      "reason": "INCONSISTENT_WITH",
+      "title": "Inconsistent with",
+      "description": "The value contradicts another field. detail names that field's pointer.",
+      "params": []
+    },
+    {
+      "object": "problem_reason",
+      "reason": "INVALID_FORMAT",
+      "title": "Invalid format",
+      "description": "The value does not match the expected format (date, URI, hash, id string).",
+      "params": []
+    },
+    {
+      "object": "problem_reason",
+      "reason": "NOT_ALLOWED_VALUE",
+      "title": "Not allowed value",
+      "description": "The value is in the vocabulary but is not accepted in this context.",
+      "params": []
+    },
+    {
+      "object": "problem_reason",
+      "reason": "NOT_PERMITTED",
+      "title": "Not permitted",
+      "description": "The caller is not allowed to act on this position. Unlike IMMUTABLE this is about the actor, not the field's state.",
+      "params": []
+    },
+    {
+      "object": "problem_reason",
+      "reason": "OUT_OF_RANGE",
+      "title": "Out of range",
+      "description": "A numeric value is out of range, including a date outside the allowed interval.",
+      "params": [
+        "minimum",
+        "maximum"
+      ]
+    },
+    {
+      "object": "problem_reason",
+      "reason": "REQUIRED",
+      "title": "Required",
+      "description": "A required field is missing or null.",
+      "params": []
+    },
+    {
+      "object": "problem_reason",
+      "reason": "TOO_FEW_ITEMS",
+      "title": "Too few items",
+      "description": "The array has fewer items than its minimum.",
+      "params": [
+        "min_items"
+      ]
+    },
+    {
+      "object": "problem_reason",
+      "reason": "TOO_LONG",
+      "title": "Too long",
+      "description": "A string is longer than its maxLength.",
+      "params": [
+        "max_length"
+      ]
+    },
+    {
+      "object": "problem_reason",
+      "reason": "TOO_MANY_ITEMS",
+      "title": "Too many items",
+      "description": "An array exceeds its item limit.",
+      "params": [
+        "max_items"
+      ]
+    },
+    {
+      "object": "problem_reason",
+      "reason": "TOO_SHORT",
+      "title": "Too short",
+      "description": "A string is shorter than its minLength.",
+      "params": [
+        "min_length"
+      ]
+    },
+    {
+      "object": "problem_reason",
+      "reason": "UNKNOWN_REFERENCE",
+      "title": "Unknown reference",
+      "description": "The value refers to an entity that is not visible. Absence, merge, and visibility filtering are not distinguished.",
+      "params": []
+    },
+    {
+      "object": "problem_reason",
+      "reason": "UNKNOWN_VALUE",
+      "title": "Unknown value",
+      "description": "The value is not in this field's closed vocabulary.",
+      "params": [
+        "allowed"
+      ]
+    }
+  ]
+}

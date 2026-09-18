@@ -1,0 +1,245 @@
+package apiv1
+
+import (
+	"context"
+	"errors"
+	"log/slog"
+	"net/http"
+	"strings"
+
+	"kun-galgame-api/internal/middleware"
+	"kun-galgame-api/pkg/problem"
+
+	"github.com/danielgtaylor/huma/v2"
+	"github.com/danielgtaylor/huma/v2/adapters/humafiber"
+	"github.com/gofiber/fiber/v3"
+)
+
+type Tier string
+
+const (
+	TierPublic   Tier = "public"
+	TierOptional Tier = "optional"
+	TierRequired Tier = "required"
+)
+
+const metaTier = "apiv1.tier"
+
+type IdentityResolver interface {
+	ResolveIdentity(c fiber.Ctx) middleware.Identity
+}
+
+type ctxKey int
+
+const (
+	userCtxKey ctxKey = iota
+)
+
+func Public(op huma.Operation) huma.Operation {
+	setTier(&op, TierPublic)
+	op.Security = nil
+	addErrors(&op, http.StatusInternalServerError)
+	return op
+}
+
+func Optional(op huma.Operation) huma.Operation {
+	setTier(&op, TierOptional)
+	op.Security = []map[string][]string{
+		{"session": {}},
+		{"bearer": {}},
+		{},
+	}
+	addErrors(&op, http.StatusUnauthorized, http.StatusForbidden, http.StatusInternalServerError, http.StatusServiceUnavailable)
+	return op
+}
+
+func Required(op huma.Operation) huma.Operation {
+	setTier(&op, TierRequired)
+	op.Security = []map[string][]string{
+		{"session": {}},
+		{"bearer": {}},
+	}
+	addErrors(&op, http.StatusUnauthorized, http.StatusForbidden, http.StatusInternalServerError, http.StatusServiceUnavailable)
+	return op
+}
+
+func User(ctx context.Context) *middleware.UserInfo {
+	u, _ := ctx.Value(userCtxKey).(*middleware.UserInfo)
+	return u
+}
+
+func TierOf(api huma.API, method, fiberPath string) Tier {
+	if api == nil {
+		return ""
+	}
+	return TierFromOp(lookupOp(api, method, fiberPath))
+}
+
+func TierFromOp(op *huma.Operation) Tier {
+	if op == nil || op.Metadata == nil {
+		return TierPublic
+	}
+	t, _ := op.Metadata[metaTier].(Tier)
+	if t == "" {
+		return TierPublic
+	}
+	return t
+}
+
+func setTier(op *huma.Operation, tier Tier) {
+	if op.Metadata == nil {
+		op.Metadata = map[string]any{}
+	}
+	op.Metadata[metaTier] = tier
+}
+
+func addErrors(op *huma.Operation, codes ...int) {
+	seen := make(map[int]bool, len(op.Errors)+len(codes))
+	for _, c := range op.Errors {
+		seen[c] = true
+	}
+	for _, c := range codes {
+		if seen[c] {
+			continue
+		}
+		op.Errors = append(op.Errors, c)
+		seen[c] = true
+	}
+}
+
+func lookupOp(api huma.API, method, fiberPath string) *huma.Operation {
+	if api == nil {
+		return nil
+	}
+	item := api.OpenAPI().Paths[specPath(fiberPath)]
+	if item == nil {
+		return nil
+	}
+	switch method {
+	case http.MethodGet:
+		return item.Get
+	case http.MethodPost:
+		return item.Post
+	case http.MethodPut:
+		return item.Put
+	case http.MethodPatch:
+		return item.Patch
+	case http.MethodDelete:
+		return item.Delete
+	case http.MethodHead:
+		return item.Head
+	case http.MethodOptions:
+		return item.Options
+	case http.MethodTrace:
+		return item.Trace
+	default:
+		return nil
+	}
+}
+
+func specPath(fiberPath string) string {
+	p := strings.TrimPrefix(fiberPath, Prefix)
+	if p == "" {
+		return "/"
+	}
+	parts := strings.Split(p, "/")
+	for i, s := range parts {
+		if strings.HasPrefix(s, ":") {
+			parts[i] = "{" + s[1:] + "}"
+		}
+	}
+	return strings.Join(parts, "/")
+}
+
+func newIdentityMiddleware(resolver IdentityResolver) func(ctx huma.Context, next func(huma.Context)) {
+	return func(ctx huma.Context, next func(huma.Context)) {
+		fc := humafiber.Unwrap(ctx)
+
+		op := ctx.Operation()
+		tier := TierFromOp(op)
+		if tier == TierPublic {
+			next(ctx)
+			return
+		}
+		if resolver == nil {
+			writeProblem(ctx, problem.Internal(errNoResolver))
+			return
+		}
+
+		id := resolver.ResolveIdentity(fc)
+		if id.Err != nil {
+			slog.Error("apiv1 identity", "request_id", problem.RequestID(fc), "outcome", id.Outcome.String(), "err", id.Err)
+		}
+
+		code := mapOutcome(tier, id.Outcome)
+		if code == "" {
+			if id.OK() {
+				middleware.AttachIdentity(fc, id)
+				ctx = huma.WithValue(ctx, userCtxKey, id.User)
+			}
+			next(ctx)
+			return
+		}
+		writeProblem(ctx, identityProblem(code, id.Err))
+	}
+}
+
+var errNoResolver = errors.New("apiv1: identity resolver is not configured")
+
+func mapOutcome(tier Tier, outcome middleware.IdentityOutcome) string {
+	switch outcome {
+	case middleware.IdentityAnonymous:
+		if tier == TierOptional {
+			return ""
+		}
+		return problem.CodeMissingCredential
+	case middleware.IdentitySessionMissing:
+		if tier == TierOptional {
+			return ""
+		}
+		return problem.CodeInvalidCredential
+	case middleware.IdentitySessionStoreError:
+		return problem.CodeServiceUnavailable
+	case middleware.IdentitySessionRefreshDead:
+		if tier == TierOptional {
+			return ""
+		}
+		return problem.CodeInvalidCredential
+	case middleware.IdentitySessionRefreshTransient:
+		if tier == TierOptional {
+			return ""
+		}
+		return problem.CodeServiceUnavailable
+	case middleware.IdentityBanned:
+		return problem.CodeAccountBanned
+	case middleware.IdentitySessionInternalError:
+		return problem.CodeInternalError
+	case middleware.IdentitySessionOK, middleware.IdentityBearerOK:
+		return ""
+	case middleware.IdentityBearerInvalid:
+		return problem.CodeInvalidCredential
+	case middleware.IdentityBearerKeysUnavailable:
+		return problem.CodeServiceUnavailable
+	case middleware.IdentityBearerProvisioningFailed:
+		return problem.CodeInternalError
+	default:
+		return problem.CodeInternalError
+	}
+}
+
+func identityProblem(code string, cause error) *problem.Problem {
+	switch code {
+	case problem.CodeInternalError:
+		return problem.Internal(cause)
+	case problem.CodeMissingCredential:
+		return problem.New(code, "The request has no credentials.")
+	case problem.CodeInvalidCredential:
+		return problem.New(code, "The credential is invalid, expired, or revoked.")
+	case problem.CodeAccountBanned:
+		return problem.New(code, "This account is banned.")
+	case problem.CodeServiceUnavailable:
+		return problem.New(code, "A dependency is unavailable. Retry the request.")
+	default:
+		return problem.Internal(cause)
+	}
+}

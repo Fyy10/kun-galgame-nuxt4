@@ -18,6 +18,9 @@ func Open(t *testing.T) *gorm.DB {
 
 	dsn := os.Getenv(EnvVar)
 	if dsn == "" {
+		if os.Getenv("KUN_REQUIRE_TEST_DB") == "1" {
+			t.Fatalf("%s not set while KUN_REQUIRE_TEST_DB=1", EnvVar)
+		}
 		t.Skipf("%s not set — DB-backed test skipped", EnvVar)
 	}
 
