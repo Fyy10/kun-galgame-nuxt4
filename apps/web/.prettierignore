@@ -37,3 +37,6 @@ migrate/*.json
 # docs
 docs
 
+# Generated OpenAPI types
+shared/types/api/
+

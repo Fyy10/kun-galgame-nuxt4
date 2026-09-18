@@ -14,6 +14,10 @@
 # copying the sources). The @kungal/* packages are public npm, so no registry
 # auth is needed.
 #
+# The gen:api step is gate F5: the committed shared/types/api/v1.d.ts must equal
+# a fresh generation from apps/api/openapi/kungal-v1.json, which is why a spec
+# change alone also triggers this workflow.
+#
 # Independent of build.yml on purpose — deploys are not blocked while this gate
 # settles. Add `needs: web` to build.yml once it has proven green.
 
@@ -23,6 +27,7 @@ on:
   push:
     paths: &paths
       - "apps/web/**"
+      - "apps/api/openapi/**"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - "package.json"
@@ -51,6 +56,7 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm -F web gen:api && git diff --exit-code -- apps/web/shared/types/api/
       - run: pnpm -F web lint
       - run: pnpm -F web typecheck
       - run: pnpm -F web test

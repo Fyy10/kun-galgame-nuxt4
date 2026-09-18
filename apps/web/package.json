@@ -18,6 +18,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "vue-tsc -b --force",
+    "gen:api": "openapi-typescript ../api/openapi/kungal-v1.json -o shared/types/api/v1.d.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "up": "pnpm update --latest",

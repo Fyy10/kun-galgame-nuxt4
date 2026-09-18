@@ -33,6 +33,7 @@ export default defineCachedEventHandler(
       code: number
       message: string
       data: { packs: StickerPack[]; variant?: string } | null
+      // eslint-disable-next-line no-restricted-syntax -- the sticker site's API, not the forum's
     }>(`${base}/api/v1/editor-packs`, { timeout: 8000 })
     if (res.code !== 0 || !res.data) {
       throw createError({

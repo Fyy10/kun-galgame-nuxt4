@@ -40,6 +40,7 @@ export const kunOgSignedUrl = (card: KunOgCard): string | null => {
   const sig = createHmac('sha256', ogSiteKey)
     .update(`${card.template}\n${d}`)
     .digest('base64url')
+  // eslint-disable-next-line no-restricted-syntax -- the OG card service's API, not the forum's
   return `${ogBaseUrl}/v1/og/${card.template}?d=${d}&sig=${sig}`
 }
 
