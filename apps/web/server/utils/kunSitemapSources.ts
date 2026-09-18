@@ -1,8 +1,51 @@
+import { createApiClient, type ApiClient } from '#shared/utils/api/client'
+import { settle } from '#shared/utils/api/problem'
+
 interface SitemapUrl {
   loc: string
   lastmod?: string
   changefreq?: string
   priority?: number
+}
+
+const TOPIC_PAGE_LIMIT = 100
+const TOPIC_MAX_PAGES = 200
+
+export const collectTopicUrls = async (
+  api: ApiClient
+): Promise<SitemapUrl[]> => {
+  // GET /api/topic started returning { topics, total } on 2026-06-24, so
+  // pick: Array.isArray was [] and the sitemap carried no topic URLs.
+  const urls: SitemapUrl[] = []
+  let cursor: string | undefined
+  for (let page = 0; page < TOPIC_MAX_PAGES; page++) {
+    const result = await settle(
+      api.GET('/topics', {
+        params: {
+          query: {
+            limit: TOPIC_PAGE_LIMIT,
+            ...(cursor ? { cursor } : {})
+          }
+        }
+      })
+    )
+    if (!result.ok) {
+      return urls
+    }
+    for (const item of result.data.items) {
+      urls.push({
+        loc: `/topic/${item.id}`,
+        lastmod: item.bumped_at,
+        changefreq: 'daily',
+        priority: 0.8
+      })
+    }
+    if (!result.data.next_cursor) {
+      break
+    }
+    cursor = result.data.next_cursor
+  }
+  return urls
 }
 
 const SFW_COOKIE = `KUNGalgameSettings=${encodeURIComponent(
@@ -149,14 +192,6 @@ export const buildSitemapUrls = async (
 
   const paged: PagedSource[] = [
     {
-      path: '/topic',
-      pick: (d) => (Array.isArray(d) ? (d as Record<string, unknown>[]) : []),
-      loc: (r) => `/topic/${num(r, 'id')}`,
-      lastmod: (r) =>
-        toIso((r as Pick<TopicCard, 'status_update_time'>).status_update_time),
-      priority: 0.8
-    },
-    {
       path: '/galgame?indexed=true',
       pick: (d) =>
         ((d as { galgames?: [] })?.galgames ?? []) as Record<string, unknown>[],
@@ -214,6 +249,7 @@ export const buildSitemapUrls = async (
   ]
 
   const groups = await Promise.all([
+    collectTopicUrls(createApiClient({ origin: apiBase, timeoutMs: 15000 })),
     ...paged.map((src) => collect(src)),
     collectSingle(
       '/galgame-engine',
