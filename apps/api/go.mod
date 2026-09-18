@@ -19,6 +19,7 @@ require (
 	github.com/oapi-codegen/runtime v1.4.2
 	github.com/redis/go-redis/v9 v9.18.0
 	github.com/robfig/cron/v3 v3.0.1
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	github.com/yuin/goldmark v1.8.2
 	golang.org/x/sync v0.22.0
 	gorm.io/driver/postgres v1.6.0

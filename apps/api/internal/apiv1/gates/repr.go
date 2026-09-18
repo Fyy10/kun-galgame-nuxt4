@@ -322,9 +322,11 @@ func enumValues(doc *huma.OpenAPI, s *huma.Schema) []string {
 	if s == nil || (s.Type != huma.TypeString && s.Type != "") {
 		return nil
 	}
-	values := make([]string, len(s.Enum))
-	for i, v := range s.Enum {
-		values[i] = fmt.Sprint(v)
+	var values []string
+	for _, v := range s.Enum {
+		if v != nil {
+			values = append(values, fmt.Sprint(v))
+		}
 	}
 	return values
 }

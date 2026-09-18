@@ -21,6 +21,7 @@ func CheckAll(doc *huma.OpenAPI) []string {
 	errs = append(errs, CheckG16(doc)...)
 	errs = append(errs, CheckG17(doc)...)
 	errs = append(errs, CheckF1(doc)...)
+	errs = append(errs, CheckF8()...)
 	return errs
 }
 
@@ -120,4 +121,8 @@ func unique(in []string) []string {
 func isSuccess(status string) bool {
 	n, err := strconv.Atoi(status)
 	return err == nil && n >= 200 && n < 300
+}
+
+func CheckF8() []string {
+	return scanLocaleText(apiRoot())
 }

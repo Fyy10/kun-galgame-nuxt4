@@ -11,7 +11,10 @@ import (
 
 const ContentType = "application/problem+json"
 
-const internalDetail = "An internal error occurred."
+const (
+	internalDetail    = "An internal error occurred."
+	unavailableDetail = "A dependency is unavailable. Retry the request."
+)
 
 type FieldParams struct {
 	MaxLength *int      `json:"max_length,omitempty" minimum:"0" doc:"Maximum string length the value exceeded."`
@@ -103,6 +106,18 @@ func Internal(err error) *Problem {
 	return p
 }
 
+func Unavailable(err error) *Problem {
+	p := New(CodeServiceUnavailable, unavailableDetail)
+	p.cause = err
+	return p
+}
+
+func LogCause(p *Problem) {
+	if p != nil && p.cause != nil {
+		slog.Error("problem cause", "code", p.Code, "request_id", p.RequestID, "err", p.cause)
+	}
+}
+
 func AtPointer(pointer, reason, detail string, params *FieldParams) FieldError {
 	return FieldError{Pointer: &pointer, Reason: reason, Detail: detail, Params: params}
 }
@@ -190,9 +205,7 @@ func Write(c fiber.Ctx, p *Problem) error {
 	}
 	p.RequestID = RequestID(c)
 	p.Instance = Instance(c)
-	if p.cause != nil {
-		slog.Error("internal error", "request_id", p.RequestID, "err", p.cause)
-	}
+	LogCause(p)
 	c.Set(HeaderRequestID, p.RequestID)
 	c.Set("Cache-Control", "no-store")
 	if p.Status == http.StatusUnauthorized {

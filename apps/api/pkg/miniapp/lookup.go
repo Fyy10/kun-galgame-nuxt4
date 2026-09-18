@@ -23,11 +23,11 @@ var sources = []struct {
 	{KindLottery, "topic_lottery"},
 }
 
-// ByTopic maps a topic id to the mini-app kinds it carries, in registry order.
-func ByTopic(db *gorm.DB, topicIDs []int) map[int][]string {
+// Lookup maps a topic id to the mini-app kinds it carries, in registry order.
+func Lookup(db *gorm.DB, topicIDs []int) (map[int][]string, error) {
 	out := map[int][]string{}
 	if len(topicIDs) == 0 {
-		return out
+		return out, nil
 	}
 	for _, src := range sources {
 		var ids []int
@@ -35,11 +35,20 @@ func ByTopic(db *gorm.DB, topicIDs []int) map[int][]string {
 			Distinct("topic_id").
 			Where("topic_id IN ?", topicIDs).
 			Pluck("topic_id", &ids).Error; err != nil {
-			continue
+			return nil, err
 		}
 		for _, id := range ids {
 			out[id] = append(out[id], src.kind)
 		}
+	}
+	return out, nil
+}
+
+// ByTopic is Lookup for the legacy surfaces, which show no badge rather than fail.
+func ByTopic(db *gorm.DB, topicIDs []int) map[int][]string {
+	out, err := Lookup(db, topicIDs)
+	if err != nil {
+		return map[int][]string{}
 	}
 	return out
 }

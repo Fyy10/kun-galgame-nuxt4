@@ -132,13 +132,17 @@ func installHumaGlobals() {
 	})
 }
 
+// A handler's problem is written by huma, not problem.Write: until W0a-5 the
+// cause of every v1 handler's 500 was logged nowhere.
 func stampProblemTransformer(ctx huma.Context, status string, v any) (any, error) {
 	switch p := v.(type) {
 	case *problem.Problem:
 		stampProblem(ctx, p)
+		problem.LogCause(p)
 		return p, nil
 	case problem.Problem:
 		stampProblem(ctx, &p)
+		problem.LogCause(&p)
 		return &p, nil
 	default:
 		return v, nil

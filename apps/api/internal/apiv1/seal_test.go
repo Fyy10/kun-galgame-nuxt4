@@ -23,6 +23,7 @@ type nullables struct {
 	EditedAt  *repr.DateTime  `json:"edited_at" doc:"Last edit, or null."`
 	ReplyToID *repr.DecimalID `json:"reply_to_id" doc:"Parent, or null."`
 	Tags      *[]string       `json:"tags" maxItems:"4" doc:"Tags."`
+	Grade     *string         `json:"grade" enum:"low,high" doc:"Grade, or null."`
 }
 
 func TestNilPointersAreNullableInTheDocument(t *testing.T) {
@@ -49,6 +50,7 @@ func TestNilPointersAreNullableInTheDocument(t *testing.T) {
 		"edited_at":   `"type":["string","null"]`,
 		"reply_to_id": `"type":["string","null"]`,
 		"tags":        `"type":["array","null"]`,
+		"grade":       `"enum":["low","high",null]`,
 	} {
 		if got := string(s.Properties[name]); !strings.Contains(got, want) {
 			t.Errorf("%s = %s, want %s", name, got, want)
@@ -59,7 +61,7 @@ func TestNilPointersAreNullableInTheDocument(t *testing.T) {
 	if err := json.Unmarshal(readBody(t, do(t, app, http.MethodGet, "/api/v1/n", "", nil)), &body); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"cover", "edited_at", "reply_to_id", "tags"} {
+	for _, name := range []string{"cover", "edited_at", "reply_to_id", "tags", "grade"} {
 		if v, ok := body[name]; !ok || v != nil {
 			t.Errorf("wire %s = %v (present %v), want null", name, v, ok)
 		}

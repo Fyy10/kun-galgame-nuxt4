@@ -3,6 +3,8 @@ package app
 import (
 	"kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/middleware"
+	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
+	topicRepo "kun-galgame-api/internal/topic/repository"
 	"kun-galgame-api/pkg/perm"
 
 	"github.com/gofiber/fiber/v3"
@@ -22,7 +24,7 @@ func (a *App) setupRoutes() {
 	if a.Authn != nil {
 		deps.Resolver = a.Authn
 	}
-	a.APIv1 = apiv1.Setup(a.Fiber, deps)
+	a.APIv1 = apiv1.Setup(a.Fiber, deps, topicapiv1.Register(a.newTopicV1()))
 
 	// Deliberately touches neither DB nor Redis: the container HEALTHCHECK reads
 	// this, and a transient backing-store blip must not flap the container.
@@ -462,4 +464,21 @@ func (a *App) setupRoutes() {
 	friendAdmin.Put("/admin/friend-link", middleware.RequirePermission(perm.FriendLinkEdit), a.FriendLinkHandler.Update)
 	friendAdmin.Delete("/admin/friend-link", middleware.RequirePermission(perm.FriendLinkDelete), a.FriendLinkHandler.Delete)
 	friendAdmin.Put("/admin/friend-link/reorder", middleware.RequirePermission(perm.FriendLinkEdit), a.FriendLinkHandler.Reorder)
+}
+
+func (a *App) newTopicV1() *topicapiv1.Service {
+	if a.DB == nil || a.UserClient == nil {
+		return nil
+	}
+	cdn := ""
+	if a.Config != nil {
+		cdn = a.Config.NextMoeAPI.ImageCDNBase
+	}
+	return topicapiv1.New(
+		topicRepo.NewTopicListRepository(a.DB),
+		topicRepo.NewTopicRepository(a.DB),
+		topicRepo.NewTopicTaxonomyRepository(a.DB),
+		a.UserClient,
+		cdn,
+	)
 }

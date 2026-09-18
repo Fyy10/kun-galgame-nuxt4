@@ -2,6 +2,7 @@ package gates
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -110,11 +111,15 @@ func CheckG3(doc *huma.OpenAPI) []string {
 	return errs
 }
 
+var codeToken = regexp.MustCompile(`\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b`)
+
 func CheckG4(doc *huma.OpenAPI) []string {
 	var errs []string
 	for path, item := range doc.Paths {
 		for _, op := range pathOps(item) {
+			derived := map[string]bool{}
 			for _, code := range apiv1.RequiredStatuses(path, op) {
+				derived[strconv.Itoa(code)] = true
 				if op.Responses[strconv.Itoa(code)] == nil {
 					errs = append(errs, fmt.Sprintf("G4: %s %s does not declare %d", opMethod(op), path, code))
 				}
@@ -123,9 +128,29 @@ func CheckG4(doc *huma.OpenAPI) []string {
 				if isSuccess(status) || status == "304" {
 					continue
 				}
+				where := fmt.Sprintf("G4: %s %s response %s", opMethod(op), path, status)
+				if status == "default" {
+					errs = append(errs, where+" is a catch-all; declare each error status")
+					continue
+				}
 				c := resp.Content[problem.ContentType]
 				if c == nil || c.Schema == nil || c.Schema.Ref != apiv1.ProblemRef {
-					errs = append(errs, fmt.Sprintf("G4: %s %s response %s is not application/problem+json with $ref Problem", opMethod(op), path, status))
+					errs = append(errs, where+" is not application/problem+json with $ref Problem")
+				}
+				named := false
+				for _, tok := range codeToken.FindAllString(resp.Description, -1) {
+					def, ok := problem.Lookup(tok)
+					switch {
+					case !ok:
+						errs = append(errs, fmt.Sprintf("%s names %s, which is not in the code registry", where, tok))
+					case strconv.Itoa(def.Status) != status:
+						errs = append(errs, fmt.Sprintf("%s names %s, whose status is %d", where, tok, def.Status))
+					default:
+						named = true
+					}
+				}
+				if !derived[status] && !named {
+					errs = append(errs, where+" is not derived from the operation and names no registry code with that status")
 				}
 			}
 		}

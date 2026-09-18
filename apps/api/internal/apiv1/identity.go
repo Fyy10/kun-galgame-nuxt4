@@ -36,30 +36,27 @@ const (
 )
 
 func Public(op huma.Operation) huma.Operation {
-	setTier(&op, TierPublic)
+	declareTier(&op, TierPublic)
 	op.Security = nil
-	addErrors(&op, http.StatusInternalServerError)
 	return op
 }
 
 func Optional(op huma.Operation) huma.Operation {
-	setTier(&op, TierOptional)
+	declareTier(&op, TierOptional)
 	op.Security = []map[string][]string{
 		{"session": {}},
 		{"bearer": {}},
 		{},
 	}
-	addErrors(&op, http.StatusUnauthorized, http.StatusForbidden, http.StatusInternalServerError, http.StatusServiceUnavailable)
 	return op
 }
 
 func Required(op huma.Operation) huma.Operation {
-	setTier(&op, TierRequired)
+	declareTier(&op, TierRequired)
 	op.Security = []map[string][]string{
 		{"session": {}},
 		{"bearer": {}},
 	}
-	addErrors(&op, http.StatusUnauthorized, http.StatusForbidden, http.StatusInternalServerError, http.StatusServiceUnavailable)
 	return op
 }
 
@@ -86,25 +83,15 @@ func TierFromOp(op *huma.Operation) Tier {
 	return t
 }
 
-func setTier(op *huma.Operation, tier Tier) {
+func declareTier(op *huma.Operation, tier Tier) {
 	if op.Metadata == nil {
 		op.Metadata = map[string]any{}
 	}
 	op.Metadata[metaTier] = tier
-}
-
-func addErrors(op *huma.Operation, codes ...int) {
-	seen := make(map[int]bool, len(op.Errors)+len(codes))
-	for _, c := range op.Errors {
-		seen[c] = true
-	}
-	for _, c := range codes {
-		if seen[c] {
-			continue
-		}
-		op.Errors = append(op.Errors, c)
-		seen[c] = true
-	}
+	// Not through op.Errors: once it is non-empty huma adds 422 to every operation
+	// with parameters, and when it is empty huma adds a `default` response. GET
+	// /topics declared a 422 it can never return.
+	ensureProblemResponse(op, http.StatusInternalServerError)
 }
 
 func lookupOp(api huma.API, method, fiberPath string) *huma.Operation {

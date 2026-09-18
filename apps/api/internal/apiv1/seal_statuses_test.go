@@ -1,6 +1,9 @@
 package apiv1
 
 import (
+	"context"
+	"maps"
+	"net/http"
 	"slices"
 	"testing"
 
@@ -31,6 +34,45 @@ func TestRequiredStatuses(t *testing.T) {
 		got = slices.Compact(got)
 		if !slices.Equal(got, c.want) {
 			t.Errorf("%s = %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
+type statusQuery struct {
+	Q string `query:"q" maxLength:"8" doc:"Q."`
+}
+
+type statusBody struct {
+	Body struct {
+		Name string `json:"name" maxLength:"8" doc:"Name."`
+	}
+}
+
+func TestDeclaredStatusesAreExactlyTheDerivedOnes(t *testing.T) {
+	_, api := newTestAPI(t, Deps{}, func(api huma.API) {
+		huma.Register(api, Public(huma.Operation{OperationID: "plain", Method: http.MethodGet, Path: "/plain", Summary: "P"}),
+			func(context.Context, *struct{}) (*struct{}, error) { return nil, nil })
+		huma.Register(api, Public(huma.Operation{OperationID: "query", Method: http.MethodGet, Path: "/query", Summary: "Q"}),
+			func(context.Context, *statusQuery) (*struct{}, error) { return nil, nil })
+		huma.Register(api, Optional(huma.Operation{OperationID: "opt", Method: http.MethodGet, Path: "/opt", Summary: "O"}),
+			func(context.Context, *statusQuery) (*struct{}, error) { return nil, nil })
+		huma.Register(api, IdempotencyRequired(Required(huma.Operation{OperationID: "write", Method: http.MethodPost, Path: "/write", Summary: "W"})),
+			func(context.Context, *statusBody) (*struct{}, error) { return nil, nil })
+	})
+	for path, want := range map[string][]string{
+		"/plain": {"204", "500"},
+		"/query": {"204", "400", "500"},
+		"/opt":   {"204", "400", "401", "403", "500", "503"},
+		"/write": {"204", "400", "401", "403", "409", "415", "422", "500", "503"},
+	} {
+		item := api.OpenAPI().Paths[path]
+		op := item.Get
+		if op == nil {
+			op = item.Post
+		}
+		got := slices.Sorted(maps.Keys(op.Responses))
+		if !slices.Equal(got, want) {
+			t.Errorf("%s declares %v, want %v", path, got, want)
 		}
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -180,6 +181,23 @@ func checkOmitempty(root string) []string {
 					p := gf.fset.Position(f.Pos())
 					errs = append(errs, fmt.Sprintf("G9: %s:%d %s on a non-pointer field", filepath.Base(p.Filename), p.Line, opt))
 				}
+			}
+			return true
+		})
+	}
+	return errs
+}
+
+var localeText = regexp.MustCompile(`[\p{Han}\p{Hiragana}\p{Katakana}\p{Hangul}]`)
+
+func scanLocaleText(root string) []string {
+	files, errs := sourceFiles(root)
+	for _, gf := range files {
+		ast.Inspect(gf.file, func(n ast.Node) bool {
+			lit, ok := n.(*ast.BasicLit)
+			if ok && lit.Kind == token.STRING && localeText.MatchString(lit.Value) {
+				p := gf.fset.Position(lit.Pos())
+				errs = append(errs, fmt.Sprintf("F8: %s:%d string literal in a human language; the client localizes, so send a code or a null", filepath.Base(p.Filename), p.Line))
 			}
 			return true
 		})

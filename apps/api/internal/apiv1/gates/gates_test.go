@@ -115,6 +115,46 @@ func TestG4ProblemMediaWithTheWrongSchema(t *testing.T) {
 	expect(t, gates.CheckG4(doc), "GET /odd response 409 is not application/problem+json with $ref Problem")
 }
 
+func declaring(status, description string) func(huma.API) {
+	return func(api huma.API) {
+		huma.Register(api, apiv1.Public(huma.Operation{
+			OperationID: "odd", Method: http.MethodGet, Path: "/odd", Summary: "Odd",
+			Responses: map[string]*huma.Response{status: {Description: description, Content: map[string]*huma.MediaType{
+				"application/problem+json": {Schema: &huma.Schema{Ref: apiv1.ProblemRef}},
+			}}},
+		}), func(context.Context, *struct{}) (*struct{}, error) { return nil, nil })
+	}
+}
+
+func TestG4StatusTheOperationCannotDerive(t *testing.T) {
+	expect(t, gates.CheckG4(spec(t, declaring("404", "Not Found"))),
+		"GET /odd response 404 is not derived from the operation and names no registry code with that status")
+}
+
+func TestG4StatusNamedByItsCodePasses(t *testing.T) {
+	if errs := gates.CheckG4(spec(t, declaring("404", "NOT_FOUND when the odd thing is gone."))); len(errs) > 0 {
+		t.Fatalf("a named status failed: %q", errs)
+	}
+}
+
+func TestG4DescriptionNamesACodeOfAnotherStatus(t *testing.T) {
+	expect(t, gates.CheckG4(spec(t, declaring("404", "NOT_FOUND or INVALID_PARAMETER."))),
+		"GET /odd response 404 names INVALID_PARAMETER, whose status is 400")
+}
+
+func TestG4DescriptionNamesAnUnknownCode(t *testing.T) {
+	expect(t, gates.CheckG4(spec(t, declaring("404", "NOT_FOUND or TOPIC_GONE."))),
+		"GET /odd response 404 names TOPIC_GONE, which is not in the code registry")
+}
+
+func TestG4CatchAllResponse(t *testing.T) {
+	doc := spec(t, func(api huma.API) {
+		huma.Register(api, huma.Operation{OperationID: "untiered", Method: http.MethodGet, Path: "/untiered", Summary: "Untiered"},
+			func(context.Context, *struct{}) (*struct{}, error) { return nil, nil })
+	})
+	expect(t, gates.CheckG4(doc), "GET /untiered response default is a catch-all")
+}
+
 func TestG6EnvelopeKey(t *testing.T) {
 	expect(t, gates.CheckG6(spec(t, get[struct {
 		Code int `json:"code" minimum:"0" doc:"Legacy code."`

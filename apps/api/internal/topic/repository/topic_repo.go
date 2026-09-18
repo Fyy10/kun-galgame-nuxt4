@@ -84,6 +84,10 @@ func (r *TopicRepository) FindTopicMiniApps(topicIDs []int) map[int][]string {
 	return miniapp.ByTopic(r.db, topicIDs)
 }
 
+func (r *TopicRepository) LookupMiniApps(topicIDs []int) (map[int][]string, error) {
+	return miniapp.Lookup(r.db, topicIDs)
+}
+
 func (r *TopicRepository) FindByIDTx(tx *gorm.DB, topicID int) (*model.Topic, error) {
 	var topic model.Topic
 	err := tx.First(&topic, topicID).Error

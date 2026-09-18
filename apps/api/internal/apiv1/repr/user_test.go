@@ -10,7 +10,7 @@ import (
 func TestNewUserRefAvatarFromHash(t *testing.T) {
 	u := userclient.User{ID: 3, Name: "alice", AvatarImageHash: testHash, Avatar: "https://ignored.example/a.png"}
 	ref := NewUserRef("https://cdn", u)
-	if ref.Object != "user" || string(ref.ID) != "3" || ref.Name != "alice" {
+	if ref.Object != "user" || string(ref.ID) != "3" || ref.Name == nil || *ref.Name != "alice" {
 		t.Errorf("ref %+v", ref)
 	}
 	if ref.Avatar == nil || ref.Avatar.Hash != testHash {
@@ -37,10 +37,12 @@ func TestNewUserRefExternalURLIsNullAvatar(t *testing.T) {
 	}
 }
 
-func TestNewUserRefPlaceholderPassesThrough(t *testing.T) {
-	u := userclient.Placeholder(99)
-	ref := NewUserRef("https://cdn", u)
-	if ref.Name != "已注销用户" || string(ref.ID) != "99" || ref.Avatar != nil {
-		t.Errorf("placeholder %+v", ref)
+func TestDeletedUserRefHasANullName(t *testing.T) {
+	raw, err := json.Marshal(DeletedUserRef(99))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(raw) != `{"object":"user","id":"99","name":null,"avatar":null}` {
+		t.Errorf("deleted user = %s", raw)
 	}
 }

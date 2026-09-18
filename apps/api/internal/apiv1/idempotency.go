@@ -82,7 +82,6 @@ func withIdempotency(op huma.Operation, class IdempotencyClass) huma.Operation {
 			Description: idempotencyKeyDoc,
 		},
 	})
-	addErrors(&op, http.StatusBadRequest, http.StatusConflict)
 	return op
 }
 

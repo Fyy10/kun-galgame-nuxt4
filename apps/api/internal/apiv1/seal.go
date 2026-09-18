@@ -3,6 +3,7 @@ package apiv1
 import (
 	"net/http"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -31,6 +32,7 @@ func sealDocument(doc *huma.OpenAPI) {
 		}
 	}
 	walkDocSchemas(doc, markClosedEnums)
+	walkDocSchemas(doc, nullableEnums)
 }
 
 func RequiredStatuses(path string, op *huma.Operation) []int {
@@ -131,6 +133,15 @@ func markClosedEnums(s *huma.Schema) {
 	}
 	if _, ok := s.Extensions["x-vocabulary-closed"]; !ok {
 		s.Extensions["x-vocabulary-closed"] = true
+	}
+}
+
+// huma renders a nullable enum as type [string, null] with an enum that has no
+// null, and its own validator short-circuits null before the enum: every
+// Image.sexual of null failed the W0a-5 contract test's JSON Schema validator.
+func nullableEnums(s *huma.Schema) {
+	if s.Nullable && len(s.Enum) > 0 && !slices.Contains(s.Enum, nil) {
+		s.Enum = append(s.Enum, nil)
 	}
 }
 

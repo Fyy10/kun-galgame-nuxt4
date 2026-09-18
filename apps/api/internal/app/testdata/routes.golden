@@ -182,6 +182,7 @@ GET    /api/user/search                               cors.New → middleware.Na
 GET    /api/user/status                               cors.New → middleware.NamePreference → Auth → UserHandler.GetStatus
 GET    /api/v1/problems                               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/problems/reasons                       cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/topics                                 cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/website                                   cors.New → middleware.NamePreference → OptionalAuth → WebsiteHandler.GetWebsites
 GET    /api/website-category                          cors.New → middleware.NamePreference → CategoryHandler.GetWebsiteCategories
 GET    /api/website-category/:name                    cors.New → middleware.NamePreference → CategoryHandler.GetWebsiteCategory

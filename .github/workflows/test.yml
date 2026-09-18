@@ -1,17 +1,20 @@
 # CI test gate for the Go module under apps/api.
 #
 #   unit — build + vet + errcheck + `go test ./...`, no external services.
+#   db   — empty Postgres, testdb-bootstrap.sh, then `go test -count=1 -p 1 ./...`
+#          with TEST_DATABASE_DSN and KUN_REQUIRE_TEST_DB=1 so a skip is a failure.
 #
 # errcheck is here because `go vet` does not catch a discarded error, and a
 # discarded gorm error is the repo's worst failure mode: the write silently
 # does nothing and the request still answers 200. See apps/api/.errcheck-exclude
 # for the (short) list of calls whose error is genuinely nothing to act on.
 #
-# The job needs no services and is always green: the DB-backed tests that do
-# exist go through internal/testdb, which SKIPS unless TEST_DATABASE_DSN is set,
-# and nothing here sets it. If those are ever meant to run in CI, spin their
-# containers up in a second job then (mirror the pattern; don't pre-build it) —
-# do not hand this job a DSN.
+# unit still sets no DSN: DB-backed tests go through internal/testdb and SKIP
+# there. db is the job that actually runs them. The two jobs share triggers
+# and the Go version; they do not share a database.
+#
+# db relies on the psql client shipped on GitHub's ubuntu-latest image. It
+# does not apt-install postgresql-client.
 #
 # The paths include three web files because Go tests read them: the permission
 # tri-mirror (pkg/perm/frontend_mirror_test.go) and the moemoepoint rules mirror
@@ -54,3 +57,32 @@ jobs:
       - run: go vet ./...
       - run: go run github.com/kisielk/errcheck@v1.9.0 -exclude .errcheck-exclude ./...
       - run: go test ./...
+
+  db:
+    name: db (bootstrap · go test)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: kun
+          POSTGRES_DB: kun_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kun -d kun_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_DSN: postgres://kun@localhost:5432/kun_test?sslmode=disable
+      KUN_REQUIRE_TEST_DB: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/api/go.mod
+          cache-dependency-path: apps/api/go.sum
+      - run: bash scripts/testdb-bootstrap.sh
+      - run: go test -count=1 -p 1 ./...

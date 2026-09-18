@@ -91,3 +91,16 @@ func TestOmitemptyScan(t *testing.T) {
 	})
 	expectExactly(t, checkOmitempty(root), "dto.go:4 omitempty on a non-pointer field", "dto.go:6 omitzero on a non-pointer field")
 }
+
+func TestLocaleTextScan(t *testing.T) {
+	root := tree(t, map[string]string{
+		"pkg/problem/ok.go":              "package problem\n\n// 已注销用户 in a comment is not sent.\nconst x = \"deleted\"\n",
+		"internal/apiv1/a.go":            "package apiv1\n\nvar name = \"已注销用户\"\n",
+		"internal/topic/apiv1/b.go":      "package apiv1\n\nvar (\n\ta = `ログイン`\n\tb = \"ok\"\n)\n",
+		"internal/topic/apiv1/b_test.go": "package apiv1\n\nvar c = \"测试\"\n",
+	})
+	expectExactly(t, scanLocaleText(root),
+		"a.go:3 string literal in a human language",
+		"b.go:4 string literal in a human language",
+	)
+}
