@@ -169,49 +169,49 @@
       "reason": "DUPLICATE_ITEM",
       "title": "Duplicate item",
       "description": "An array that must be unique contains a duplicate.",
-      "params": []
+      "param_names": []
     },
     {
       "object": "problem_reason",
       "reason": "IMMUTABLE",
       "title": "Immutable",
       "description": "This field cannot be changed in the current state.",
-      "params": []
+      "param_names": []
     },
     {
       "object": "problem_reason",
       "reason": "INCONSISTENT_WITH",
       "title": "Inconsistent with",
       "description": "The value contradicts another field. detail names that field's pointer.",
-      "params": []
+      "param_names": []
     },
     {
       "object": "problem_reason",
       "reason": "INVALID_FORMAT",
       "title": "Invalid format",
       "description": "The value does not match the expected format (date, URI, hash, id string).",
-      "params": []
+      "param_names": []
     },
     {
       "object": "problem_reason",
       "reason": "NOT_ALLOWED_VALUE",
       "title": "Not allowed value",
       "description": "The value is in the vocabulary but is not accepted in this context.",
-      "params": []
+      "param_names": []
     },
     {
       "object": "problem_reason",
       "reason": "NOT_PERMITTED",
       "title": "Not permitted",
       "description": "The caller is not allowed to act on this position. Unlike IMMUTABLE this is about the actor, not the field's state.",
-      "params": []
+      "param_names": []
     },
     {
       "object": "problem_reason",
       "reason": "OUT_OF_RANGE",
       "title": "Out of range",
       "description": "A numeric value is out of range, including a date outside the allowed interval.",
-      "params": [
+      "param_names": [
         "minimum",
         "maximum"
       ]
@@ -221,14 +221,14 @@
       "reason": "REQUIRED",
       "title": "Required",
       "description": "A required field is missing or null.",
-      "params": []
+      "param_names": []
     },
     {
       "object": "problem_reason",
       "reason": "TOO_FEW_ITEMS",
       "title": "Too few items",
       "description": "The array has fewer items than its minimum.",
-      "params": [
+      "param_names": [
         "min_items"
       ]
     },
@@ -237,7 +237,7 @@
       "reason": "TOO_LONG",
       "title": "Too long",
       "description": "A string is longer than its maxLength.",
-      "params": [
+      "param_names": [
         "max_length"
       ]
     },
@@ -246,7 +246,7 @@
       "reason": "TOO_MANY_ITEMS",
       "title": "Too many items",
       "description": "An array exceeds its item limit.",
-      "params": [
+      "param_names": [
         "max_items"
       ]
     },
@@ -255,7 +255,7 @@
       "reason": "TOO_SHORT",
       "title": "Too short",
       "description": "A string is shorter than its minLength.",
-      "params": [
+      "param_names": [
         "min_length"
       ]
     },
@@ -264,14 +264,14 @@
       "reason": "UNKNOWN_REFERENCE",
       "title": "Unknown reference",
       "description": "The value refers to an entity that is not visible. Absence, merge, and visibility filtering are not distinguished.",
-      "params": []
+      "param_names": []
     },
     {
       "object": "problem_reason",
       "reason": "UNKNOWN_VALUE",
       "title": "Unknown value",
       "description": "The value is not in this field's closed vocabulary.",
-      "params": [
+      "param_names": [
         "allowed"
       ]
     }

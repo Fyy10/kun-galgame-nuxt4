@@ -5,40 +5,36 @@ import (
 	"net/http"
 	"sort"
 
+	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/pkg/problem"
 
 	"github.com/danielgtaylor/huma/v2"
 )
 
-type listObject[T any] struct {
-	Object string `json:"object" enum:"list" maxLength:"4" doc:"Type discriminant. Always list."`
-	Items  []T    `json:"items" doc:"The members of this list. Empty array, never null." maxItems:"256"`
-}
-
 type problemType struct {
 	Object      string `json:"object" enum:"problem_type" maxLength:"12" doc:"Type discriminant. Always problem_type."`
-	Code        string `json:"code" pattern:"^[A-Z][A-Z0-9_]*[A-Z0-9]$" maxLength:"63" doc:"Top-level error code. UPPER_SNAKE."`
+	Code        string `json:"code" pattern:"^[A-Z][A-Z0-9_]*[A-Z0-9]$" minLength:"2" maxLength:"63" doc:"Top-level error code. UPPER_SNAKE."`
 	Domain      string `json:"domain" enum:"platform,kungal" maxLength:"16" doc:"Type URI domain segment."`
 	Status      int    `json:"status" minimum:"400" maximum:"599" doc:"HTTP status this code is bound to. One status per code."`
 	Type        string `json:"type" format:"uri" maxLength:"256" doc:"Problem type URI. The last path segment is the kebab-case form of code."`
 	Title       string `json:"title" maxLength:"128" pattern:"^[ -~]+$" doc:"Stable English phrase for this type. Does not vary per request."`
-	Description string `json:"description" maxLength:"512" doc:"English prose. Must not be used as a discriminant."`
+	Description string `json:"description" maxLength:"512" doc:"English prose. Free text; never use it as a decision input."`
 }
 
 type problemReason struct {
 	Object      string   `json:"object" enum:"problem_reason" maxLength:"14" doc:"Type discriminant. Always problem_reason."`
-	Reason      string   `json:"reason" pattern:"^[A-Z][A-Z0-9_]*[A-Z0-9]$" maxLength:"63" doc:"Field-level reason. UPPER_SNAKE. Disjoint from top-level codes."`
+	Reason      string   `json:"reason" pattern:"^[A-Z][A-Z0-9_]*[A-Z0-9]$" minLength:"2" maxLength:"63" doc:"Field-level reason. UPPER_SNAKE. Disjoint from top-level codes."`
 	Title       string   `json:"title" maxLength:"128" pattern:"^[ -~]+$" doc:"Stable English phrase for this reason."`
-	Description string   `json:"description" maxLength:"512" doc:"English prose. Must not be used as a discriminant."`
-	Params      []string `json:"params" doc:"Declared param key names for this reason. Empty array when the reason carries no params." maxItems:"8"`
+	Description string   `json:"description" maxLength:"512" doc:"English prose. Free text; never use it as a decision input."`
+	ParamNames  []string `json:"param_names" doc:"Keys this reason can carry in a field error's params. Empty array when it carries none." maxItems:"8" maxLength:"32" pattern:"^[a-z][a-z0-9_]*$"`
 }
 
 type listProblemTypesOutput struct {
-	Body listObject[problemType]
+	Body repr.List[problemType]
 }
 
 type listProblemReasonsOutput struct {
-	Body listObject[problemReason]
+	Body repr.List[problemReason]
 }
 
 func registerMeta(api huma.API) {
@@ -62,11 +58,11 @@ func registerMeta(api huma.API) {
 }
 
 func listProblemTypes(context.Context, *struct{}) (*listProblemTypesOutput, error) {
-	return &listProblemTypesOutput{Body: listObject[problemType]{Object: "list", Items: ProblemTypes()}}, nil
+	return &listProblemTypesOutput{Body: repr.NewList(ProblemTypes(), nil)}, nil
 }
 
 func listProblemReasons(context.Context, *struct{}) (*listProblemReasonsOutput, error) {
-	return &listProblemReasonsOutput{Body: listObject[problemReason]{Object: "list", Items: ProblemReasons()}}, nil
+	return &listProblemReasonsOutput{Body: repr.NewList(ProblemReasons(), nil)}, nil
 }
 
 func ProblemTypes() []problemType {
@@ -95,16 +91,16 @@ func ProblemTypes() []problemType {
 func ProblemReasons() []problemReason {
 	items := make([]problemReason, 0, len(problem.Reasons))
 	for _, d := range problem.Reasons {
-		params := d.Params
-		if params == nil {
-			params = []string{}
+		names := d.Params
+		if names == nil {
+			names = []string{}
 		}
 		items = append(items, problemReason{
 			Object:      "problem_reason",
 			Reason:      d.Reason,
 			Title:       d.Title,
 			Description: d.Description,
-			Params:      params,
+			ParamNames:  names,
 		})
 	}
 	sort.Slice(items, func(i, j int) bool {

@@ -78,9 +78,12 @@ func registerNested(api huma.API) {
 func registerQuery(api huma.API) {
 	huma.Register(api, huma.Operation{Method: http.MethodGet, Path: "/query"},
 		func(context.Context, *struct {
-			Q    int    `query:"q" required:"true"`
-			Sort string `query:"sort" enum:"new,old"`
-			Name string `query:"name" minLength:"2" maxLength:"8"`
+			Q      int    `query:"q" required:"true"`
+			Sort   string `query:"sort" enum:"new,old"`
+			Color  string `query:"color" enum:"red,blue"`
+			Name   string `query:"name" minLength:"2" maxLength:"8"`
+			Limit  int    `query:"limit" minimum:"1" maximum:"100"`
+			Cursor string `query:"cursor" pattern:"^cur_[A-Za-z0-9_-]+$" maxLength:"512"`
 		}) (*struct{}, error) {
 			return nil, nil
 		})
@@ -475,9 +478,33 @@ func TestFromHumaBridge(t *testing.T) {
 		record(p)
 	})
 	t.Run("query unknown enum", func(t *testing.T) {
+		c := capture(t, registerQuery, http.MethodGet, "/query?q=1&color=green")
+		p := fromCaptured(c)
+		checkBridge(t, p, bridgeWant{CodeUnknownEnumValue, 400, "parameter", "color", ReasonUnknownValue, map[string]any{"allowed": []string{"red", "blue"}}})
+		record(p)
+	})
+	t.Run("query unknown sort", func(t *testing.T) {
 		c := capture(t, registerQuery, http.MethodGet, "/query?q=1&sort=weird")
 		p := fromCaptured(c)
-		checkBridge(t, p, bridgeWant{CodeUnknownEnumValue, 400, "parameter", "sort", ReasonUnknownValue, map[string]any{"allowed": []string{"new", "old"}}})
+		checkBridge(t, p, bridgeWant{CodeUnknownSort, 400, "parameter", "sort", ReasonUnknownValue, map[string]any{"allowed": []string{"new", "old"}}})
+		record(p)
+	})
+	t.Run("query limit too large", func(t *testing.T) {
+		c := capture(t, registerQuery, http.MethodGet, "/query?q=1&limit=101")
+		p := fromCaptured(c)
+		checkBridge(t, p, bridgeWant{CodeLimitTooLarge, 400, "parameter", "limit", ReasonOutOfRange, map[string]any{"maximum": 100}})
+		record(p)
+	})
+	t.Run("query cursor malformed", func(t *testing.T) {
+		c := capture(t, registerQuery, http.MethodGet, "/query?q=1&cursor=nope")
+		p := fromCaptured(c)
+		checkBridge(t, p, bridgeWant{CodeInvalidCursor, 400, "parameter", "cursor", ReasonInvalidFormat, nil})
+		record(p)
+	})
+	t.Run("query limit below one", func(t *testing.T) {
+		c := capture(t, registerQuery, http.MethodGet, "/query?q=1&limit=0")
+		p := fromCaptured(c)
+		checkBridge(t, p, bridgeWant{CodeInvalidParameter, 400, "parameter", "limit", ReasonOutOfRange, map[string]any{"minimum": 1}})
 		record(p)
 	})
 	t.Run("query too long", func(t *testing.T) {

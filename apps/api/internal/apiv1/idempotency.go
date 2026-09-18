@@ -45,11 +45,11 @@ var (
 
 type idempotencyRecord struct {
 	Fingerprint string `json:"fp"`
-	Done        bool   `json:"done,omitempty"`
-	Status      int    `json:"status,omitempty"`
-	ContentType string `json:"content_type,omitempty"`
-	Location    string `json:"location,omitempty"`
-	Body        []byte `json:"body,omitempty"`
+	Done        bool   `json:"done"`
+	Status      int    `json:"status"`
+	ContentType string `json:"content_type"`
+	Location    string `json:"location"`
+	Body        []byte `json:"body"`
 }
 
 func IdempotencyOptional(op huma.Operation) huma.Operation {

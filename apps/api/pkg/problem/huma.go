@@ -97,7 +97,16 @@ func pickCode(ctx huma.Context, status int, msg string, fields []FieldError) str
 		}
 		if allParamOrHeader {
 			if allUnknown {
+				if namedParam(fields, "sort") {
+					return CodeUnknownSort
+				}
 				return CodeUnknownEnumValue
+			}
+			if namedParam(fields, "cursor") {
+				return CodeInvalidCursor
+			}
+			if limitTooLarge(fields) {
+				return CodeLimitTooLarge
 			}
 			return CodeInvalidParameter
 		}
@@ -107,6 +116,30 @@ func pickCode(ctx huma.Context, status int, msg string, fields []FieldError) str
 		return CodeMalformedBody
 	}
 	return StatusToCode(status)
+}
+
+func namedParam(fields []FieldError, name string) bool {
+	for _, f := range fields {
+		if f.Parameter != nil && *f.Parameter == name {
+			return true
+		}
+	}
+	return false
+}
+
+func limitTooLarge(fields []FieldError) bool {
+	for _, f := range fields {
+		if f.Parameter == nil || *f.Parameter != "limit" {
+			continue
+		}
+		if f.Reason != ReasonOutOfRange {
+			continue
+		}
+		if f.Params != nil && f.Params.Maximum != nil {
+			return true
+		}
+	}
+	return false
 }
 
 func isMalformedBodyMessage(msg string) bool {

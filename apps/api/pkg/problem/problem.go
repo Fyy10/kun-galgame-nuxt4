@@ -14,33 +14,33 @@ const ContentType = "application/problem+json"
 const internalDetail = "An internal error occurred."
 
 type FieldParams struct {
-	MaxLength *int      `json:"max_length,omitempty"`
-	MinLength *int      `json:"min_length,omitempty"`
-	Minimum   *float64  `json:"minimum,omitempty"`
-	Maximum   *float64  `json:"maximum,omitempty"`
-	MaxItems  *int      `json:"max_items,omitempty"`
-	MinItems  *int      `json:"min_items,omitempty"`
-	Allowed   *[]string `json:"allowed,omitempty"`
+	MaxLength *int      `json:"max_length,omitempty" minimum:"0" doc:"Maximum string length the value exceeded."`
+	MinLength *int      `json:"min_length,omitempty" minimum:"0" doc:"Minimum string length the value failed."`
+	Minimum   *float64  `json:"minimum,omitempty" minimum:"-9007199254740991" maximum:"9007199254740991" doc:"Inclusive numeric lower bound the value missed."`
+	Maximum   *float64  `json:"maximum,omitempty" minimum:"-9007199254740991" maximum:"9007199254740991" doc:"Inclusive numeric upper bound the value missed."`
+	MaxItems  *int      `json:"max_items,omitempty" minimum:"0" doc:"Maximum array length the value exceeded."`
+	MinItems  *int      `json:"min_items,omitempty" minimum:"0" doc:"Minimum array length the value failed."`
+	Allowed   *[]string `json:"allowed,omitempty" maxItems:"256" maxLength:"128" pattern:"^[\\x20-\\x7E]+$" doc:"Closed vocabulary members that were expected."`
 }
 
 type FieldError struct {
-	Pointer   *string      `json:"pointer,omitempty"`
-	Parameter *string      `json:"parameter,omitempty"`
-	Header    *string      `json:"header,omitempty"`
-	Reason    string       `json:"reason"`
-	Detail    string       `json:"detail"`
-	Params    *FieldParams `json:"params,omitempty"`
+	Pointer   *string      `json:"pointer,omitempty" maxLength:"512" pattern:"^(/([^/~]|~[01])*)*$" doc:"JSON Pointer to a body location. Exactly one of pointer, parameter, or header is present."`
+	Parameter *string      `json:"parameter,omitempty" maxLength:"128" pattern:"^[A-Za-z0-9._\\[\\]-]+$" doc:"Query or path parameter name. Exactly one of pointer, parameter, or header is present."`
+	Header    *string      `json:"header,omitempty" maxLength:"128" pattern:"^[A-Za-z0-9-]+$" doc:"Header name. Exactly one of pointer, parameter, or header is present."`
+	Reason    string       `json:"reason" pattern:"^[A-Z][A-Z0-9_]*[A-Z0-9]$" minLength:"2" maxLength:"63" doc:"Field-level reason. UPPER_SNAKE. Disjoint from top-level codes."`
+	Detail    string       `json:"detail" maxLength:"4096" doc:"English diagnostic for this location. Free text; never use it as a decision input."`
+	Params    *FieldParams `json:"params,omitempty" doc:"Reason-specific bounds or allowed values. Omitted when the reason has no params."`
 }
 
 type Problem struct {
-	Type      string       `json:"type"`
-	Title     string       `json:"title"`
-	Status    int          `json:"status"`
-	Detail    string       `json:"detail"`
-	Instance  string       `json:"instance"`
-	Code      string       `json:"code"`
-	RequestID string       `json:"request_id"`
-	Errors    []FieldError `json:"errors"`
+	Type      string       `json:"type" format:"uri" maxLength:"256" pattern:"^https://developer\\.nextmoe\\.dev/problems/[a-z]+/[a-z0-9-]+$" doc:"Problem type URI. The last path segment is the kebab-case form of code."`
+	Title     string       `json:"title" maxLength:"128" pattern:"^[ -~]+$" doc:"Stable English phrase for this type. Does not vary per request."`
+	Status    int          `json:"status" minimum:"400" maximum:"599" doc:"HTTP status this code is bound to. One status per code."`
+	Detail    string       `json:"detail" maxLength:"4096" doc:"English diagnostic for this request. Free text; never use it as a decision input."`
+	Instance  string       `json:"instance" maxLength:"4096" pattern:"^/\\S*$" doc:"Request path and query that failed."`
+	Code      string       `json:"code" pattern:"^[A-Z][A-Z0-9_]*[A-Z0-9]$" minLength:"2" maxLength:"63" doc:"Top-level error code. UPPER_SNAKE."`
+	RequestID string       `json:"request_id" pattern:"^req_[0-9A-HJKMNP-TV-Z]{26}$" minLength:"30" maxLength:"30" doc:"Request correlation id. Echoed from X-Request-ID when valid."`
+	Errors    []FieldError `json:"errors" doc:"Field-level errors. Empty array, never null."`
 	extra     map[string]any
 	cause     error
 }

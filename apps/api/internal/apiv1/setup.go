@@ -66,16 +66,18 @@ func Setup(app *fiber.App, deps Deps, registrars ...func(huma.API)) huma.API {
 	api := humafiber.NewWithGroup(app, group, cfg)
 	api.UseMiddleware(newIdentityMiddleware(deps.Resolver))
 	api.UseMiddleware(newIdempotencyMiddleware(deps.Redis))
+	api.UseMiddleware(strictBooleans)
 
 	declareSecurity(api.OpenAPI())
 	registerMeta(api)
 	for _, register := range registrars {
 		register(api)
 	}
+	sealDocument(api.OpenAPI())
+	mirrorHead(app)
 	// Fiber matches in registration order and the legacy /api group spreads
 	// OptionalAuth and Auth over every path below it: without this, an unmatched
 	// /api/v1 request fell through into them and answered a legacy envelope.
-	mirrorHead(app)
 	app.Use(Prefix, unmatched(api.OpenAPI()))
 	return api
 }

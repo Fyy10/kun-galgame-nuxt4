@@ -38,6 +38,14 @@ var (
 
 var contentImageRefRe = regexp.MustCompile(`^/image/([0-9a-f]{64})(?:_([a-z0-9]+))?$`)
 
+func ParseContentImageRef(dest string) (hash, variant string, ok bool) {
+	m := contentImageRefRe.FindStringSubmatch(dest)
+	if m == nil {
+		return "", "", false
+	}
+	return m[1], m[2], true
+}
+
 var contentImageScanRe = regexp.MustCompile(`/image/[0-9a-f]{64}`)
 
 func ExtractContentImages(content string, limit int) []string {
@@ -524,11 +532,11 @@ func ResolveContentImageMeta(tokens []string) map[string]imageclient.ImageMeta {
 }
 
 func contentImageHash(dest string) string {
-	m := contentImageRefRe.FindStringSubmatch(dest)
-	if m == nil {
+	hash, _, ok := ParseContentImageRef(dest)
+	if !ok {
 		return ""
 	}
-	return m[1]
+	return hash
 }
 
 type contentImageMetaTransformer struct{}

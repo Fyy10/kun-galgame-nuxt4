@@ -3,6 +3,7 @@ package apiv1
 import (
 	"encoding/json"
 	"net/http"
+	"slices"
 	"testing"
 
 	"kun-galgame-api/pkg/problem"
@@ -65,8 +66,8 @@ func TestMetaEndpointsMatchRegistry(t *testing.T) {
 		if got.Reason != want.Reason || got.Title != want.Title || got.Description != want.Description || got.Object != "problem_reason" {
 			t.Errorf("reason %d %+v != %+v", i, got, want)
 		}
-		if len(got.Params) != len(want.Params) {
-			t.Errorf("reason %s params %v != %v", got.Reason, got.Params, want.Params)
+		if !slices.Equal(got.ParamNames, want.ParamNames) {
+			t.Errorf("reason %s param_names %v != %v", got.Reason, got.ParamNames, want.ParamNames)
 		}
 	}
 	for i := 1; i < len(reasonList.Items); i++ {
