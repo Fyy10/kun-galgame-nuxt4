@@ -38,16 +38,25 @@ App 用 AppAuth + PKCE 直接从 OP 换出 access token，然后 `Authorization:
 - **没有 staff 能力**：Bearer 用户的 `roles` 会剥掉 `moderator` / `admin` / `ren`（`creator` 等保留）。`UserInfo.Can` / `CanModerate` / `CanAdminister` 对 Bearer 恒为 false，**连个人权限覆盖也不生效**；`/api/perm/mine` 恒返回空列表。`internal/middleware/bearer_guard_test.go` 禁止任何代码绕过这些方法、直接在 `u.Roles` 上做能力检查。
 - **首次见到用户**（每用户 24h 一次）：补做网页 OAuth 回调里做的两件事：`kungal_user_state` 行（没有这行，发帖会失败）和社区 trust boost。boost 用的是**未剥离**的 roles，因为它每个用户只声明一次、由 SETNX 守着，从 App 先声明一个剥离后的值，会把版主之后从网页登录时的 boost 锁掉。
 - **封禁**：access token 有效期 15 分钟，没有吊销列表，所以封禁最多滞后 15 分钟，和网页会话的刷新周期相同。封禁用户发的内容仍在渲染层隐藏。
-- **下游转发**：论坛把 App 的 token 原样当 Bearer 转给 catalog `/v2` 用户面、OAuth `/auth/me`、图床。catalog 不校验 `aud` / `client_id` 白名单，但会读取该 client 的 `catalog_site` 和 scope。社区接口走 client Basic 认证，不受影响。
+- **下游转发**：论坛把 App 的 token 原样当 Bearer 转给 catalog `/v2` 用户面和 OAuth `/auth/me`。catalog 不校验 `aud` / `client_id` 白名单，但会读取该 client 的 `catalog_site` 和 scope。社区接口和图床（`pkg/imageclient`）都走论坛 client 的 Basic 认证，不经过用户 token，不受影响。
 
 ### 对 infra 注册 kungal-app 的要求（工单 01）
 
-- `site_id = 2`（www.kungal.com）：否则 `site_roles` 为空，图床也会拒绝（图床要求 token 的 `site_id` 等于论坛 client 的）。
+- `site_id = 2`（www.kungal.com）：否则 `site_roles` 为空。
 - `catalog_site = kungal`：否则编辑提案 / 认领返回 `SITE_NOT_BOUND`。
 - `owner_user_id` 为空：否则会被当成第三方 client（编辑受限，catalog 管理面拒绝）。
-- scope 需包含 `catalog:edit`、`folder:read`、`folder:write`；图床上传另需 `image:upload`。
+- scope 需包含 `catalog:edit`、`folder:read`、`folder:write`。
 - 固定的 client_id（如 `kungal-app`）后台生成不了，只能手工插入或写进 seed。
 - playtime 按 `(user, work, client_id)` 分行存，App 上报的是独立一行，读取时取各行最大值。
+
+**实际注册（2026-09-17，线上 `oauth_clients` 核对过）**：两个 public client，上述四条都满足，scope 均为 `openid profile email catalog:read catalog:edit folder:read folder:write`，RT 90 天。
+
+| client_id | 平台 | redirect_uris |
+|---|---|---|
+| `kungal-app` | Android / iOS | `com.kungal.app://oauth2redirect`、`https://www.kungal.com/app/oauth/callback`、`com.kungal.app://logout` |
+| `kungal-app-desktop` | Windows / Linux | `http://127.0.0.1/oauth/callback`（loopback，端口宽松匹配） |
+
+**两个都要进白名单**：漏掉哪个，那个平台的所有用户都会 401。
 
 ### 放行范围
 
@@ -119,8 +128,8 @@ curl -s -X POST 'https://www.kungal.com/api/topic/4230/reply' \
 ## 6. 上线
 
 - **不需要数据库迁移**（幂等键存在 Redis 里）。
-- `docker-compose.prod.yml` 已写入 `KUN_OIDC_ISSUER`、`KUN_OIDC_JWKS_URL`（内网 `http://oauth:9277/oauth/jwks`，已从生产网络实测可达）、`KUN_BEARER_CLIENT_IDS` 和 `KUN_APP_*`。
-- 部署后 Bearer 通道默认**关闭**。infra 注册好 kungal-app 后，在 Dokploy 面板设置 `KUN_BEARER_CLIENT_IDS=<client_id>` 并重启 kungal-api。
+- `docker-compose.prod.yml` 已写入 `KUN_OIDC_ISSUER`、`KUN_OIDC_JWKS_URL`（内网 `http://oauth:9277/oauth/jwks`，已从生产网络实测可达）和 `KUN_APP_*`。
+- `KUN_BEARER_CLIENT_IDS=kungal-app,kungal-app-desktop` 直接写在 compose 里（client_id 是公开标识，和 `OAUTH_CLIENT_ID` 同样处理），不走 Dokploy 面板。以后 infra 新增一方 client 时改这一行；要紧急关掉 Bearer 通道，就把它改成空值后重新部署。
 
 ## 7. 没做 / 已知缺口
 

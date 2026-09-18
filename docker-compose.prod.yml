@@ -56,11 +56,13 @@ x-kungal-api-env: &kungal-api-env
   # `Authorization: Bearer`. ISSUER must be the OP's PUBLIC origin — that is what
   # it stamps into `iss`; deriving it from OAUTH_SERVER_URL above would give
   # http://oauth:9277 and 401 every App request. JWKS is fetched in-network.
-  # CLIENT_IDS is the allow-list (comma separated); empty keeps the channel
-  # closed. Set it to the kungal-app client_id once infra registers it.
+  # CLIENT_IDS is the allow-list (comma separated); empty closes the channel.
+  # Both are public clients infra registered 2026-09-17 (site_id=2,
+  # catalog_site=kungal, no owner): kungal-app = Android/iOS, kungal-app-desktop
+  # = Windows/Linux loopback. A client missing here 401s every one of its users.
   KUN_OIDC_ISSUER: https://account.nextmoe.com
   KUN_OIDC_JWKS_URL: http://oauth:9277/oauth/jwks
-  KUN_BEARER_CLIENT_IDS: ${KUN_BEARER_CLIENT_IDS:-}
+  KUN_BEARER_CLIENT_IDS: kungal-app,kungal-app-desktop
   # ── comment areas on the community primitive (track 03) ──
   # Community is now the UNCONDITIONAL backend for the galgame + resource
   # (rating / website / toolset) comment areas: the legacy in-forum comment
