@@ -58,7 +58,7 @@
 按 `01-standard.md` §2 实现。
 
 - `Problem` 与 `FieldError` 类型，JSON 形状与 infra `problem.go` 一致。另加：
-  - `FieldError.Params`（`map[string]any`，指针或 `omitempty` 的 map，缺席时不发）；
+  - `FieldError.Params`（有类型的结构体，全部字段为指针，缺席时不发；原稿写的 `map[string]any` 会违反 G9，派发时已改）；
   - 顶层扩展成员机制：每个 code 在注册表里声明允许的扩展成员及其类型。W0a 还没有任何 code 带扩展成员，但机制和测试要有。
 - 注册表：`Def{Code, Domain, Status, Title, Description}` 与 `ReasonDef`。只收录**本波会产生**的 code：
 
@@ -322,5 +322,7 @@ Bearer 的 `WithoutStaff` / `viaBearer` 语义原样保留；`bearer_guard_test.
 > 1. `go run ./cmd/migrate -dir up` — dies at `053_add_notification_preferences` because `kungal_user_state` does not exist: 007 creates it and 007 is in the runner's **default `-exclude 005,006,007,012,015`**.
 > 2. `-only 007`, then `-dir up` again — now dies at `069_galgame_contributor` (`column "source" does not exist`): the table already exists from the baseline, so 069's `CREATE TABLE IF NOT EXISTS` is skipped and the rest of the file references a column the old shape lacks. `DROP TABLE galgame_contributor CASCADE` and re-run; everything applies.
 > 3. `-only 005 006 012 015` (one at a time). **005 is the post-OAuth cleanup and it DROPs columns** (`vndb_id`, `resource_update_time`, …) that later migrations restore, so running it last leaves the schema behind production. Delete their rows from `_migrations` and re-run: `-only 018`, `022`, `023`, `079`, `092`.
+>
+> （Claude 2026-09-18 复核补充：005 还会 `DROP TABLE galgame_contributor`，所以重跑清单里要加 `069`；`cmd/migrate` 要求 URL 形式的 DSN。按这个顺序建出的库，列、索引、触发器、函数与 dev 库逐条一致。）
 >
 > The migrate runner reads `KUN_DATABASE_URL` through `godotenv.Load()`, which does **not** override an exported var — so `export KUN_DATABASE_URL=<throwaway>` is enough to keep it off the dev database. Confirm it took effect by counting tables in the throwaway before trusting it.

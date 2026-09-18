@@ -68,8 +68,12 @@ infra 的 `errors[]` 只有英文 `detail`。客户端要本地化「标题最�
   | `TOO_SHORT` | `{ "min_length": int }` |
   | `OUT_OF_RANGE` | `{ "minimum"?: number, "maximum"?: number }` |
   | `TOO_MANY_ITEMS` | `{ "max_items": int }` |
+  | `TOO_FEW_ITEMS` | `{ "min_items": int }` |
   | `UNKNOWN_VALUE` | `{ "allowed": [string] }`（封闭词表才发） |
   | 其余 | 不发 |
+
+- `TOO_FEW_ITEMS` 是论坛补的 reason，infra 的 13 条里没有「数组项数不足」。论坛的请求体有 `minItems` 约束（如话题至少选 1 个版块），所以需要它。和 `params` 一起提给 infra。
+- `params` 是有类型的对象（`pkg/problem.FieldParams`，全部指针字段），不是自由 map。
 
 - 顶层 problem 的扩展成员同理：每个 code 在注册表里声明自己带哪些扩展成员及类型（infra 已有先例：`ENTITY_MERGED` 带 `current_id`、`DUPLICATE_SUSPECTS` 带 `suspects[]`）。没声明的扩展成员不得出现。
 - huma 自带校验产生的错误**必须**映射到精确的 `reason` 与 `params`。infra 的 `fieldFromHuma` 把它们一律映射成 `INVALID_FORMAT`，论坛不照抄。映射表必须有测试覆盖每一条 v1 schema 可能触发的 huma 校验消息。

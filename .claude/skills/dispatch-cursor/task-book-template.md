@@ -41,6 +41,10 @@ Every prior adjudication this task depends on, stated inline. If the reader woul
 - Go's build and module caches start cold. The first `go build` downloads modules and, with
   `GOTOOLCHAIN=go1.26.1`, the toolchain, which takes minutes. Give long commands a shell
   timeout of at least 600000 ms.
+- The sandbox cannot write `~/go`, where Go keeps the downloaded toolchain and the sumdb
+  cache. Before the first Go command, run
+  `export GOPATH="$(dirname "$(go env GOCACHE)")/gopath"`: it points `GOPATH` into this
+  run's own cache directory, which the orchestrator deletes afterwards.
 - **Always run Go gates with `GOTOOLCHAIN=go1.26.1`.** CI uses 1.26.1. The system Go 1.27
   breaks errcheck, and it inlines differently, which renames handlers in
   `internal/app/testdata/routes.golden`.

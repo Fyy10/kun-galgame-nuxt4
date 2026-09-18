@@ -229,3 +229,10 @@ assert a little less than the report implies, so mutate.
 
 | Date | Task | Model | Elapsed | Acceptance |
 |---|---|---|---|---|
+| 2026-09-18 | `w0a-1-problem`: new `pkg/problem` (closed error registry, RFC 9457 writer, ULID request ids, huma validation → reason/params bridge), 1.9k lines incl. tests | grok-4.6-xhigh | 1155 s, 142 calls, 222k in + 9.0M cache read, 77k out | Every rule implemented. It pinned each bridge mapping with a request through real huma validation, not hand-built errors, as the book asked. Platform titles and descriptions diffed byte-identical to infra. It stopped nowhere, but it flagged its one deviation honestly (huma forces Fiber v3.3→v3.4 via MVS; accepted). It also caught **two errors in the orchestrator's own docs**: K5 lacked the `TOO_FEW_ITEMS` row, and the W0a record said `map[string]any` where G9 forbids it. 9/14 of the orchestrator's mutants died as delivered. The survivors were a nested required-property pointer, the 401 split, cause logging, and `MarshalJSON`'s own null guard (the mutation needs a literal `Problem`); acceptance added 4 tests (13/14, the last survivor being ULID random-byte width) |
+| 2026-09-18 | `w0a-2-identity`: extract a 12-outcome identity resolver from the auth middleware, rebuild `Auth()` / `OptionalAuth()` on it byte-identically | grok-4.6-xhigh | 1250 s, 130 calls, 403k in + 5.7M cache read, 70k out | Checked every cell of the book's legacy table against the code before trusting it. Kept all earned comments. `routes.golden` untouched. It listed 12 real smells, flat: Redis errors folded into "expired", an ignored `SETNX` error, a ban that leaves `OptionalAuth` anonymous. It left one dead method (`Bearer.authenticate`, zero callers), which acceptance removed. 10/10 of the orchestrator's mutants died, including the multi-line ones. DB-backed full suite green |
+
+Both runs hit the same environment wall: the sandbox cannot write `~/go`, so the first
+`GOTOOLCHAIN=go1.26.1` toolchain or sumdb fetch fails with `permission denied`. Both worked
+around it by pointing `GOPATH` into the run's own cache, which `dispatch.sh` deletes. The
+template now says so.
