@@ -233,7 +233,7 @@ POST   /api/toolset/:id/upload/abort                  cors.New → middleware.Na
 POST   /api/toolset/:id/upload/complete               cors.New → middleware.NamePreference → OptionalAuth → Auth → UploadHandler.UploadComplete
 POST   /api/toolset/:id/upload/init                   cors.New → middleware.NamePreference → OptionalAuth → Auth → UploadHandler.UploadInit
 POST   /api/toolset/:id/upload/resume                 cors.New → middleware.NamePreference → OptionalAuth → Auth → UploadHandler.UploadResume
-POST   /api/topic                                     cors.New → middleware.NamePreference → OptionalAuth → Auth → middleware.Idempotent → TopicHandler.Create
+POST   /api/topic                                     cors.New → middleware.NamePreference → OptionalAuth → Auth → Idempotent → TopicHandler.Create
 POST   /api/topic/:tid/comment                        cors.New → middleware.NamePreference → OptionalAuth → Auth → CommentHandler.CreateComment
 POST   /api/topic/:tid/lottery                        cors.New → middleware.NamePreference → OptionalAuth → Auth → LotteryHandler.CreateLottery
 POST   /api/topic/:tid/lottery/cancel                 cors.New → middleware.NamePreference → OptionalAuth → Auth → LotteryHandler.Cancel
@@ -243,7 +243,7 @@ POST   /api/topic/:tid/lottery/enter                  cors.New → middleware.Na
 POST   /api/topic/:tid/lottery/withdraw               cors.New → middleware.NamePreference → OptionalAuth → Auth → LotteryHandler.Withdraw
 POST   /api/topic/:tid/poll                           cors.New → middleware.NamePreference → OptionalAuth → Auth → PollHandler.CreatePoll
 POST   /api/topic/:tid/poll/vote                      cors.New → middleware.NamePreference → OptionalAuth → Auth → PollHandler.Vote
-POST   /api/topic/:tid/reply                          cors.New → middleware.NamePreference → OptionalAuth → Auth → middleware.Idempotent → ReplyHandler.CreateReply
+POST   /api/topic/:tid/reply                          cors.New → middleware.NamePreference → OptionalAuth → Auth → Idempotent → ReplyHandler.CreateReply
 POST   /api/topic/draft                               cors.New → middleware.NamePreference → OptionalAuth → Auth → TopicDraftHandler.Save
 POST   /api/trust/callback                            cors.New → middleware.NamePreference → TrustHandler.Callback
 POST   /api/update/history                            cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → UpdateHandler.CreateHistory

@@ -111,7 +111,10 @@ func handlerName(h fiber.Handler) string {
 	full = strings.NewReplacer("(", "", ")", "", "*", "").Replace(full)
 	parts := strings.Split(full, ".")
 	last := parts[len(parts)-1]
-	if strings.HasPrefix(last, "Require") || last == "Auth" || last == "OptionalAuth" {
+	// A closure is named after wherever its constructor was inlined: Go 1.26
+	// (CI) called Idempotent's "setupRoutes.Idempotent", Go 1.27 (local)
+	// "middleware.Idempotent", and the golden only ever matched one of them.
+	if strings.HasPrefix(last, "Require") || slices.Contains([]string{"Auth", "OptionalAuth", "Idempotent"}, last) {
 		return last
 	}
 	if len(parts) > 2 {
