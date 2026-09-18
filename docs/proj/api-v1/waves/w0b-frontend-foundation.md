@@ -6,7 +6,8 @@
 > |---|---|---|
 > | W0b-1 `client` | §1 生成类型、类型化客户端、错误目录、F2 / F4 / F5 / F6 | W0a |
 > | W0b-2 `topic-page` | §2 `/topic` 页与 sitemap 切到 v1，删网页侧旧代码 | W0b-1 |
-> | 部署后 | §3 删旧路由 `GET /api/topic` | W0b-2 上线 |
+> | W0b-3 `naming`（Claude 直接改） | §3 `author` 与 `total` 两处命名 | W0b-2 |
+> | 部署后 | §4 删旧路由 `GET /api/topic` | W0b-2 上线 |
 
 ## 1. W0b-1：客户端地基
 
@@ -65,6 +66,16 @@ Grok 用了 1076 秒、242 次调用，范围内全部落地，只写了允许�
 - dev 数据里没有删号作者，「已注销用户」只由组件测试与 `userRef` 测试覆盖。
 - 变异：Grok 的 6 个加 Claude 的 15 个，全部被杀（pop 标志不复位、pop 监听失效、快照上限、过期的 loadMore、失败后结束列表、loadMore 不写快照、NSFW 取反、页大小、升降序改了排序键、浏览数不格式化、lastmod 取错字段、失败时丢掉已收集的 URL、头像与 id 映射、末页文案）。
 
-## 3. 部署之后：删旧路由
+## 3. W0b-3：两处命名（2026-09-18）
+
+上线前复查 v1 的三个端点时发现，改动只有几十行，没有派发。v1 还没部署过，现在改不算破坏任何调用方。
+
+- **`total` 是一个永远不会出现的字段。** `repr.List[T]` 自带 `total`，于是三个列表都声明了它，说明写着「`include_total=true` 时出现」，可这三个操作都不接受 `include_total`（话题列表是 W0a 有意不给的，见 W0a 验收）。生成的类型里是 `total?: number`，读出来恒为 `undefined`。现在 `repr.List` 不带 `total`，给总数的集合用 `repr.CountedList` 并嵌 `collect.Total`；新门 F9 要求二者成对。
+- **话题作者 `user` 改名 `author`。** spec 里它的说明只有一句 "Author."，名字要靠说明才懂，就该改名。以后回复、通知、动态里常同时有几个人（作者、操作者、被回复的人），`user` 分不清是谁。`user` 加进 G8 禁用名，01 §3 命名表同步。
+- 条目测试补了键集合断言：列表外层与每个条目的键必须恰好是 spec 里那些，多一个、少一个、旧名残留都会红。契约测试只校验 schema，schema 不禁止多余的键，所以旧名残留原先抓不到。
+
+验证：`make lint`、`go test ./...` 绿；一次性库上 `KUN_REQUIRE_TEST_DB=1` 全量 DB 套件绿；`make openapi` 两次输出一致。网页 F5、`lint`、`typecheck`、`test`（32 个文件 231 条）绿，类型测试加了一条「读 `ListTopicSummary.total` 是编译错误」。变异：把 `total` 放回 `List`，F9 在三个端点上各报一次；把 `author` 改回 `user`，G8 与键集合断言都红。dev 上 API 返回 `author`，`/topic` 的 SSR 照常显示作者名。
+
+## 4. 部署之后：删旧路由
 
 旧 `GET /api/topic` 在 W0b-2 里**不删**。同一次部署里删掉它，会有两个窗口出错：新 API 先上线而旧网页还在时，`/topic` 的 SSR 直接失败；部署前打开、还没刷新的标签页在客户端导航到 `/topic` 时也会失败。等 W0b-2 的网页上线后再删：路由、`TopicHandler.GetList`、`TopicService.GetList`、`FindList`、`TopicListResponse`，重生成 `routes.golden`，`legacy_route_baseline` 320 → 319，同时把 F3 改成与 F4 一样的「等于基线」。

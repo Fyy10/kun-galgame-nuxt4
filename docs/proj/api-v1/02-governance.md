@@ -57,6 +57,7 @@ G 编号沿用 infra 07 §2 的同名门，F 编号是论坛补的。**每道门
 | **G17** | 写得进去就读得出来：写操作路径里的每个 `{x_id}`，以它结尾的那段路径必须有 GET，且其 200 响应是带 `id` 的对象。例如 `PUT /topics/{topic_id}/like` 要求 `GET /topics/{topic_id}` | spec 测试 | api |
 | **F1** | 命名规则（[01 §3](01-standard.md)），property 与参数都查：布尔以 `is_` / `has_` / `can_` 开头（查询参数另允许 `include_`）、`_at` ↔ date-time、`_date` ↔ date、`_count` 为非负整数、封闭枚举值是 snake_case（具名例外只有 `sections`：论坛的 URL slug） | spec 测试 | api |
 | **F8** | v1 源码（与 G5 同一组目录）里没有中日韩文字的字符串字面量：给人看的文字由客户端按语言出，服务端发 code 或 `null`。W0a-5 验收时发现删号作者经 `userclient.Placeholder` 以「已注销用户」上了线，现在 `UserRef.name` 为 `null` | Go AST | api |
+| **F9** | 列表响应声明 `total` 当且仅当操作接受 `include_total`：`repr.List` 不带 `total`，嵌了 `collect.Total` 的集合返回 `repr.CountedList`。W0b-3 之前 `List` 自带 `total`，三个端点都声明了一个永远不会出现的字段，生成的类型里是一个读出来恒为 `undefined` 的 `total?: number` | spec 测试 | api |
 | **F2** | 注册表的每个 code 与 reason 在 `zh-CN/problem.json` 里都有译文，目录里没有多余键。reason 的译文按参数分变体（`default` 必有，其余键是所用参数名升序以 `__` 连接，占位符恰好是这些参数），`status` 至少覆盖注册表里出现的每个状态与 429 / 502 / 504，文本里不许出现 vue-i18n 的特殊字符 `@` `$` `\|` | vitest（`tests/api/problemCatalog.spec.ts`），读 `problems.json` | web |
 | **F3** | 旧路由数只减不增：`routes.golden` 里 `/api/v1` 以外的路由数 ≤ `legacy_route_baseline` | Go 测试 | api |
 | **F4** | `kunFetch` / `useKunFetch` 调用点数**等于**基线 `tests/api/legacy-fetch-baseline`：少了也红，删调用点的提交必须同时下调基线，否则基线留下的余量会让新调用悄悄长回来 | vitest 源码扫描（`tests/api/legacyFetchRatchet.spec.ts`） | web |

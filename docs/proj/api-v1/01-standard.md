@@ -161,7 +161,7 @@ infra 的 `errors[]` 只有英文 `detail`。客户端要本地化「标题最�
 |---|---|---|
 | 话题版块 `sections` | `g-walkthrough` | 它们同时是 `/section/{key}` 页面的 URL 段，改拼写就改了公开 URL |
 
-**禁用名**（任何 property 或参数名都不得是）：`kind`、`gid`、`tid`、`uid`、`rid`、`pid`、`cid`、`created`、`updated`、`edited`、`view`、`status_update_time`，以及成功响应顶层的 `code` / `message` / `data` / `success`。
+**禁用名**（任何 property 或参数名都不得是）：`kind`、`gid`、`tid`、`uid`、`rid`、`pid`、`cid`、`created`、`updated`、`edited`、`view`、`status_update_time`、`user`，以及成功响应顶层的 `code` / `message` / `data` / `success`。
 
 **命名对照表**（迁移时逐条执行，新增条目随波追加）：
 
@@ -176,12 +176,13 @@ infra 的 `errors[]` 只有英文 `detail`。客户端要本地化「标题最�
 | `section`（数组） | `sections` |
 | `comment`（数组） | `comments` |
 | `is_nsfw_topic` | `is_nsfw` |
+| `user`（话题、回复的作者） | `author`。指向人的字段按这个人在资源里的角色命名（`author`、`actor`、`follower`…），不叫 `user`：一条资源里常有好几个人，`user` 分不清是谁 |
 | `status`（资源生命周期整数） | `state`（封闭字符串枚举，取值由普查决定）。不叫 `status`：Problem 的 `status` 是整数，同名不同型会被 G8 拦下；infra 的资源生命周期也叫 `state` |
 | `content`（请求体里的 Markdown） | `content_markdown` |
 | `cover_images` + `cover_image_meta`（hash 数组 + 旁挂 map） | `cover_images: [Image]` |
 | `is_liked` / `is_favorited` / … | `viewer.has_liked` / `viewer.has_favorited` / … |
 
-**论坛的偏好 cookie 不再是输入。** v1 不读 `KUNGalgameSettings`、不读 `X-Kungal-Nsfw`、不走 `NamePreference`。影响结果集的输入一律是显式查询参数（如 `nsfw=true`）。名字按 infra 04 §8 发全部（`display_name` + `latin` + `localized{}`），由客户端挑。
+**论坛的偏好 cookie 不再是输入。** v1 不读 `KUNGalgameSettings`、不读 `X-Kungal-Nsfw`、不走 `NamePreference`。影响结果集的输入一律是显式查询参数（如 `include_nsfw=true`）。名字按 infra 04 §8 发全部（`display_name` + `latin` + `localized{}`），由客户端挑。
 
 ## §4 集合
 
