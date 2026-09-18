@@ -1,6 +1,21 @@
 # W0a · 后端地基 + `GET /api/v1/topics`
 
-> 任务书。执行者：cursor-agent。验收：Claude。写于 2026-09-18。
+> 裁决记录（中文，给人看）。执行者：cursor-agent，模型 Grok 4.6 Extra High，在沙箱里跑。验收：Claude。写于 2026-09-18。
+>
+> **执行方式**：按 `.claude/skills/dispatch-cursor/`，每次派发都拿一份英文任务书，写在 session scratchpad 里，内容是下表中的一段，并把本文的相关裁决原样译进去。沙箱里没有数据库、docker 和网络（包仓库除外），也不能写 git，所以：
+>
+> - 执行者只写代码、跑不需要数据库的门；
+> - DB 测试由执行者写，由 Claude 在一次性库上跑；
+> - 提交由 Claude 做；
+> - 下文里凡是「你起容器」「你提交」的说法，都按这条分工理解。
+>
+> | 派发 | 范围（本文章节） | 依赖 |
+> |---|---|---|
+> | W0a-1 `problem-registry` | §1 的 huma 依赖、§2 | — |
+> | W0a-2 `identity-resolve` | §3 | —（与 W0a-1 并行） |
+> | W0a-3 `apiv1-wiring` | §4、§4.1、§5、§6、§8，§10 的路由清单适配与 F3 / F7 | W0a-1、W0a-2 |
+> | W0a-4 `spec-gates` | §10 其余的门 | W0a-3 |
+> | W0a-5 `topics-list` | §7、§9、§11、§12、§13 | W0a-4 |
 
 ## 0. 工作方式与红线
 

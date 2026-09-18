@@ -56,4 +56,4 @@ infra `refs/api-v2/`（01 公理与黑名单 · 02 协议 · 04 表示 · 05 集
 | W4 | 互动（点赞、收藏、推、表情、隐藏、最佳答案、置顶） | ⏳ |
 | W5 | 评论、投票、抽奖、草稿、其余话题读面 | ⏳ |
 
-执行方式：任务书派发给 cursor-agent 在独立 worktree 里实现，Claude 校验（代码审读 + 门 + 运行时实测）后合入 master。
+执行方式：按 `.claude/skills/dispatch-cursor/` 派发 cursor-agent（Grok 4.6 Extra High），在独立 worktree 的沙箱里实现；Claude 负责裁决、写英文任务书、跑 DB 测试与运行时实测、提交并合入 master。
