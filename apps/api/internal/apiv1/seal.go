@@ -33,6 +33,15 @@ func sealDocument(doc *huma.OpenAPI) {
 	}
 	walkDocSchemas(doc, markClosedEnums)
 	walkDocSchemas(doc, nullableEnums)
+	walkDocSchemas(doc, omitTrueAdditionalProperties)
+}
+
+// openapi-typescript renders additionalProperties: true as [key: string]: unknown,
+// so in W0b-1 reading a misspelled field of a response type-checked as unknown.
+func omitTrueAdditionalProperties(s *huma.Schema) {
+	if ap, ok := s.AdditionalProperties.(bool); ok && ap {
+		s.AdditionalProperties = nil
+	}
 }
 
 func RequiredStatuses(path string, op *huma.Operation) []int {

@@ -2,7 +2,6 @@
   "components": {
     "schemas": {
       "FieldError": {
-        "additionalProperties": true,
         "properties": {
           "detail": {
             "description": "English diagnostic for this location. Free text; never use it as a decision input.",
@@ -46,7 +45,6 @@
         "type": "object"
       },
       "FieldParams": {
-        "additionalProperties": true,
         "properties": {
           "allowed": {
             "description": "Closed vocabulary members that were expected.",
@@ -100,7 +98,6 @@
         "type": "object"
       },
       "Image": {
-        "additionalProperties": true,
         "properties": {
           "hash": {
             "description": "Image-service content hash.",
@@ -171,7 +168,6 @@
         "type": "object"
       },
       "ListProblemReason": {
-        "additionalProperties": true,
         "properties": {
           "items": {
             "description": "Members of this page. Empty array, never null.",
@@ -209,7 +205,6 @@
         "type": "object"
       },
       "ListProblemType": {
-        "additionalProperties": true,
         "properties": {
           "items": {
             "description": "Members of this page. Empty array, never null.",
@@ -247,7 +242,6 @@
         "type": "object"
       },
       "ListTopicSummary": {
-        "additionalProperties": true,
         "properties": {
           "items": {
             "description": "Members of this page. Empty array, never null.",
@@ -285,7 +279,6 @@
         "type": "object"
       },
       "Problem": {
-        "additionalProperties": true,
         "properties": {
           "code": {
             "description": "Top-level error code. UPPER_SNAKE.",
@@ -353,7 +346,6 @@
         "type": "object"
       },
       "ProblemReason": {
-        "additionalProperties": true,
         "properties": {
           "description": {
             "description": "English prose. Free text; never use it as a decision input.",
@@ -403,7 +395,6 @@
         "type": "object"
       },
       "ProblemType": {
-        "additionalProperties": true,
         "properties": {
           "code": {
             "description": "Top-level error code. UPPER_SNAKE.",
@@ -468,7 +459,6 @@
         "type": "object"
       },
       "TopicSummary": {
-        "additionalProperties": true,
         "properties": {
           "bumped_at": {
             "description": "Bump time. Replies, comments, poll votes and lottery events set it to now, but only for topics created within the last 3 months. It is not a last-activity time.",
@@ -662,7 +652,6 @@
         "type": "object"
       },
       "UserRef": {
-        "additionalProperties": true,
         "properties": {
           "avatar": {
             "anyOf": [
