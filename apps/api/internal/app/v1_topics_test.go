@@ -240,6 +240,10 @@ func (f *topicsFix) seed(t *testing.T) {
 		{910000216, v1UserAlice, 8, 13, 13, 13, 31, 41, 0, "galgame", "public", false, base.Add(16*time.Hour + time.Millisecond), base.Add(15 * time.Second), "", nil},
 		{910000217, v1UserGone, 9, 14, 14, 14, 32, 42, 0, "galgame", "public", false, base.Add(17 * time.Hour), base.Add(16 * time.Second), "", nil},
 	}
+	for i := range 6 {
+		rows = append(rows, row{910000218 + i, v1UserBanned, 1, 0, 0, 0, 0, 0, 0, "galgame", "public", false,
+			base.Add(time.Duration(18+i) * time.Hour), base.Add(time.Duration(20+i) * time.Second), "", nil})
+	}
 	for _, r := range rows {
 		runSQL(`INSERT INTO topic (
 			id, title, content, view, status, category, status_update_time, created, updated,
@@ -412,8 +416,8 @@ func TestV1TopicsTraversalParity(t *testing.T) {
 						t.Fatalf("status %d %s", resp.StatusCode, body)
 					}
 					list := decodeList(t, body)
-					if len(list.Items) == 0 {
-						t.Errorf("page %d of %s is empty", page, path)
+					if list.NextCursor != nil && len(list.Items) != 2 {
+						t.Errorf("page %d of %s holds %d items and a cursor, want 2", page, path, len(list.Items))
 					}
 					for _, it := range list.Items {
 						got = append(got, it.ID)
@@ -657,6 +661,22 @@ func TestV1TopicsErrors(t *testing.T) {
 		v1UserAlice).Error
 	if err == nil || !strings.Contains(err.Error(), "topic_status_check") {
 		t.Errorf("a topic with status 2 was not refused by topic_status_check: %v", err)
+	}
+}
+
+func TestV1TopicsStopsRefillingAfterFiveWindows(t *testing.T) {
+	f := newTopicsFix(t)
+	resp, body := f.get(t, "/api/v1/topics?sort=created_desc&limit=1", "", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("%d %s", resp.StatusCode, body)
+	}
+	first := decodeList(t, body)
+	if len(first.Items) != 0 || first.NextCursor == nil {
+		t.Fatalf("six banned topics lead created_desc; five one-row windows should leave the page empty with a cursor: %s", body)
+	}
+	_, body = f.get(t, "/api/v1/topics?sort=created_desc&limit=1&cursor="+*first.NextCursor, "", nil)
+	if second := decodeList(t, body); len(second.Items) != 1 || second.Items[0].ID != "910000217" {
+		t.Fatalf("the page after the banned run = %s, want 910000217", body)
 	}
 }
 

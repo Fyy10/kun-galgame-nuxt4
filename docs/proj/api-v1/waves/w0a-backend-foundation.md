@@ -246,6 +246,7 @@ W0a-5 落地（2026-09-18 验收）：
 - 作者在 OAuth 里查不到（删号）时 `user.name` 为 `null`，不再发「已注销用户」，客户端自己出本地化文案（F8）。查询 OAuth 失败是 503，原因写进日志。
 - `mini_apps` 的查询错误不再吞掉（`miniapp.Lookup`）；旧的 `ByTopic` 留给旧路由。
 - 声明的状态码恰好是 200 / 400 / 401 / 403 / 500 / 503。
+- 封禁作者的话题在查询之后剔除。一页只读一个窗口时，dev 真数据上 `views_30d_desc` 翻出过空页：那一窗全是封禁作者的话题。带游标的空页会让无限滚动的客户端卡住，所以服务端接着读下一窗，最多 5 窗，每窗 `limit` 行。于是带 `next_cursor` 的页总是满 `limit` 条，除非连续 5×`limit` 行都被剔除。游标指向最后一个被消费的行。验收时在 dev 上把 18 个排序 × NSFW 开关全部翻完（约 11 万条）：每条响应都符合 spec，`created_desc` 与旧列表逐条相同。
 
 **声明的错误**：400（`INVALID_PARAMETER` / `UNKNOWN_ENUM_VALUE` / `LIMIT_TOO_LARGE` / `INVALID_CURSOR` / `UNKNOWN_SORT`）、401（`INVALID_CREDENTIAL`，Bearer 无效）、403（`ACCOUNT_BANNED`，按 §3 的解析，封禁用户走可选档时的行为请查清现行 `OptionalAuth` 与 bearer 路径后照现行语义处理，写进报告）、500、503。
 

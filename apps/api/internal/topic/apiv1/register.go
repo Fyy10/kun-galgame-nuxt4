@@ -19,8 +19,8 @@ func Register(svc *Service) func(huma.API) {
 			Description: "Lists topics visible to the caller as a cursor page. " +
 				"Anonymous callers see public published topics. Signed-in callers also see login-scoped topics. " +
 				"Role and user grants never appear. Hidden topics never appear. " +
-				"Banned authors are dropped after the query, so a page may contain fewer than limit items; " +
-				"next_cursor is taken from the last fetched row, not the last returned item.",
+				"Topics by banned authors are left out; the server reads on to fill the page, so every page but the last holds limit items " +
+				"unless a long run of such topics cuts it short. Continue while next_cursor is present, whatever the page size.",
 			Tags: []string{"topics"},
 			Responses: map[string]*huma.Response{
 				"400": {

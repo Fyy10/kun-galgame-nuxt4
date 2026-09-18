@@ -67,33 +67,69 @@ func (s *Service) listTopics(ctx context.Context, in *listTopicsInput) (*listTop
 		return nil, posErr
 	}
 
-	rows, err := s.list.FindKeyset(repository.KeysetQuery{
+	query := repository.KeysetQuery{
 		SortKey:       spec.Key,
 		Direction:     spec.Direction,
 		Category:      in.Category,
 		IncludeNSFW:   in.IncludeNSFW,
 		Authenticated: authenticated,
-		Limit:         in.Limit,
 		Pos:           pos,
-	})
-	if err != nil {
-		return nil, problem.Internal(err)
+	}
+	items := make([]TopicSummary, 0, in.Limit)
+	hasMore := false
+	var last repository.TopicKeysetRow
+	// Banned authors are dropped after the query. Reading one window per page
+	// returned an empty page with a cursor on dev (views_30d_desc), which stalls
+	// an infinite-scroll client, so read on until the page is full.
+windows:
+	for range maxWindows {
+		query.Limit = in.Limit
+		rows, err := s.list.FindKeyset(query)
+		if err != nil {
+			return nil, problem.Internal(err)
+		}
+		more := len(rows) > in.Limit
+		if more {
+			rows = rows[:in.Limit]
+		}
+		rendered, p := s.summaries(ctx, rows)
+		if p != nil {
+			return nil, p
+		}
+		for i, item := range rendered {
+			last = rows[i]
+			if item != nil {
+				items = append(items, *item)
+			}
+			if len(items) == in.Limit {
+				hasMore = more || i < len(rows)-1
+				break windows
+			}
+		}
+		hasMore = more
+		if !more {
+			break
+		}
+		query.Pos = positionAfter(last, spec)
 	}
 
-	hasMore := len(rows) > in.Limit
-	page := rows
+	var next *string
 	if hasMore {
-		page = rows[:in.Limit]
+		cur := collect.EncodeCursor(spec.Token, fp, encodeKeys(last, spec)...)
+		next = &cur
 	}
+	return &listTopicsOutput{Body: repr.NewList(items, next)}, nil
+}
 
-	ids := make([]int, len(page))
-	for i, r := range page {
+func (s *Service) summaries(ctx context.Context, rows []repository.TopicKeysetRow) ([]*TopicSummary, *problem.Problem) {
+	ids := make([]int, len(rows))
+	for i, r := range rows {
 		ids[i] = r.ID
 	}
 	sectionMap := map[int][]string{}
 	if len(ids) > 0 {
-		sectionMap, err = s.taxonomy.FindSectionNamesByTopicIDs(ids)
-		if err != nil {
+		var err error
+		if sectionMap, err = s.taxonomy.FindSectionNamesByTopicIDs(ids); err != nil {
 			return nil, problem.Internal(err)
 		}
 	}
@@ -101,15 +137,13 @@ func (s *Service) listTopics(ctx context.Context, in *listTopicsInput) (*listTop
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-
-	userIDs := userclient.CollectIDs(page, func(r repository.TopicKeysetRow) int { return r.UserID })
-	users, err := s.users.Users(ctx, userIDs)
+	users, err := s.users.Users(ctx, userclient.CollectIDs(rows, func(r repository.TopicKeysetRow) int { return r.UserID }))
 	if err != nil {
 		return nil, problem.Unavailable(err)
 	}
 
-	items := make([]TopicSummary, 0, len(page))
-	for _, row := range page {
+	out := make([]*TopicSummary, len(rows))
+	for i, row := range rows {
 		author := repr.DeletedUserRef(row.UserID)
 		if u, ok := users[row.UserID]; ok {
 			if !userclient.IsRenderable(u) {
@@ -117,20 +151,20 @@ func (s *Service) listTopics(ctx context.Context, in *listTopicsInput) (*listTop
 			}
 			author = repr.NewUserRef(s.cdn, u)
 		}
-		item, mapErr := mapSummary(s.cdn, row, author, sectionMap[row.ID], miniApps[row.ID])
-		if mapErr != nil {
-			return nil, problem.Internal(mapErr)
+		item, err := mapSummary(s.cdn, row, author, sectionMap[row.ID], miniApps[row.ID])
+		if err != nil {
+			return nil, problem.Internal(err)
 		}
-		items = append(items, item)
+		out[i] = &item
 	}
-
-	var next *string
-	if hasMore && len(page) > 0 {
-		cur := collect.EncodeCursor(spec.Token, fp, encodeKeys(page[len(page)-1], spec)...)
-		next = &cur
-	}
-	return &listTopicsOutput{Body: repr.NewList(items, next)}, nil
+	return out, nil
 }
+
+func positionAfter(row repository.TopicKeysetRow, spec sortSpec) *repository.KeysetPos {
+	return &repository.KeysetPos{ID: row.ID, SortInt: row.SortInt, SortTime: row.SortTime, TimeSort: spec.Kind == sortKindTime}
+}
+
+const maxWindows = 5
 
 var errUnconfigured = errors.New("apiv1 topics: service is not configured")
 
