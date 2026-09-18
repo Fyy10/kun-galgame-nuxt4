@@ -38,7 +38,9 @@ shells='select(.type == "tool_call" and .subtype == "completed") | .tool_call.sh
 
 # The sandbox fails open: --force, an allow-listed command or approvalMode "unrestricted" each run
 # the command unsandboxed, and the stream still shows the sandbox policy that was requested.
-preflight=$(jq -r "$shells | .result.success.stdout // empty" "$stream" 2>/dev/null | grep '^dispatch-preflight:' || true)
+# An executor that re-runs the preflight in its gate section prints the line twice (w0a-5-topics),
+# which the exact comparison below read as an unproven fence.
+preflight=$(jq -r "$shells | .result.success.stdout // empty" "$stream" 2>/dev/null | grep '^dispatch-preflight:' | sort -u || true)
 if [ "$preflight" != 'dispatch-preflight: sandbox=native net=blocked loopback=private' ]; then
   echo "dispatch: FENCE NOT PROVEN; treat every shell call in this run as unsandboxed. Preflight said: ${preflight:-nothing}" >&2
   fail=1

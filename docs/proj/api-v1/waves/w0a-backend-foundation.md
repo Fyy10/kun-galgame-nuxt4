@@ -239,6 +239,14 @@ W0a-4 落地，包是 `internal/apiv1/repr` 与 `internal/apiv1/collect`；领�
 
 每个 property 都要有 description、`maxLength` 或 `minimum` 等约束（G2 / G14）。
 
+W0a-5 落地（2026-09-18 验收）：
+
+- sort token：`bumped` / `created` / `views` / `views_1d` / `views_7d` / `views_30d` / `likes` / `favorites` / `upvotes`，各带 `_asc` / `_desc`，共 18 个。布尔参数按 F1 叫 `include_nsfw`，不叫 `nsfw`。
+- 游标指纹含 `sort`、`category`、`include_nsfw` 与是否登录；时间键以 RFC 3339 纳秒精度、UTC 进游标，秒级会跳过同一秒的行。
+- 作者在 OAuth 里查不到（删号）时 `user.name` 为 `null`，不再发「已注销用户」，客户端自己出本地化文案（F8）。查询 OAuth 失败是 503，原因写进日志。
+- `mini_apps` 的查询错误不再吞掉（`miniapp.Lookup`）；旧的 `ByTopic` 留给旧路由。
+- 声明的状态码恰好是 200 / 400 / 401 / 403 / 500 / 503。
+
 **声明的错误**：400（`INVALID_PARAMETER` / `UNKNOWN_ENUM_VALUE` / `LIMIT_TOO_LARGE` / `INVALID_CURSOR` / `UNKNOWN_SORT`）、401（`INVALID_CREDENTIAL`，Bearer 无效）、403（`ACCOUNT_BANNED`，按 §3 的解析，封禁用户走可选档时的行为请查清现行 `OptionalAuth` 与 bearer 路径后照现行语义处理，写进报告）、500、503。
 
 ## 8. spec 生成
@@ -256,6 +264,8 @@ W0a-4 落地，包是 `internal/apiv1/repr` 与 `internal/apiv1/collect`；领�
 - 迁移文件按 `CLAUDE.md` 要求写注释：改了什么、为什么、现存的行怎么处理。
 - 在报告里提醒：这条需要在生产跑，按 memory「kungal-prod-deploy-and-migrate」，迁移在部署时自动执行。
 - 确认迁移的写法与现有迁移一致（幂等等）。
+
+W0a-5 落地：up 在归一之后加 `CHECK (status IN (0, 1))`（`topic_status_check`），让这个缺陷不能再写进来。唯一的写入方 `hideDecision` 只写 0 或 1，新旧代码在两种部署顺序下都满足它。down 只删约束。
 
 ## 10. 门（Go 测试）
 
@@ -276,6 +286,8 @@ W0a-4 落地：门在 `internal/apiv1/gates`（`gates.CheckAll`），对真实�
 ## 11. 契约测试（DB，G1 ②）
 
 - 用 `internal/testdb` 起真库，装配真实的 Fiber app（含 v1），造数据。造数据的方式按仓里现有 DB 测试的习惯。
+
+W0a-5 落地：`internal/app/v1_topics_test.go`，经 `setupRoutes` 装配；Redis 用 miniredis，OAuth 用 httptest 桩。响应校验改用 `santhosh-tekuri/jsonschema/v6`：文档是 OpenAPI 3.1，kin-openapi 只认 3.0。另有逐字段断言（`TestV1TopicsItemFields`），只校验 schema 抓不到值错。
 - `GET /api/v1/topics`：
   - 每个 `sort` token，用 `limit=2` 把全部页翻完，结果与直接 SQL 的排序逐条相等，无重复无遗漏；
   - 覆盖 `nsfw`、`category`、匿名、有会话、封禁作者的话题被滤掉后游标仍正确；
@@ -286,13 +298,13 @@ W0a-4 落地：门在 `internal/apiv1/gates`（`gates.CheckAll`），对真实�
 - 会话怎么造：
   - cookie 会话：直接往测试 Redis 写 `kungal:session:v2:<token>` JSON，`oauth_expires_at` 是 int64 unix 秒，写成字符串会静默解析失败；
   - Bearer：用测试密钥自签 JWT，参照 `bearer_test.go` 的做法。
-  - Redis 同样用你起的一次性容器。
+  - Redis 同样用你起的一次性容器。W0a-5 落地用的是 miniredis，所以 `db` 作业只起 Postgres。
 
 ## 12. CI
 
 `test.yml`：
 
-- unit 作业加一步：`make openapi && git diff --exit-code openapi/`。
+- unit 作业加一步：`make openapi && git diff --exit-code openapi/`。W0a-5 落地时没加：`TestCommittedSpecIsCurrent` 已在 `go test` 里做同一件事。
 - 新增 `db` 作业：
   - 服务容器 `postgres`（与生产同主版本，生产是 `postgres:18-alpine`）与 `redis`；
   - 用仓里新写的引导脚本从零建库（下一条）；
