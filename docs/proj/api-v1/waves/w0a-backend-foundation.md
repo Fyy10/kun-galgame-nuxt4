@@ -158,24 +158,32 @@ Bearer 的 `WithoutStaff` / `viaBearer` 语义原样保留；`bearer_guard_test.
 
 旧路由上的 `middleware.Idempotent` **保持原样**，App 在迁到 v1 之前还在用它的行为。本波没有 v1 的 `POST`：在测试里注册一个仅测试用的操作，覆盖全部分支（首次、重放、处理中、请求不同、缺键、格式错、5xx 释放）。
 
-## 5. 表示层与集合的公共件（`internal/apiv1/repr` 或同级包，由你定）
+## 5. 表示层与集合的公共件
 
-- `ID(int) string`、`Timestamp(time.Time) string`（UTC，秒精度，`Z` 结尾，同 infra `repr/id.go`）、`Date`。
-- `Image`：`{url, hash, width, height, thumbhash, sexual}`，从图床 hash + `imageclient.ImageMeta` 构造。
-  - `sexual`：0 / 1 / 2 → `safe` / `suggestive` / `explicit`，缺席 → `null`。先读 `pkg/imageclient` 里 `Sexual` 的注释与 memory 指出的「缺席 ≠ 0」。
-  - 尺寸未知发 `null`。键名与类型对齐 infra `repr/image.go` 的同名键。
-- `UserRef`：`{object: "user", id, name, avatar: Image | null}`，从 `userclient.User` 构造。头像有 `avatar_image_hash` 就出 Image（没有 meta 时尺寸为 `null`），只有 URL 没有 hash 时怎么办，查清后写进报告再定。已注销用户的占位（`userclient` 的 `已注销用户`）原样透传 `name`；它是数据，不是服务端文案。
-- `List[T]`：`{object: "list", items, next_cursor?, total?}`。`items` 永不 `null`。
-- 游标：
-  - `cur_` + base64url（无填充）的 JSON，内容含版本号、排序 token、过滤条件指纹、keyset 值；
-  - 解码严格：任何字段不对，或指纹与本次请求的排序和过滤不一致，都是 `400 INVALID_CURSOR`；
-  - 游标不需要签名：过滤与可见性闸永远在服务端重新施加，改游标只能改起点。
-- 查询参数解析的统一实现：
+W0a-4 落地，包是 `internal/apiv1/repr` 与 `internal/apiv1/collect`；领域包放在 `internal/<domain>/apiv1/` 并引用它们。
+
+- 标量类型各带自己的 schema（`huma.SchemaProvider`），DTO 字段用类型声明，字段上的 `doc` 照常成为描述：
+  - `repr.DecimalID`：`^[0-9]+$`，1–20 位；`repr.ID(int)` 构造，`repr.ParseID` 只收正整数；
+  - `repr.DateTime`：UTC、秒精度、`Z` 结尾，同 infra `repr/id.go`；`repr.Timestamp` / `repr.TimestampPtr` 构造；
+  - `repr.CalendarDate`：`YYYY-MM-DD`；`repr.Date` 构造。
+- **可空的写法**：字段是指针且没有 `omitempty` ⇒ 值为 `null`，`sealDocument` 把 schema 标成可空（对象用 `anyOf [$ref, null]`）。字段是指针且有 `omitempty` ⇒ 缺席。非指针字段永远在场、永不为 `null`。
+- `repr.Image`：`{url, hash, width, height, thumbhash, sexual}`，从图床 hash + `imageclient.ImageMeta` 构造（`NewImage`），或从正文 token `/image/<hash>[_variant]` 构造（`NewImageFromToken`，复用 `markdown.ParseContentImageRef`）。
+  - `sexual`：0 / 1 / 2 → `safe` / `suggestive` / `explicit`，缺席 → `null`（未分级 ≠ 安全）。
+  - 尺寸为 0 视为未知，发 `null`。键名与类型对齐 infra `repr/image.go` 的同名键；论坛不发 `violence` 与 `source`。
+- `repr.UserRef`：`{object: "user", id, name, avatar: Image | null}`。有 `avatar_image_hash` 就出 Image，否则 `null`。
+  - **裁决**：线上 10 个头像是外链（bilibili、抖音等）且没有 hash 的用户，v1 发 `null`；Image 的 `hash` 保持必填，不为它们放宽。重新托管是 infra 的事。
+  - 已注销用户的占位名 `已注销用户` 原样透传。
+- `repr.List[T]`：`{object: "list", items, next_cursor?, total?}`。`items` 永不 `null`；`next_cursor` 末页省略；`total` 只在请求时出现。schema 名可读（`ListProblemType`）。
+- 游标（`collect.EncodeCursor` / `DecodeCursor` / `Fingerprint`）：
+  - `cur_` + base64url（无填充）的 JSON `{v, s, f, k}`：版本、排序 token、过滤指纹、keyset 值（字符串）；
+  - 解码严格：前缀、base64、JSON、版本、排序与指纹任何一项不对都是 `400 INVALID_CURSOR`，`errors[]` 为 `{parameter: cursor, reason: INVALID_FORMAT}`。不合 `^cur_` 语法、在 huma 校验阶段就被拒的游标，错误码同样是 `INVALID_CURSOR`；
+  - 不签名：过滤与可见性闸永远在服务端重新施加，改游标只能改起点。
+- 查询参数（`collect.Page` 嵌入 `cursor` + `limit`，`collect.Total` 单独嵌入 `include_total`，只有 `total` 与 `items` 同口径的集合才嵌）：
   - `limit`：1–100，默认 20，超限 `400 LIMIT_TOO_LARGE`，不 clamp；小于 1 → `400 INVALID_PARAMETER`；
-  - 布尔：只收 `true` / `false`；
+  - 布尔：只收 `true` / `false`，由 `Setup` 装的中间件对每个 v1 操作的每个布尔查询参数统一执行；
   - 封闭枚举：未知值 → `400 UNKNOWN_ENUM_VALUE`，`errors[]` 带 `parameter`、`reason: UNKNOWN_VALUE`、`params.allowed`；
   - `sort`：未知 → `400 UNKNOWN_SORT`。
-  - 同名参数在任何操作上语法一致。能用 huma 的 schema 约束表达的就用 huma 表达，让 spec 如实描述，但错误码必须是上面这些。
+  - 这些错误码由 `pkg/problem` 的 `pickCode` 按参数名选出：约束写在 huma schema 里，让 spec 如实描述。
 
 ## 6. 元数据端点
 
@@ -252,6 +260,8 @@ Bearer 的 `WithoutStaff` / `viaBearer` 语义原样保留；`bearer_guard_test.
 ## 10. 门（Go 测试）
 
 按 `02-governance.md` §3 实现 **G1 ①、G2、G3、G4、G5/G13、G6、G7、G8、G9、G14、G16、G17、F1、F3、F7**。
+
+W0a-4 落地：门在 `internal/apiv1/gates`（`gates.CheckAll`），对真实文档的断言是 `internal/app/v1_gates_test.go`，跑的是 `app.V1Spec()`，与 `cmd/openapi` 同一条路径。新端点经 `setupRoutes` 注册，自动受它约束。
 
 - 可以移植 infra 的 `gates.go` 与 `gates_repr.go` 的结构，但判据以论坛规范为准。
 - **每道门都要有阳性对照**：构造一份违规的 spec 片段，或在测试里注册一个违规操作，走和真实 spec **同一条**检查路径，断言门会红。

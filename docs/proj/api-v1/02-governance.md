@@ -37,17 +37,17 @@ G 编号沿用 infra 07 §2 的同名门，F 编号是论坛补的。**每道门
 |---|---|---|---|
 | **G1** | ① 提交的 spec 与 `problems.json` 等于重新生成的结果。② 契约测试打真路由：每条响应都通过 spec 校验（状态码在声明集合里、body 符合 schema、`Content-Type` 正确） | ① `make openapi && git diff --exit-code`。② Go 测试（kin-openapi `openapi3filter`），带真库 | api · db |
 | **G2** | 操作、参数、property、响应都有非空 `description` | spec 测试 | api |
-| **G3** | 每个枚举标 `x-vocabulary-closed`；开放枚举标 `x-vocabulary` | spec 测试 | api |
-| **G4** | 每个操作声明它真实会发的全部状态码，错误响应一律 `$ref` Problem。最低集合：全部操作 500；有参数 400；`required` / `optional` 档 401 + 403（封禁）+ 503（会话存储或 OAuth 故障）；路径带 id 404；有请求体 400 + 415 + 422；要求幂等键 409 | spec 测试 | api |
+| **G3** | 每个枚举标 `x-vocabulary-closed`；开放枚举标 `x-vocabulary`。struct tag 写 `enum:"…"` 即声明封闭词表，由 `sealDocument` 补标；开放词表用 `repr.OpenEnum` | spec 测试 | api |
+| **G4** | 每个操作声明它真实会发的全部状态码，错误响应一律 `application/problem+json` 且 `$ref` Problem。最低集合由 `apiv1.RequiredStatuses` 从操作推导，`sealDocument` 据此补进文档、门据此检查，同一个函数，任何操作都不手写：全部操作 500；有参数 400；`required` / `optional` 档 401 + 403（封禁）+ 503（会话存储或 OAuth 故障）；路径带 id 404；有请求体 400 + 415 + 422；要求幂等键 409 | spec 测试 | api |
 | **G5 / G13** | 注册表七项检查（infra 10 §7）；code ↔ type URI 双向一一对应；`problems.json` 与注册表一致；代码里构造的每个 code / reason 都在注册表里 | Go 测试 + AST 扫描 | api |
 | **G6** | 2xx schema 顶层不含 `code` / `message` / `data` / `success` / `status` / `timestamp` / `error` | spec 测试 | api |
 | **G7** | 名为 `id`、以 `_id` 结尾的 property 与参数是字符串；以 `_ids` 结尾的是字符串数组 | spec 测试 | api |
-| **G8** | 同名 property 全 spec 内 schema 一致。例外只走具名清单（初版只有 `state`：资源生命周期，各资源各一份封闭枚举）；禁用名不出现 | spec 测试 | api |
-| **G9** | 数组 / map 不允许 `null`；没有 `additionalProperties: false`；v1 包里 `omitempty` 只在指针字段上 | spec 测试 + Go AST | api |
+| **G8** | 同名 property 全 spec 内 schema 一致：类型、format、可空性、枚举值、`$ref` 目标、数组元素。例外只走具名清单：`object`（各资源各一个单值判别枚举）、`state`（各资源各自的生命周期封闭枚举）、`items`（列表容器的成员，元素类型随列表而变）。查询 / 路径参数不参与一致性比较（`sort` 等是各集合自己的词表），但禁用名照查 | spec 测试 | api |
+| **G9** | 数组 / map 不允许 `null`；没有 `additionalProperties: false`；请求体里没有可空对象（huma 把 `{"type":"null"}` 分支当作匹配任何值，等于关掉该字段的校验，改用 `omitempty`）；v1 包里 `omitempty` / `omitzero` 只在指针字段上 | spec 测试 + Go AST | api |
 | **G14** | 字符串必须有 `enum` / `format` / `pattern` 之一或自由文本声明，且全部有 `maxLength`；数值有 `minimum` | spec 测试 | api |
 | **G16** | `request_id` 匹配 `^req_[0-9A-HJKMNP-TV-Z]{26}$`；游标匹配 `^cur_` | spec 测试 + 契约测试 | api · db |
-| **G17** | 写面路径参数寻址的对象，在读面 schema 里有 `id` | spec 测试 | api |
-| **F1** | 命名规则（[01 §3](01-standard.md)）：布尔前缀、`_at` ↔ date-time、`_date` ↔ date、`_count` 为非负整数、禁用名 | spec 测试 | api |
+| **G17** | 写得进去就读得出来：写操作路径里的每个 `{x_id}`，以它结尾的那段路径必须有 GET，且其 200 响应是带 `id` 的对象。例如 `PUT /topics/{topic_id}/like` 要求 `GET /topics/{topic_id}` | spec 测试 | api |
+| **F1** | 命名规则（[01 §3](01-standard.md)），property 与参数都查：布尔以 `is_` / `has_` / `can_` 开头（查询参数另允许 `include_`）、`_at` ↔ date-time、`_date` ↔ date、`_count` 为非负整数、封闭枚举值是 snake_case（具名例外只有 `sections`：论坛的 URL slug） | spec 测试 | api |
 | **F2** | 注册表的每个 code 与 reason 在 `zh-CN/problem.json` 里都有译文，目录里没有多余键 | vitest，读 `problems.json` | web |
 | **F3** | 旧路由数只减不增：`routes.golden` 里 `/api/v1` 以外的路由数 ≤ `legacy_route_baseline` | Go 测试 | api |
 | **F4** | `kunFetch` / `useKunFetch` 调用点数 ≤ 基线 | vitest 源码扫描 | web |
@@ -55,6 +55,10 @@ G 编号沿用 infra 07 §2 的同名门，F 编号是论坛补的。**每道门
 | **F6** | 应用代码里不出现以 `/v1/` 开头的字符串字面量：v1 只能经类型化客户端调用 | eslint `no-restricted-syntax` | web |
 | **F7** | DB 作业里 `testdb` 不许跳过：设了 `KUN_REQUIRE_TEST_DB=1` 而没有 DSN 就失败，而不是 skip | Go 测试辅助 | db |
 | **G12** | oasdiff 对比 master 上的 spec。preview 期只报告，稳定后阻断 | CI | api |
+
+`apiv1.Setup` 在全部操作注册完之后跑一次 `sealDocument`，文档由它补齐三件事，别的一概不改：G4 的推导状态码；封闭枚举标记；没有 `omitempty` 的指针字段标为可空（huma 把指向结构体的指针渲染成裸 `$ref`，把指向 `DateTime` / `DecimalID` 等自定义 schema 类型的指针渲染成非空，而代码对它们发 `null`）。infra 的同类后处理还会强制数组非空、把错误响应改写成 Problem，论坛**不做**这两件：它们会让 G9 与 G4 在真实文档上永远不红，掩盖代码与文档的分歧。
+
+源码门（G5 的 AST 扫描、G9 的 `omitempty` 扫描）与它们的阳性对照走同一个目录扫描函数：对照在临时目录里造违规文件再扫；必需目录扫到零个文件本身就是违规。
 
 作业：
 
