@@ -22,6 +22,14 @@
 - **手写类型**：v1 操作的请求与响应**不得**再手写 TS 类型。需要具名类型时，从生成物里别名：`type TopicSummary = components['schemas']['TopicSummary']`。旧的手写类型随对应旧端点一起删。
 - **旧调用的棘轮**：`kunFetch` / `useKunFetch` 的调用点数只减不增（门 F4）。
 
+W0b-1 落地的形状：
+
+- 纯 TS 模块在 `apps/web/shared/utils/api/`，网页与 Nitro 共用：`client.ts`（`createApiClient({ origin, cookie?, timeoutMs? })`，全站唯一出现 `/api/v1` 的地方；`sessionCookie` 只取 `kungal_session`）、`problem.ts`（`settle` 把 openapi-fetch 的结果收成 `ApiResult`，失败是 `ClientProblem { kind, status, code, errors, requestId }`，不带 `title` / `detail`）、`message.ts`（`problemMessage`、`fieldMessage`）。超时用包一层 `fetch` 的 `AbortSignal.timeout`，并与调用方的 signal 合并。
+- `settle` 只在 `Content-Type` 是 `application/problem+json` 且体里有字符串 `code`、数字 `status` 时才认作 problem；代理的 502 页面、空体 429 都是 `kind: 'http'`，按 status 兜底。`TypeError` / `AbortError` 是 `network`，`TimeoutError` 是 `timeout`，其余异常原样抛出（bug 不伪装成断网）。
+- Nuxt 层：`useApiClient()`（服务端每次新建，带 cookie 与 10 秒超时；浏览器单例）、`useApi(key, (api, { signal }) => api.GET(…))`（包 `useAsyncData`，handler 返回纯 JSON 的 `ApiResult`，所以 SSR payload 可直接水合；key 可响应式）、`reportProblem(problem)`（toast，服务端无操作）。
+- 类型测试：`shared/utils/api/client.typetest.ts` 与 `app/composables/useApi.typetest.ts` 由 `pnpm -F web typecheck` 检查。`@ts-expect-error` 钉住错路径、错查询参数、错排序 token、读错字段名；最后一条就是 `additionalProperties` 那个坑的回归门。
+- 会话失效 / 封禁 / 重新授权的全局副作用与 UUIDv7 幂等键**还没做**：等第一个需要它们的 v1 调用（必需鉴权档或创建类 `POST`）一起落地，免得写出没有真实调用验证的代码。
+
 ### 2.2 App（kungal-apps）
 
 - tonik 从论坛仓 `apps/api/openapi/kungal-v1.json` 生成 Dart 客户端，按论坛 commit 钉版。
@@ -49,15 +57,15 @@ G 编号沿用 infra 07 §2 的同名门，F 编号是论坛补的。**每道门
 | **G17** | 写得进去就读得出来：写操作路径里的每个 `{x_id}`，以它结尾的那段路径必须有 GET，且其 200 响应是带 `id` 的对象。例如 `PUT /topics/{topic_id}/like` 要求 `GET /topics/{topic_id}` | spec 测试 | api |
 | **F1** | 命名规则（[01 §3](01-standard.md)），property 与参数都查：布尔以 `is_` / `has_` / `can_` 开头（查询参数另允许 `include_`）、`_at` ↔ date-time、`_date` ↔ date、`_count` 为非负整数、封闭枚举值是 snake_case（具名例外只有 `sections`：论坛的 URL slug） | spec 测试 | api |
 | **F8** | v1 源码（与 G5 同一组目录）里没有中日韩文字的字符串字面量：给人看的文字由客户端按语言出，服务端发 code 或 `null`。W0a-5 验收时发现删号作者经 `userclient.Placeholder` 以「已注销用户」上了线，现在 `UserRef.name` 为 `null` | Go AST | api |
-| **F2** | 注册表的每个 code 与 reason 在 `zh-CN/problem.json` 里都有译文，目录里没有多余键 | vitest，读 `problems.json` | web |
+| **F2** | 注册表的每个 code 与 reason 在 `zh-CN/problem.json` 里都有译文，目录里没有多余键。reason 的译文按参数分变体（`default` 必有，其余键是所用参数名升序以 `__` 连接，占位符恰好是这些参数），`status` 至少覆盖注册表里出现的每个状态与 429 / 502 / 504，文本里不许出现 vue-i18n 的特殊字符 `@` `$` `\|` | vitest（`tests/api/problemCatalog.spec.ts`），读 `problems.json` | web |
 | **F3** | 旧路由数只减不增：`routes.golden` 里 `/api/v1` 以外的路由数 ≤ `legacy_route_baseline` | Go 测试 | api |
-| **F4** | `kunFetch` / `useKunFetch` 调用点数 ≤ 基线 | vitest 源码扫描 | web |
-| **F5** | 提交的 `v1.d.ts` 等于从提交的 spec 重新生成的结果 | `pnpm -F web gen:api && git diff --exit-code` | web |
-| **F6** | 应用代码里不出现以 `/v1/` 开头的字符串字面量：v1 只能经类型化客户端调用 | eslint `no-restricted-syntax` | web |
+| **F4** | `kunFetch` / `useKunFetch` 调用点数**等于**基线 `tests/api/legacy-fetch-baseline`：少了也红，删调用点的提交必须同时下调基线，否则基线留下的余量会让新调用悄悄长回来 | vitest 源码扫描（`tests/api/legacyFetchRatchet.spec.ts`） | web |
+| **F5** | 提交的 `v1.d.ts` 等于从提交的 spec 重新生成的结果。openapi-typescript 精确钉版，生成物随版本变 | `pnpm -F web gen:api && git diff --exit-code` | web |
+| **F6** | 应用代码（`app/` `server/` `shared/`）里不出现以 `/v1` 或 `/api/v1` 开头的字符串字面量或模板片段：v1 只能经类型化客户端调用。唯一例外是 `shared/utils/api/client.ts`。别家服务的 `${base}/v1/…` 也会命中，逐行 `eslint-disable-next-line` 并写明是谁的 API（现有两处：贴纸站、OG 卡片服务） | eslint `no-restricted-syntax`，阳性对照 `tests/api/v1Literals.spec.ts` 用 ESLint Node API 跑仓里的配置 | web |
 | **F7** | DB 作业里 `testdb` 不许跳过：设了 `KUN_REQUIRE_TEST_DB=1` 而没有 DSN 就失败，而不是 skip | Go 测试辅助 | db |
 | **G12** | oasdiff 对比 master 上的 spec。preview 期只报告，稳定后阻断 | CI | api |
 
-`apiv1.Setup` 在全部操作注册完之后跑一次 `sealDocument`，文档由它补齐四件事，别的一概不改：G4 的推导状态码；封闭枚举标记；没有 `omitempty` 的指针字段标为可空（huma 把指向结构体的指针渲染成裸 `$ref`，把指向 `DateTime` / `DecimalID` 等自定义 schema 类型的指针渲染成非空，而代码对它们发 `null`）；可空枚举的 `enum` 补上 `null`（huma 渲染成 `type: [string, null]` 而 `enum` 里没有 `null`，它自己的校验器先放过 null 所以从没发现，标准 JSON Schema 校验器会拒；W0a-5 契约测试在 `Image.sexual` 上抓到）。infra 的同类后处理还会强制数组非空、把错误响应改写成 Problem，论坛**不做**这两件：它们会让 G9 与 G4 在真实文档上永远不红，掩盖代码与文档的分歧。
+`apiv1.Setup` 在全部操作注册完之后跑一次 `sealDocument`，文档由它补齐五件事，别的一概不改：G4 的推导状态码；封闭枚举标记；没有 `omitempty` 的指针字段标为可空（huma 把指向结构体的指针渲染成裸 `$ref`，把指向 `DateTime` / `DecimalID` 等自定义 schema 类型的指针渲染成非空，而代码对它们发 `null`）；可空枚举的 `enum` 补上 `null`（huma 渲染成 `type: [string, null]` 而 `enum` 里没有 `null`，它自己的校验器先放过 null 所以从没发现，标准 JSON Schema 校验器会拒；W0a-5 契约测试在 `Image.sexual` 上抓到）；去掉值为 `true` 的 `additionalProperties`（与缺省语义相同，huma 的校验器对 `nil` 与 `true` 一视同仁，所以请求体仍接受未知字段；但 openapi-typescript 把 `true` 渲染成 `[key: string]: unknown`，W0b-1 发现读错字段名只得到 `unknown` 而不报错）。infra 的同类后处理还会强制数组非空、把错误响应改写成 Problem，论坛**不做**这两件：它们会让 G9 与 G4 在真实文档上永远不红，掩盖代码与文档的分歧。
 
 源码门（G5 的 AST 扫描、G9 的 `omitempty` 扫描、F8）与它们的阳性对照走同一个目录扫描函数：对照在临时目录里造违规文件再扫；必需目录扫到零个文件本身就是违规。
 
