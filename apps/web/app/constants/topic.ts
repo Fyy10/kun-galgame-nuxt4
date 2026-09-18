@@ -74,24 +74,6 @@ export const KUN_TOPIC_SECTION_CONST = [
   'o-other'
 ] as const
 
-export type TopicListSortField =
-  | 'status_update_time'
-  | 'created'
-  | 'view_1d'
-  | 'view_7d'
-  | 'view_30d'
-  | 'view'
-
-export const topicListSortFieldOptions: KunSelectOption<TopicListSortField>[] =
-  [
-    { value: 'status_update_time', label: '更新时间' },
-    { value: 'created', label: '创建时间' },
-    { value: 'view_1d', label: '日浏览数' },
-    { value: 'view_7d', label: '周浏览数' },
-    { value: 'view_30d', label: '月浏览数' },
-    { value: 'view', label: '总浏览数' }
-  ]
-
 export const TOPIC_SORT_FIELD_CONST = [
   'created',
   'view',

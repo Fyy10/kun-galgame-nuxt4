@@ -1,61 +1,104 @@
 <script setup lang="ts">
 import { useRouteQuery } from '@vueuse/router'
-import {
-  topicListSortFieldOptions,
-  type TopicListSortField
-} from '~/constants/topic'
+import type { operations } from '#shared/types/api/v1'
+import type { TopicSummary } from '#shared/utils/api/schemas'
+import { problemMessage } from '#shared/utils/api/message'
+import { useCursorList } from '~/composables/useCursorList'
 
-const route = useRoute()
+type TopicSort = NonNullable<
+  NonNullable<operations['listTopics']['parameters']['query']>['sort']
+>
 
-const page = useRouteQuery('page', 1, { mode: 'replace', transform: Number })
-const sortField = useRouteQuery<TopicListSortField>(
-  'sort_field',
-  'status_update_time',
-  { mode: 'replace' }
-)
-const sortOrder = useRouteQuery<'asc' | 'desc'>('sort_order', 'desc', {
+const OFFERED_SORTS = [
+  'bumped_desc',
+  'bumped_asc',
+  'created_desc',
+  'created_asc',
+  'views_1d_desc',
+  'views_1d_asc',
+  'views_7d_desc',
+  'views_7d_asc',
+  'views_30d_desc',
+  'views_30d_asc',
+  'views_desc',
+  'views_asc'
+] as const satisfies readonly TopicSort[]
+
+type OfferedSort = (typeof OFFERED_SORTS)[number]
+type SortField =
+  | 'bumped'
+  | 'created'
+  | 'views_1d'
+  | 'views_7d'
+  | 'views_30d'
+  | 'views'
+type SortOrder = 'asc' | 'desc'
+
+const SORT_FIELD_OPTIONS: { value: SortField; label: string }[] = [
+  { value: 'bumped', label: '更新时间' },
+  { value: 'created', label: '创建时间' },
+  { value: 'views_1d', label: '日浏览数' },
+  { value: 'views_7d', label: '周浏览数' },
+  { value: 'views_30d', label: '月浏览数' },
+  { value: 'views', label: '总浏览数' }
+]
+
+const isOfferedSort = (value: string): value is OfferedSort =>
+  (OFFERED_SORTS as readonly string[]).includes(value)
+
+const toToken = (field: SortField, order: SortOrder): OfferedSort =>
+  `${field}_${order}` as OfferedSort
+
+const fieldOf = (token: OfferedSort): SortField =>
+  token.endsWith('_asc')
+    ? (token.slice(0, -4) as SortField)
+    : (token.slice(0, -5) as SortField)
+
+const sortQuery = useRouteQuery<string>('sort', 'bumped_desc', {
   mode: 'replace'
 })
-const limit = 50
 
-const { data, status, refresh } = await useKunFetch<{
-  topics: TopicCard[]
-  total: number
-}>('/topic', {
-  method: 'GET',
-  query: {
-    page,
-    limit,
-    sort_field: sortField,
-    sort_order: sortOrder,
-    category: 'all'
-  },
-  watch: false
-})
+const offeredSort = computed<OfferedSort>(() =>
+  isOfferedSort(sortQuery.value) ? sortQuery.value : 'bumped_desc'
+)
 
-const setSortField = (
-  value: TopicListSortField | TopicListSortField[] | null
-) => {
+const sortField = computed(() => fieldOf(offeredSort.value))
+const sortOrder = computed<SortOrder>(() =>
+  offeredSort.value.endsWith('_asc') ? 'asc' : 'desc'
+)
+
+const settings = usePersistSettingsStore()
+const includeNsfw = computed(
+  () => settings.showKUNGalgameContentLimit === 'nsfw'
+)
+
+const setSortField = (value: SortField | SortField[] | null) => {
   if (!value || Array.isArray(value)) return
   if (value === sortField.value) return
-  page.value = 1
-  sortField.value = value
-}
-const setSortOrder = (value: 'asc' | 'desc') => {
-  if (value === sortOrder.value) return
-  page.value = 1
-  sortOrder.value = value
+  sortQuery.value = toToken(value, sortOrder.value)
 }
 
-const listPath = route.path
-watch(
-  () => route.fullPath,
-  () => {
-    if (route.path !== listPath) return
-    refresh()
-    if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-)
+const setSortOrder = (value: SortOrder) => {
+  if (value === sortOrder.value) return
+  sortQuery.value = toToken(sortField.value, value)
+}
+
+const { items, hasMore, problem, status, loadingMore, loadMore, refresh } =
+  await useCursorList<TopicSummary>(
+    () => `topics:${offeredSort.value}:${includeNsfw.value ? 'nsfw' : 'sfw'}`,
+    (api, cursor, { signal }) =>
+      api.GET('/topics', {
+        params: {
+          query: {
+            limit: 50,
+            sort: offeredSort.value,
+            include_nsfw: includeNsfw.value,
+            ...(cursor ? { cursor } : {})
+          }
+        },
+        signal
+      })
+  )
 </script>
 
 <template>
@@ -69,7 +112,7 @@ watch(
       <KunSelect
         class-name="w-44"
         :model-value="sortField"
-        :options="topicListSortFieldOptions"
+        :options="SORT_FIELD_OPTIONS"
         @update:model-value="setSortField"
       />
 
@@ -95,28 +138,37 @@ watch(
       </div>
     </div>
 
-    <template v-if="data">
+    <template v-if="problem">
+      <KunNull :description="problemMessage(problem)" />
+      <div class="flex justify-center">
+        <KunButton variant="flat" size="sm" @click="() => refresh()">
+          重试
+        </KunButton>
+      </div>
+    </template>
+
+    <template v-else>
       <KunLoading :loading="status === 'pending'">
         <div class="divide-default-200/60 divide-y">
-          <TopicCard
-            v-for="topic in data.topics"
-            :key="topic.id"
-            :topic="topic"
-          />
+          <TopicCard v-for="topic in items" :key="topic.id" :topic="topic" />
         </div>
       </KunLoading>
 
       <KunNull
-        v-if="!data.topics.length"
+        v-if="status !== 'pending' && !items.length"
         description="真的一滴也不剩了呜呜呜"
       />
 
-      <div class="flex justify-center pt-4">
-        <KunPagination
-          v-model:current-page="page"
-          :total-page="Math.ceil(data.total / limit)"
-          :is-loading="status === 'pending'"
-        />
+      <div v-if="items.length" class="flex justify-center pt-4">
+        <KunButton
+          v-if="hasMore"
+          variant="light"
+          :loading="loadingMore"
+          @click="loadMore"
+        >
+          加载更多
+        </KunButton>
+        <span v-else class="text-default-400 text-sm">没有更多话题了</span>
       </div>
     </template>
   </div>
