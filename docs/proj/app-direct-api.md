@@ -2,6 +2,8 @@
 
 > 本仓自有工程笔记（**非** infra 镜像）。kungal-apps 工单 02「App 直连论坛 API 的四项前置」的论坛侧交付与契约。
 > 取代 [app-aggregation-api.md](./app-aggregation-api.md) 的方向。
+>
+> **工单 02 回报对照**：① 放行端点与 curl 示例在 §1「放行范围」；② 幂等键在 §2；③ 版本闸在 §4；④ assetlinks 在 §5；⑤ galgame 供数结论在 §1「galgame 供数」。infra 工单 01 裁决要求通知、未读、下载也走论坛，这三面在 §1「放行范围」逐条列出，已全部确认可用 Bearer 访问。
 
 ## 裁决（2026-09-17，App 侧拍板）
 
@@ -60,26 +62,80 @@ App 用 AppAuth + PKCE 直接从 OP 换出 access token，然后 `Authorization:
 
 ### 放行范围
 
-凡是挂了 `Auth` / `OptionalAuth` 的路由都接受 Bearer（完整清单见 `internal/app/testdata/routes.golden`）。App 首批消费：
+路由挂了 `OptionalAuth` / `Auth`，Bearer 才会被校验（完整清单与每条路由的中间件链见 `apps/api/internal/app/testdata/routes.golden`）。完全公开的路由不看 `Authorization` 头，带了无效 token 也照常返回。下表中：
 
-| 端点 | 方式 |
-|---|---|
-| `GET /api/topic`（`page` `limit` `sort_field` `sort_order` `category`） | 匿名可读，带 Bearer 时附带登录态 |
-| `GET /api/topic/:tid`、`GET /api/topic/:tid/reply` | 同上 |
-| `GET /api/galgame`、`GET /api/galgame/:gid` | 同上（Go api 自己调 catalog 拼数据，不经 Nitro） |
-| `GET /api/user/:id` | 匿名 |
-| `POST /api/topic`、`POST /api/topic/:tid/reply` | 必须 Bearer，支持幂等键 |
+- **匿名+**：匿名可读，带 Bearer 时附加登录态（如 `is_liked`），token 无效时 401；
+- **公开**：完全不看 token；
+- **Bearer**：必须登录。
+
+**实测（2026-09-18，本地用 dev OP 真实走 PKCE 签出的 token）**：
+- 下文「通知与未读」表里的读接口带 Bearer 全部返回 200；
+- 不带 token 或 token 无效时返回 401/205；
+- 两个下载详情接口都通过了鉴权。但 dev 库的用户全是「已注销」，资源都被过滤成 404，所以下载内容本身没能在 dev 跑通。
+
+#### 首批读写
+
+| 端点 | 方式 | 说明 |
+|---|---|---|
+| `GET /api/topic` | 匿名+ | `page` `limit`（≤50）`sort_order=asc\|desc` `category`；`sort_field` 取 `status_update_time`（最新）`created` `view` `view_7d` `view_30d` `like` `favorite` `upvote`，其他值静默回落默认 |
+| `GET /api/topic/:tid`、`GET /api/topic/:tid/reply` | 匿名+ | |
+| `GET /api/galgame` | 公开 | 列表 |
+| `GET /api/galgame/:gid` | 匿名+ | 详情 |
+| `GET /api/user/:id` | 公开 | 公开资料 |
+| `POST /api/topic`、`POST /api/topic/:tid/reply` | Bearer | 支持幂等键（§2）；回复体里也要带 `topic_id` |
+| `GET /api/auth/me` | Bearer | 当前用户；Bearer 下 `roles` 已剥掉 staff 角色 |
+
+#### 通知与未读
+
+论坛**没有** SSE / WebSocket，网页也是轮询。红点只轮询 `GET /api/user/status` 一个接口，打开消息页时再拉列表。社区墙的通知已由论坛镜像进 `/api/message`（`community: true` 的行），不必再单独拉社区。
+
+| 端点 | 方式 | 说明 |
+|---|---|---|
+| `GET /api/user/status` | Bearer | `has_new_message`：通知、系统公告、私信任一有未读就是 true（已静音的类型不计）；另有 `moemoepoints` `is_check_in` |
+| `GET /api/message/nav/system` | Bearer | 两行：`route:"notice"`（通知）和 `route:"system"`（系统公告），各带 `unread_count` `count` `content` `last_message_time` |
+| `GET /api/message` | Bearer | `page`、`limit`（≤30）、`sort_order=asc\|desc`（**必填**）→ `{messages:[{id, sender{id,name,avatar}, receiver_id, link, content, status:"unread"\|"read", type, created, item_count, actor_count, community}], total}`。这个端点**忽略** `type` 参数 |
+| `PUT /api/message/system/read` | Bearer | 全部通知标为已读（同时转发给社区） |
+| `DELETE /api/message/:id` | Bearer | 删除一条通知 |
+| `GET /api/message/admin`、`PUT /api/message/admin/read` | Bearer | 系统公告 `[{id, is_read, content, admin, created}]` 与全部已读 |
+| `GET /api/message/muted` | Bearer | 被静音类型的通知，参数同 `/api/message`，可加 `type` |
+| `GET/PUT /api/user/notification-preferences` | Bearer | `{muted_types: string[]}` |
+| `GET /api/message/nav/contact` | Bearer | 私信会话列表，每项带 `unread_count` |
+| `GET /api/message/chat/history` | Bearer | `receiver_id`、`page`、`limit`（≤50） |
+| `POST /api/message/chat/send` | Bearer | `{receiver_id, content}`（≤1000 字），**没有**幂等键 |
+| `POST /api/message/chat/recall` | Bearer | `{message_id}` |
+| `GET /api/community/following` | Bearer | 关注的评论墙，`cursor` `limit`（≤50）→ `{items:[{anchor_kind, anchor_id, link, title, label, galgame_id}], next_cursor}` |
+| `POST /api/community/wall/follow` | Bearer | `{anchor_kind, anchor_id, following}` |
+| `POST /api/community/wall/read` | Bearer | `{anchor_kind, anchor_id, thread_id}` |
+
+#### 下载
+
+论坛调用 artifact 和社区时用的是论坛自己 client 的 Basic 认证，App 的用户 token 不会转发过去，这符合 infra「community/artifact 不收用户令牌」的裁决。每调用一次下载详情接口，下载计数就 +1，所以断点续传时**不要**重复调用。
+
+| 端点 | 方式 | 说明 |
+|---|---|---|
+| `GET /api/galgame/:gid/resource/all?galgame_id=:gid` | 匿名+ | 某作品的资源卡片列表 |
+| `GET /api/galgame-resource/:id/detail` | 匿名+ | galgame 资源的下载信息：`link[]` `code` `password`。这些是外部网盘或磁链，文件不在论坛托管 |
+| `GET /api/toolset/:id/resource/detail?toolset_resource_id=:rid` | 公开 | 工具资源。`type` 为 `"s3"` 时，`content` 是 artifact **预签名 URL**：有效期 24 小时，支持 `Range` 断点续传，过期后再调一次换新 URL |
+| `GET /api/app/version` | 公开 | App 自身安装包的下载地址（§4） |
+
+#### curl 示例
 
 ```sh
 # 匿名
-curl -s 'https://www.kungal.com/api/topic?page=1&limit=10'
-# Bearer 发回复
+curl -s 'https://www.kungal.com/api/topic?page=1&limit=10&sort_field=status_update_time&sort_order=desc'
+# Bearer：未读红点
+curl -s 'https://www.kungal.com/api/user/status' -H "Authorization: Bearer $AT"
+# Bearer：发回复（带幂等键）
 curl -s -X POST 'https://www.kungal.com/api/topic/4230/reply' \
   -H "Authorization: Bearer $AT" \
   -H "Idempotency-Key: $(uuidgen)" \
   -H 'Content-Type: application/json' \
   -d '{"topic_id":4230,"content":"…"}'
 ```
+
+### galgame 供数
+
+Go api 自己就能供数，**不依赖 Nitro**。`/api/galgame` 和 `/api/galgame/:gid` 由 Go api 直接调 catalog 并合并本地数据。Nitro（`apps/web/server/`）只有 sitemap、OG 图、RSS 和几条重定向中间件，没有任何 galgame 数据聚合。所以 App 直连 Go api，拿到的 galgame 数据和网页一致，对应 infra 工单 01 任务 C 的 (b)。
 
 ## 2. 幂等键：`Idempotency-Key`
 
@@ -120,7 +176,7 @@ curl -s -X POST 'https://www.kungal.com/api/topic/4230/reply' \
 
 ## 5. App Links 与网页
 
-- `apps/web/public/.well-known/assetlinks.json`：`com.kungal.app`，**指纹是全 0 占位**，等 App 侧提供直发签名钥的 SHA-256 后替换。本地验证返回 200 + `application/json`。
+- 上线地址 `https://www.kungal.com/.well-known/assetlinks.json`（源文件 `apps/web/public/.well-known/assetlinks.json`）：`com.kungal.app`，**指纹是全 0 占位**，等 App 侧提供直发签名钥的 SHA-256 后替换。本地验证返回 200 + `application/json`，没有重定向。
 - 裸域 `kungal.com` 会 302 到 www，而 Android 验证不跟随跳转，所以 App 的 intent-filter **只能声明 `www.kungal.com`**。
 - `/app`：下载页，数据来自版本闸接口。
 - `/app/oauth/callback`：App Links 验证失败或没装 App 时的落地页。页面提示「请在 App 中完成登录」，不消费授权码，挂载后把 `code` / `state` 从地址栏清掉，并带 `noindex` 和 `referrer: no-referrer`；已加入 sitemap 排除列表。
