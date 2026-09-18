@@ -43,6 +43,28 @@ Grok 用了 1481 秒、211 次调用。范围内的东西全部照任务书落�
 - 删号作者显示「已注销用户」：服务端发 `name: null`（F8），由客户端出文案。
 - **sitemap 的话题源从 2026-06-24 起一直是空的**：旧 `GET /api/topic` 那天从数组改成了 `{ topics, total }`，sitemap 的 `pick` 仍按数组取，每页都得到 `[]`。改成沿 v1 游标遍历（每页 100 条，匿名，最多 200 页）。
 
+### W0b-2 验收（2026-09-18）
+
+Grok 用了 1076 秒、242 次调用，范围内全部落地，只写了允许的路径。沙箱里 `.nuxt` 的自动导入没有随新文件重新生成、而 `nuxt prepare` 不在允许的命令里，它就改用显式导入并在报告里说明，没有去绕。它照要求跑了任务书列的六个变异，全部是真的。
+
+验收改了什么：
+
+- `getCachedData` 原来不看调用原因，只要这次导航是 popstate 且有快照就返回快照；后退回来之后再 `refresh()`（例如「重试」）会拿到快照而不是重新请求。改为只在首次取数（`cause === 'initial'`）时用快照，并补测试。
+- sitemap 的话题遍历给了 15 秒超时，与其他来源一致，免得 API 卡住时整份 sitemap 挂起。
+- sitemap 测试的样本里 `created_at` 与 `bumped_at` 相同，把 `lastmod` 换成 `created_at` 的变异活了下来；样本改成不同的时间。
+
+验证（dev 库，API 与网页各起一个进程，浏览器 Playwright）：
+
+- SSR 首屏 50 条，顺序与 `GET /api/v1/topics` 一致，payload 键 `cursor:topics:bumped_desc:sfw`；水合后浏览器不再请求。
+- 滚到底不加载；点「加载更多」只发一个带游标的请求，得到 100 条、无重复。
+- 滚到第 80 条、点进详情、后退：100 条原样、`scrollY` 与离开时完全相同（9195），没有任何 v1 请求。随后用路由 push 进入 `/topic`：重新取第一页，50 条、回到顶部。
+- 升序按钮把 URL 改成 `?sort=bumped_asc`，前三条与 API 一致；`?sort=garbage&page=7&sort_field=view` 渲染的是 `bumped_desc` 的第一页。
+- 设置为 NSFW 时 payload 键是 `…:nsfw`、NSFW 话题出现并带标签；SFW 时一条都没有。
+- 停掉 API 后打开 `/topic`：显示「网络请求失败，请检查网络后重试」与「重试」，不显示「加载更多」和空列表文案。
+- sitemap：话题 URL 2988 条，恰好等于匿名 v1 遍历的总数，`lastmod` 是 `bumped_at`。本地 catalog 没起，所以依赖 catalog 的 galgame、资源、评分等来源在本地为空或 500；这些来源本波没有改动。
+- dev 数据里没有删号作者，「已注销用户」只由组件测试与 `userRef` 测试覆盖。
+- 变异：Grok 的 6 个加 Claude 的 15 个，全部被杀（pop 标志不复位、pop 监听失效、快照上限、过期的 loadMore、失败后结束列表、loadMore 不写快照、NSFW 取反、页大小、升降序改了排序键、浏览数不格式化、lastmod 取错字段、失败时丢掉已收集的 URL、头像与 id 映射、末页文案）。
+
 ## 3. 部署之后：删旧路由
 
 旧 `GET /api/topic` 在 W0b-2 里**不删**。同一次部署里删掉它，会有两个窗口出错：新 API 先上线而旧网页还在时，`/topic` 的 SSR 直接失败；部署前打开、还没刷新的标签页在客户端导航到 `/topic` 时也会失败。等 W0b-2 的网页上线后再删：路由、`TopicHandler.GetList`、`TopicService.GetList`、`FindList`、`TopicListResponse`，重生成 `routes.golden`，`legacy_route_baseline` 320 → 319，同时把 F3 改成与 F4 一样的「等于基线」。
