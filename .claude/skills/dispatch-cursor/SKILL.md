@@ -169,6 +169,9 @@ Then, by hand, in the worktree:
      rule 14).
 6. Mutate: break each behaviour the task added (flip a condition, drop a filter) and confirm
    a test fails. Grok's tests have repeatedly asserted a little less than its report implies.
+   Before trusting a batch where everything dies, confirm one kill by hand. The zsh here does
+   not word-split an unquoted `$P`, so a package list in one variable reached `go test` as a
+   single bad argument, and every mutant of a batch "died" of a build error.
 7. Commit from the orchestrator, `git commit -- <paths>` (never `add -A`: it misses the root
    `pnpm-lock.yaml` or sweeps in strays). Then merge the branch into master.
 
@@ -192,6 +195,9 @@ Template: `task-book-template.md` (step 0, environment and discipline already fi
   mirror image (infra `mt-stray-rows`).
 - **Word each check as the property, not your guess at its shape.**
 - **Demand a positive control** for every gate, search or census.
+- **Name the real construction path the tests must go through** (`newFiber()` +
+  `setupRoutes`, `app.V1Spec()`). Left to itself Grok builds its own fixture, and a fixture
+  cannot see how the new code composes with the rest of the app (`w0a-3-wiring`).
 - **Ask it to prove new tests run.** A `TestMain` or helper that skips without a database
   takes DB-free tests down with it.
 - **Forbid ranking**; "anything that looks wrong, in scope or not" goes near the top of the
@@ -231,8 +237,9 @@ assert a little less than the report implies, so mutate.
 |---|---|---|---|---|
 | 2026-09-18 | `w0a-1-problem`: new `pkg/problem` (closed error registry, RFC 9457 writer, ULID request ids, huma validation → reason/params bridge), 1.9k lines incl. tests | grok-4.6-xhigh | 1155 s, 142 calls, 222k in + 9.0M cache read, 77k out | Every rule implemented. It pinned each bridge mapping with a request through real huma validation, not hand-built errors, as the book asked. Platform titles and descriptions diffed byte-identical to infra. It stopped nowhere, but it flagged its one deviation honestly (huma forces Fiber v3.3→v3.4 via MVS; accepted). It also caught **two errors in the orchestrator's own docs**: K5 lacked the `TOO_FEW_ITEMS` row, and the W0a record said `map[string]any` where G9 forbids it. 9/14 of the orchestrator's mutants died as delivered. The survivors were a nested required-property pointer, the 401 split, cause logging, and `MarshalJSON`'s own null guard (the mutation needs a literal `Problem`); acceptance added 4 tests (13/14, the last survivor being ULID random-byte width) |
 | 2026-09-18 | `w0a-2-identity`: extract a 12-outcome identity resolver from the auth middleware, rebuild `Auth()` / `OptionalAuth()` on it byte-identically | grok-4.6-xhigh | 1250 s, 130 calls, 403k in + 5.7M cache read, 70k out | Checked every cell of the book's legacy table against the code before trusting it. Kept all earned comments. `routes.golden` untouched. It listed 12 real smells, flat: Redis errors folded into "expired", an ignored `SETNX` error, a ban that leaves `OptionalAuth` anonymous. It left one dead method (`Bearer.authenticate`, zero callers), which acceptance removed. 10/10 of the orchestrator's mutants died, including the multi-line ones. DB-backed full suite green |
+| 2026-09-18 | `w0a-3-wiring`: mount huma on `/api/v1` (tier table, error routing, headers, v1 idempotency, metadata endpoints, spec generator, manifest tiers, F3 / F7), 2.2k lines incl. tests | grok-4.6-xhigh | 2566 s, 349 calls, 1.06M in + 14.9M cache read, 147k out | Every row of the tier table exactly as adjudicated. Its own five mutations were real, and its flat §2 list was accurate. But every test built its own Fiber app, so none saw how v1 composes with the legacy router. **An unmatched `/api/v1` path fell through into the legacy `/api` `OptionalAuth` / `Auth` chain**, because Fiber matches in registration order: a nil-deref 500 under test, a legacy envelope in production. It also missed that v1 HEAD answered 405 and that replay dropped `Location` (the book's own gap). Its "legacy unchanged" test exercised a copy of the handler. Its manifest positive control took a different path from the real check, which is exactly what the book warned against. It wrote a 90-line schema walk that `huma.DefaultArrayNullable = false` replaces, plus a 405 promotion Fiber v3 already does. First round: 7 of 17 mutants survived. Acceptance added app-level tests over `newFiber()` + `setupRoutes`, an unmatched-path terminator with `Allow`, HEAD mirroring, `app.V1Spec()` as the one spec source, and CORS and template tests. Final: 25/25 killed, DB suite green with `KUN_REQUIRE_TEST_DB=1` |
 
-Both runs hit the same environment wall: the sandbox cannot write `~/go`, so the first
+The first two runs hit the same environment wall: the sandbox cannot write `~/go`, so the first
 `GOTOOLCHAIN=go1.26.1` toolchain or sumdb fetch fails with `permission denied`. Both worked
 around it by pointing `GOPATH` into the run's own cache, which `dispatch.sh` deletes. The
 template now says so.

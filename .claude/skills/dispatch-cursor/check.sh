@@ -62,7 +62,7 @@ if [ -n "$refused" ]; then
   printf '%s\n' "$refused" | cut -c1-200 | sort | uniq -c >&2
 fi
 
-if [ -n "$head_before" ] && [ "$(git rev-parse HEAD)" != "$head_before" ]; then
+if [ -n "$head_before" ] && [ "$(git rev-parse HEAD)" != "$(git rev-parse "$head_before")" ]; then
   echo "dispatch: HEAD MOVED during the run ($head_before -> $(git rev-parse HEAD)); the executor committed" >&2
   fail=1
 fi

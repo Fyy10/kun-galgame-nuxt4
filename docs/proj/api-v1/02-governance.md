@@ -38,7 +38,7 @@ G 编号沿用 infra 07 §2 的同名门，F 编号是论坛补的。**每道门
 | **G1** | ① 提交的 spec 与 `problems.json` 等于重新生成的结果。② 契约测试打真路由：每条响应都通过 spec 校验（状态码在声明集合里、body 符合 schema、`Content-Type` 正确） | ① `make openapi && git diff --exit-code`。② Go 测试（kin-openapi `openapi3filter`），带真库 | api · db |
 | **G2** | 操作、参数、property、响应都有非空 `description` | spec 测试 | api |
 | **G3** | 每个枚举标 `x-vocabulary-closed`；开放枚举标 `x-vocabulary` | spec 测试 | api |
-| **G4** | 每个操作声明它真实会发的全部状态码，错误响应一律 `$ref` Problem。最低集合：全部操作 500；有参数 400；`required` / `optional` 档 401；路径带 id 404；有请求体 400 + 415 + 422；要求幂等键 409 | spec 测试 | api |
+| **G4** | 每个操作声明它真实会发的全部状态码，错误响应一律 `$ref` Problem。最低集合：全部操作 500；有参数 400；`required` / `optional` 档 401 + 403（封禁）+ 503（会话存储或 OAuth 故障）；路径带 id 404；有请求体 400 + 415 + 422；要求幂等键 409 | spec 测试 | api |
 | **G5 / G13** | 注册表七项检查（infra 10 §7）；code ↔ type URI 双向一一对应；`problems.json` 与注册表一致；代码里构造的每个 code / reason 都在注册表里 | Go 测试 + AST 扫描 | api |
 | **G6** | 2xx schema 顶层不含 `code` / `message` / `data` / `success` / `status` / `timestamp` / `error` | spec 测试 | api |
 | **G7** | 名为 `id`、以 `_id` 结尾的 property 与参数是字符串；以 `_ids` 结尾的是字符串数组 | spec 测试 | api |

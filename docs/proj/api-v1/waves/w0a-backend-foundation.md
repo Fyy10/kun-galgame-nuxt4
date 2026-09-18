@@ -125,7 +125,10 @@ Bearer 的 `WithoutStaff` / `viaBearer` 语义原样保留；`bearer_guard_test.
 
 ## 4. `internal/apiv1`：huma API 的装配
 
-- `Setup(app *fiber.App, deps Deps) huma.API`，由 `setupRoutes` 调用，挂在 `/api/v1`。
+- `Setup(app *fiber.App, deps Deps, registrars ...func(huma.API)) huma.API`，由 `setupRoutes` 调用，挂在 `/api/v1`。
+  - **v1 操作一律经 `Setup` 的 `registrars` 参数注册**，在 `setupRoutes` 里传入。`Setup` 在注册完之后挂一个收尾处理器：v1 下没匹配到的请求就地回 404，或者回 405 并带 `Allow`。Fiber 按注册顺序匹配，旧 `/api` 组又把 `OptionalAuth` / `Auth` 铺在它下面的所有路径上。W0a-3 验收时发现，没有这个收尾，未知的 v1 路径会一路掉进旧的鉴权链，回旧信封。代价是 `Setup` 返回之后再注册的操作全部不可达，测试同样得走 `registrars`。
+  - v1 的 GET 路由由 `Setup` 镜像成 HEAD。Fiber 自动补的 HEAD 在启动时才加，会落在收尾处理器后面，结果全部回 405。
+  - spec 由 `app.V1Spec()` 产出：它在零依赖下跑真实的 `setupRoutes`，`cmd/openapi` 和「提交的 spec 是否过期」的测试都用它，所以 spec 与服务端注册的永远是同一张表。
   - 注册**不得**依赖活的依赖：`route_manifest_test.go` 用零值 `App` 调 `setupRoutes`，`cmd/openapi` 也要能在零依赖下构建同一个 API。依赖只在请求时使用。
 - huma 配置：
   - title `KUN Galgame Forum API`，版本 `1.0.0-preview`，`info.x-stability: preview`，`info.description` 非空；
@@ -151,7 +154,7 @@ Bearer 的 `WithoutStaff` / `viaBearer` 语义原样保留；`bearer_guard_test.
 - 接受 UUID（任意版本）或 ULID；
 - 处理中 → `409 IDEMPOTENCY_REQUEST_IN_PROGRESS`；
 - 请求不同 → `409 IDEMPOTENCY_KEY_REUSED`；
-- 存 2xx–4xx 的最终响应，5xx 与 429 释放。
+- 存 2xx–4xx 的最终响应（状态、`Content-Type`、`Location`、响应体），5xx、409 与 429 释放。
 
 旧路由上的 `middleware.Idempotent` **保持原样**，App 在迁到 v1 之前还在用它的行为。本波没有 v1 的 `POST`：在测试里注册一个仅测试用的操作，覆盖全部分支（首次、重放、处理中、请求不同、缺键、格式错、5xx 释放）。
 
@@ -201,7 +204,7 @@ Bearer 的 `WithoutStaff` / `viaBearer` 语义原样保留；`bearer_guard_test.
 | `sort` | 封闭枚举，默认 `bumped_desc`。每个排序键各有 `_asc` / `_desc`：`bumped`（`status_update_time`）、`created`、`view`、`view_1d`、`view_7d`、`view_30d`、`like_count`、`favorite_count`、`upvote_count`。键集合对齐 `internal/constants/topic.go` 的两张表加 `view_1d`。token 的最终拼写由你在 spec 里定，要求一致、全小写 snake_case、方向做后缀 |
 | `category` | 封闭枚举 `galgame` / `technique` / `others`；缺席 = 全部 |
 | `nsfw` | 布尔，默认 `false` |
-| `limit` / `cursor` / `include_total` | 按 §5 |
+| `limit` / `cursor` | 按 §5。**不提供 `include_total`**：封禁作者的话题是查询之后在渲染层过滤的（`userclient.IsRenderable`），SQL 数出的总数与返回条目不同口径，违反 infra 05 §3。因此一页可以少于 `limit` 条，`next_cursor` 按取到的最后一行计算 |
 
 `view_1d` 排序的键是 `topic_view_daily` 当日计数的关联子查询（见 `topicOrderCol`）。keyset 要对同一个表达式成立：游标里存当时的值，`WHERE (expr, id) < (?, ?)`。当日计数会增长，翻页期间顺序可能漂移，这是这个排序本身的性质；只要保证不重复、不死循环即可。
 
@@ -265,7 +268,7 @@ Bearer 的 `WithoutStaff` / `viaBearer` 语义原样保留；`bearer_guard_test.
 - 用 `internal/testdb` 起真库，装配真实的 Fiber app（含 v1），造数据。造数据的方式按仓里现有 DB 测试的习惯。
 - `GET /api/v1/topics`：
   - 每个 `sort` token，用 `limit=2` 把全部页翻完，结果与直接 SQL 的排序逐条相等，无重复无遗漏；
-  - 覆盖 `nsfw`、`category`、`include_total`、匿名、有会话；
+  - 覆盖 `nsfw`、`category`、匿名、有会话、封禁作者的话题被滤掉后游标仍正确；
   - `login` 可见域的话题只对登录者出现；隐藏的话题永不出现。
 - 每个声明的错误 code 至少一个用例：非法 `limit`、超限 `limit`、非法布尔、未知枚举、未知 sort、坏游标、换了过滤条件的旧游标、无效 Bearer。
 - 每条响应都用 kin-openapi 对生成的 spec 校验：状态码在声明集合里、body 符合 schema、`Content-Type` 正确（错误是 `application/problem+json`）；并断言 `X-Request-ID` 与 `Cache-Control: no-store`。
