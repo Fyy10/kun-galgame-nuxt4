@@ -79,3 +79,15 @@ Grok 用了 1076 秒、242 次调用，范围内全部落地，只写了允许�
 ## 4. 部署之后：删旧路由
 
 旧 `GET /api/topic` 在 W0b-2 里**不删**。同一次部署里删掉它，会有两个窗口出错：新 API 先上线而旧网页还在时，`/topic` 的 SSR 直接失败；部署前打开、还没刷新的标签页在客户端导航到 `/topic` 时也会失败。等 W0b-2 的网页上线后再删：路由、`TopicHandler.GetList`、`TopicService.GetList`、`FindList`、`TopicListResponse`，重生成 `routes.golden`，`legacy_route_baseline` 320 → 319，同时把 F3 改成与 F4 一样的「等于基线」。
+
+### 上线与删除记录（2026-09-19）
+
+第一次在 Dokploy 点部署没有生效：主机没有拉新镜像，容器仍是 09-18 06:55Z 建的。第二次部署于 05:29Z 生效，迁移 096 自动执行（3 条 status 2/3 的话题归 0，加上 `topic_status_check`）。线上验收：
+
+- `/api/v1/topics`：200、`no-store`、`X-Request-ID`、条目字段恰好 18 个；`limit=0` / `101`、坏 `sort`、坏 `cursor`、`include_nsfw=yes`、未知路径各自回对应的 problem；无效 Bearer 回 401 `INVALID_CREDENTIAL` 带 `WWW-Authenticate`；陈旧 cookie 降级为匿名 200。
+- 四种排序各全量遍历一次：无重复，每页衔接。含 NSFW 的匿名遍历 3202 条，数据库里已发布的是 3225 条。差的 23 条逐条对上：16 条作者在 OAuth 已封禁，7 条 `access_scope = 'login'`，匿名本来就看不到。
+- sitemap 的话题 URL 3020 条，等于匿名 SFW 遍历的条数（2026-06-24 以来一直是 0）。
+- 真浏览器：SSR 50 条且水合不重复请求；点一次「加载更多」到 100 条，只发一个请求；进详情再后退，100 条原样、0 请求、滚动位置 6869 → 6869；全程没有请求旧路由，没有页面错误。
+- 顺带修了一处日志噪音：v1 身份中间件把陈旧 cookie、无效 Bearer 这类客户端原因记成 ERROR（`f08e3196`），现在降为 DEBUG，只有存储、密钥、预配这类服务端故障仍记 ERROR。
+
+随后删除了旧路由与 `GetList` / `FindList` / `TopicListResponse`，基线 320 → 319，F3 改为等于基线；`app-direct-api.md` 改指 v1。API 没有访问日志，旧调用方的残留量无从统计；网页与 Nitro 已零调用，剩下的只有部署前打开、还没刷新的标签页。
