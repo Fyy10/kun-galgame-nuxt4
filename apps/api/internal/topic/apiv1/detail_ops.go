@@ -1,12 +1,8 @@
 package apiv1
 
 import (
-	"context"
-	"errors"
-
 	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
-	"kun-galgame-api/pkg/problem"
 
 	"github.com/danielgtaylor/huma/v2"
 )
@@ -48,22 +44,4 @@ type getReplyOutput struct {
 
 type recordTopicViewInput struct {
 	TopicID string `path:"topic_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Topic id."`
-}
-
-var errNotImplemented = errors.New("apiv1 topics: not implemented")
-
-func (s *Service) getTopic(ctx context.Context, in *getTopicInput) (*getTopicOutput, error) {
-	return nil, problem.Internal(errNotImplemented)
-}
-
-func (s *Service) listTopicReplies(ctx context.Context, in *listTopicRepliesInput) (*listTopicRepliesOutput, error) {
-	return nil, problem.Internal(errNotImplemented)
-}
-
-func (s *Service) getReply(ctx context.Context, in *getReplyInput) (*getReplyOutput, error) {
-	return nil, problem.Internal(errNotImplemented)
-}
-
-func (s *Service) recordTopicView(ctx context.Context, in *recordTopicViewInput) (*struct{}, error) {
-	return nil, problem.Internal(errNotImplemented)
 }

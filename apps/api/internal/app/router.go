@@ -25,7 +25,7 @@ func (a *App) setupRoutes() {
 	if a.Authn != nil {
 		deps.Resolver = a.Authn
 	}
-	a.APIv1 = apiv1.Setup(a.Fiber, deps, content.Register, topicapiv1.Register(a.newTopicV1()))
+	a.APIv1 = apiv1.Setup(a.Fiber, deps, topicapiv1.Register(a.newTopicV1()))
 
 	// Deliberately touches neither DB nor Redis: the container HEALTHCHECK reads
 	// this, and a transient backing-store blip must not flap the container.
@@ -474,11 +474,20 @@ func (a *App) newTopicV1() *topicapiv1.Service {
 	if a.Config != nil {
 		cdn = a.Config.NextMoeAPI.ImageCDNBase
 	}
+	convert := &content.Converter{
+		CDNBase:  cdn,
+		SiteBase: apiv1.SiteOrigin,
+		Images:   a.ImageMeta,
+		Users:    a.UserClient.Users,
+	}
 	return topicapiv1.New(
 		topicRepo.NewTopicListRepository(a.DB),
 		topicRepo.NewTopicRepository(a.DB),
 		topicRepo.NewTopicTaxonomyRepository(a.DB),
+		topicRepo.NewReplyRepository(a.DB),
+		topicRepo.NewCommentRepository(a.DB),
 		a.UserClient,
+		convert,
 		cdn,
 	)
 }

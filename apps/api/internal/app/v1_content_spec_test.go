@@ -9,9 +9,11 @@ import (
 )
 
 type publishedSpec struct {
-	ContentDocument map[string]string `json:"x-content-document"`
-	Components      struct {
+	Components struct {
 		Schemas map[string]struct {
+			Properties map[string]struct {
+				Ref string `json:"$ref"`
+			} `json:"properties"`
 			OneOf []struct {
 				Ref string `json:"$ref"`
 			} `json:"oneOf"`
@@ -32,8 +34,15 @@ func TestV1SpecPublishesTheContentNodeVocabulary(t *testing.T) {
 	if err := json.Unmarshal(raw, &spec); err != nil {
 		t.Fatal(err)
 	}
-	if got := spec.ContentDocument["$ref"]; got != "#/components/schemas/ContentDocument" {
-		t.Fatalf("x-content-document = %q", got)
+	topic, ok := spec.Components.Schemas["Topic"]
+	if !ok {
+		t.Fatal("Topic is not in the published spec")
+	}
+	if got := topic.Properties["content"].Ref; got != "#/components/schemas/ContentDocument" {
+		t.Fatalf("Topic.content $ref = %q", got)
+	}
+	if _, ok := spec.Components.Schemas["ContentDocument"]; !ok {
+		t.Fatal("ContentDocument is not in the published spec")
 	}
 	unions := map[string][]string{
 		"BlockNode": {"blockquote", "code", "heading", "list", "math", "paragraph", "spoiler", "table", "thematic_break"},
