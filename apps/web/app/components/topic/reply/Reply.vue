@@ -1,17 +1,23 @@
 <script setup lang="ts">
+import ContentDocument from '~/components/content/Document.vue'
 import { scrollPage } from '../_helper'
 import { useQuoteContent } from '~/composables/topic/useQuoteContent'
+import { useTopicReplies } from '~/composables/topic/useTopicReplies'
+import type { Reply } from '#shared/utils/api/schemas'
+import { contentPlainText } from '~/utils/contentPlainText'
+import { toKunReactions } from '~/utils/reactionSummary'
+import { toKunUserWithPoints } from '~/utils/userRef'
 
 const bannerBaseClasses =
   'flex items-center gap-2 px-4 py-2 mb-3 rounded-lg font-semibold text-sm'
 
 const props = defineProps<{
-  reply: TopicReply
+  reply: Reply
   title: string
 }>()
 
 const { scrollToReplyId } = storeToRefs(useTempReplyStore())
-const comments = ref(props.reply.comment)
+const { refreshReply } = useTopicReplies(props.reply.topic_id)
 
 const activeFloor = inject('activeReplyFloor', ref(0))
 const isActive = computed(
@@ -21,9 +27,9 @@ const isActive = computed(
 provide(
   reactionsKey,
   useReactions({
-    replyId: props.reply.id,
-    targetUserId: props.reply.user.id,
-    reactions: props.reply.reactions,
+    replyId: Number(props.reply.id),
+    targetUserId: Number(props.reply.author.id),
+    reactions: toKunReactions(props.reply.reactions),
     showReactors: true
   })
 )
@@ -32,7 +38,7 @@ const contentRef = ref<HTMLElement | null>(null)
 const { preview, keepPreview, hidePreview } = useQuoteContent(contentRef)
 
 const replyContent = computed(() =>
-  truncateRunes(markdownToText(props.reply.content_markdown), 20)
+  truncateRunes(contentPlainText(props.reply.content), 20)
 )
 
 const cardClasses = computed(() => {
@@ -56,8 +62,8 @@ watch(
   }
 )
 
-const handleNewComment = (comment: TopicComment) => {
-  comments.value.push(comment)
+const handleNewComment = () => {
+  void refreshReply(props.reply.id)
 }
 </script>
 
@@ -112,18 +118,18 @@ const handleNewComment = (comment: TopicComment) => {
       </div>
 
       <TopicDetailUser
-        :user="reply.user"
-        :created="reply.created"
-        :edited="reply.edited"
-        :topic-id="reply.topic_id"
+        :user="toKunUserWithPoints(reply.author, reply.author_moemoepoint)"
+        :created="reply.created_at"
+        :edited="reply.edited_at"
+        :topic-id="Number(reply.topic_id)"
         :floor="reply.floor"
       />
 
       <div ref="contentRef">
-        <KunContent
-          v-if="reply.content_markdown && reply.content_markdown.trim()"
+        <ContentDocument
+          v-if="reply.content.children.length"
           compact
-          :content="renderKatex(reply.content_html)"
+          :document="reply.content"
         />
       </div>
 
@@ -141,7 +147,7 @@ const handleNewComment = (comment: TopicComment) => {
         @handle-new-comment="handleNewComment"
       />
 
-      <TopicComment :reply-id="reply.id" :comments-data="comments" />
+      <TopicComment :reply-id="reply.id" :comments-data="reply.comments" />
     </KunCard>
   </div>
 </template>

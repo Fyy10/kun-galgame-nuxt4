@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import type { Reply } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
-  reply: TopicReply
+  reply: Reply
 }>()
 
 const tempReplyStore = useTempReplyStore()
@@ -8,11 +10,13 @@ const { id, moemoepoint } = usePersistUserStore()
 const canDeleteAnyReply = useCan('reply.delete_any')
 
 const isCommonUser = !canDeleteAnyReply.value
-const isDisabled = computed(() => id !== props.reply.user.id && isCommonUser)
+const isDisabled = computed(
+  () => id !== Number(props.reply.author.id) && isCommonUser
+)
 
 const handleDeleteReply = async () => {
   const moemoepointToDecrease =
-    3 * (props.reply.comment.length + props.reply.like_count + 1)
+    3 * (props.reply.comments.length + props.reply.like_count + 1)
 
   if (moemoepoint < moemoepointToDecrease && isCommonUser) {
     useMessage(
@@ -35,15 +39,18 @@ const handleDeleteReply = async () => {
   }
 
   const result = await kunFetch<string>(
-    `/topic/${props.reply.topic_id}/reply`,
+    `/topic/${Number(props.reply.topic_id)}/reply`,
     {
       method: 'DELETE',
-      query: { replyId: props.reply.id }
+      query: { replyId: Number(props.reply.id) }
     }
   )
 
   if (result) {
-    tempReplyStore.setSuccessfulReply({ data: props.reply, type: 'deleted' })
+    tempReplyStore.setSuccessfulReply({
+      data: { id: props.reply.id, floor: props.reply.floor },
+      type: 'deleted'
+    })
     useMessage('删除回复成功', 'success')
   }
 }

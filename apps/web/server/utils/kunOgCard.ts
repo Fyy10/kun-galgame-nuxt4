@@ -3,11 +3,15 @@ import { kungal } from '../../app/config/kungal'
 import { KUN_GALGAME_RESOURCE_TYPE_MAP } from '../../app/constants/galgame'
 import { KUN_GALGAME_OFFICIAL_CATEGORY_MAP } from '../../app/constants/galgameOfficial'
 import { KUN_TOPIC_SECTION } from '../../app/constants/topic'
+import { deletedUserName } from '#shared/utils/deletedUser'
 import type { GalgameCharacterDetail } from '../../shared/types/galgame-character'
 import type { GalgameDetail } from '../../shared/types/galgame'
 import type { GalgameOfficialDetail } from '../../shared/types/galgame-official'
 import type { GalgameStaffDetail } from '../../shared/types/galgame-staff'
-import type { TopicDetail } from '../../shared/types/topic'
+import type { Topic } from '../../shared/utils/api/schemas'
+import { createApiClient } from '../../shared/utils/api/client'
+import { settle } from '../../shared/utils/api/problem'
+import { documentPlainText } from '../../shared/utils/content/plainText'
 import { truncateRunes } from '../../shared/utils/format'
 import { getEffectivePortrait } from '../../shared/utils/getEffectiveBanner'
 import { markdownToText } from '../../shared/utils/markdownToText'
@@ -53,25 +57,47 @@ export const kunOgSiteCard = (origin: string): KunOgCard => ({
   }
 })
 
-const buildTopic = async (id: number): Promise<KunOgCard | null> => {
-  const topic = await fetchKunApi<TopicDetail>(`/topic/${id}`, { topic_id: id })
-  if (!topic || topic.is_nsfw || topic.status === 1) {
+export const topicToOgCard = (topic: Topic): KunOgCard | null => {
+  if (topic.is_nsfw || topic.state === 'hidden') {
     return null
   }
-  const section = topic.section[0]
+  const section = topic.sections[0]
   return {
     template: 'topic',
     fields: {
       title: text(topic.title, 200),
-      excerpt: text(markdownToText(topic.content_markdown), 120),
+      excerpt: text(documentPlainText(topic.content, deletedUserName), 120),
       section: section ? KUN_TOPIC_SECTION[section] : undefined,
-      author: text(topic.user.name, 80),
-      authorAvatar: topic.user.avatar || undefined,
-      views: topic.view,
+      author: text(topic.author.name ?? deletedUserName, 80),
+      authorAvatar: topic.author.avatar?.url || undefined,
+      views: topic.view_count,
       replies: topic.reply_count,
       likes: topic.like_count
     }
   }
+}
+
+export const fetchTopicOgCard = async (
+  api: ReturnType<typeof createApiClient>,
+  topicId: string
+): Promise<KunOgCard | null> => {
+  const result = await settle(
+    api.GET('/topics/{topic_id}', {
+      params: { path: { topic_id: topicId } }
+    })
+  )
+  if (!result.ok) {
+    return null
+  }
+  return topicToOgCard(result.data)
+}
+
+const buildTopic = async (id: number): Promise<KunOgCard | null> => {
+  const api = createApiClient({
+    origin: useRuntimeConfig().apiBaseUrl,
+    timeoutMs: 10000
+  })
+  return fetchTopicOgCard(api, String(id))
 }
 
 const buildGalgame = async (id: number): Promise<KunOgCard | null> => {
