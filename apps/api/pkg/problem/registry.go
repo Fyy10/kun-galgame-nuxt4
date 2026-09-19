@@ -12,10 +12,11 @@ type Domain string
 
 const (
 	DomainPlatform Domain = "platform"
-	DomainKungal   Domain = "kungal"
+	DomainKungal     Domain = "kungal"
+	DomainModeration Domain = "moderation"
 )
 
-var DomainOrder = []Domain{DomainPlatform, DomainKungal}
+var DomainOrder = []Domain{DomainPlatform, DomainKungal, DomainModeration}
 
 type ExtDef struct {
 	Name string
@@ -57,6 +58,12 @@ const (
 	CodeValidationFailed             = "VALIDATION_FAILED"
 	CodeInternalError                = "INTERNAL_ERROR"
 	CodeServiceUnavailable           = "SERVICE_UNAVAILABLE"
+	CodePermissionRequired           = "PERMISSION_REQUIRED"
+	CodeContentRejected              = "CONTENT_REJECTED"
+	CodeTopicDailyLimitReached       = "TOPIC_DAILY_LIMIT_REACHED"
+	CodeMoemoepointInsufficient      = "MOEMOEPOINT_INSUFFICIENT"
+	CodeSelfLikeForbidden            = "SELF_LIKE_FORBIDDEN"
+	CodeSelfUpvoteForbidden          = "SELF_UPVOTE_FORBIDDEN"
 )
 
 const (
@@ -105,6 +112,12 @@ var Codes = []Def{
 	{CodeValidationFailed, DomainPlatform, http.StatusUnprocessableEntity, "Validation failed", "The request is syntactically valid but semantically not. errors[] is present and non-empty.", nil},
 	{CodeInternalError, DomainPlatform, http.StatusInternalServerError, "Internal error", "A bug on our side, including the output of panic recovery.", nil},
 	{CodeServiceUnavailable, DomainPlatform, http.StatusServiceUnavailable, "Service unavailable", "A dependency is unavailable. The request may be retried.", nil},
+	{CodePermissionRequired, DomainModeration, http.StatusForbidden, "Permission required", "The token lacks the permission this decision needs.", nil},
+	{CodeContentRejected, DomainKungal, http.StatusUnprocessableEntity, "Content rejected", "The trust-and-safety check refused the submitted text. Nothing was written.", nil},
+	{CodeTopicDailyLimitReached, DomainKungal, http.StatusTooManyRequests, "Topic daily limit reached", "The caller has created as many topics in the last 24 hours as their moemoepoint balance allows. limit is that number.", []ExtDef{{Name: "limit", Type: "integer"}}},
+	{CodeMoemoepointInsufficient, DomainKungal, http.StatusForbidden, "Moemoepoint insufficient", "The caller's moemoepoint balance, as this forum last cached it, is below what the operation costs. required is that cost.", []ExtDef{{Name: "required", Type: "integer"}}},
+	{CodeSelfLikeForbidden, DomainKungal, http.StatusForbidden, "Self like forbidden", "Users cannot like their own topics, replies or comments.", nil},
+	{CodeSelfUpvoteForbidden, DomainKungal, http.StatusForbidden, "Self upvote forbidden", "Users cannot upvote their own topics.", nil},
 }
 
 var Reasons = []ReasonDef{

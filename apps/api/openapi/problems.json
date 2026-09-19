@@ -155,12 +155,66 @@
     },
     {
       "object": "problem_type",
+      "code": "CONTENT_REJECTED",
+      "domain": "kungal",
+      "status": 422,
+      "type": "https://developer.nextmoe.dev/problems/kungal/content-rejected",
+      "title": "Content rejected",
+      "description": "The trust-and-safety check refused the submitted text. Nothing was written."
+    },
+    {
+      "object": "problem_type",
       "code": "IDEMPOTENCY_REQUEST_IN_PROGRESS",
       "domain": "kungal",
       "status": 409,
       "type": "https://developer.nextmoe.dev/problems/kungal/idempotency-request-in-progress",
       "title": "Idempotency request in progress",
       "description": "A request with the same Idempotency-Key is still being processed. Retry after it completes."
+    },
+    {
+      "object": "problem_type",
+      "code": "MOEMOEPOINT_INSUFFICIENT",
+      "domain": "kungal",
+      "status": 403,
+      "type": "https://developer.nextmoe.dev/problems/kungal/moemoepoint-insufficient",
+      "title": "Moemoepoint insufficient",
+      "description": "The caller's moemoepoint balance, as this forum last cached it, is below what the operation costs. required is that cost."
+    },
+    {
+      "object": "problem_type",
+      "code": "SELF_LIKE_FORBIDDEN",
+      "domain": "kungal",
+      "status": 403,
+      "type": "https://developer.nextmoe.dev/problems/kungal/self-like-forbidden",
+      "title": "Self like forbidden",
+      "description": "Users cannot like their own topics, replies or comments."
+    },
+    {
+      "object": "problem_type",
+      "code": "SELF_UPVOTE_FORBIDDEN",
+      "domain": "kungal",
+      "status": 403,
+      "type": "https://developer.nextmoe.dev/problems/kungal/self-upvote-forbidden",
+      "title": "Self upvote forbidden",
+      "description": "Users cannot upvote their own topics."
+    },
+    {
+      "object": "problem_type",
+      "code": "TOPIC_DAILY_LIMIT_REACHED",
+      "domain": "kungal",
+      "status": 429,
+      "type": "https://developer.nextmoe.dev/problems/kungal/topic-daily-limit-reached",
+      "title": "Topic daily limit reached",
+      "description": "The caller has created as many topics in the last 24 hours as their moemoepoint balance allows. limit is that number."
+    },
+    {
+      "object": "problem_type",
+      "code": "PERMISSION_REQUIRED",
+      "domain": "moderation",
+      "status": 403,
+      "type": "https://developer.nextmoe.dev/problems/moderation/permission-required",
+      "title": "Permission required",
+      "description": "The token lacks the permission this decision needs."
     }
   ],
   "reasons": [

@@ -78,6 +78,78 @@ export interface paths {
         get: operations["getReply"];
         put?: never;
         post?: never;
+        /**
+         * Delete a reply
+         * @description Deletes the reply with its comments and reactions. It needs can_delete. Its floor is not reused. An author deleting their own reply pays 3 moemoepoint times one plus its likes plus its comments, and needs that balance; staff deleting it charges the reply's author 3. NOT_FOUND under the same conditions as getReply.
+         */
+        delete: operations["deleteReply"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a reply
+         * @description Changes the reply body and returns the reply as getReply would. It needs can_edit. A changed body sets edited_at; the topic is not bumped. NOT_FOUND under the same conditions as getReply.
+         */
+        patch: operations["updateReply"];
+        trace?: never;
+    };
+    "/replies/{reply_id}/reactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a reply's reactions
+         * @description Lists who reacted with what, newest first, as a cursor page. Reactions by banned users are left out; the server reads on to fill the page, so continue while next_cursor is present, whatever the page size. NOT_FOUND under the same conditions as getReply.
+         */
+        get: operations["listReplyReactions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/replies/{reply_id}/reactions/{reaction}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * React to a reply
+         * @description Adds the caller's reaction with this token. Setting one already set changes nothing. like and dislike exclude each other: setting one removes the other. A like earns the reply's author 1 moemoepoint and notifies them. NOT_FOUND when getReply would not return the reply to the caller or its topic is hidden.
+         */
+        put: operations["setReplyReaction"];
+        post?: never;
+        /**
+         * Remove a reaction from a reply
+         * @description Removes the caller's reaction with this token and returns the reply's engagement. Removing one not set changes nothing. Removing a like takes back the moemoepoint it earned. NOT_FOUND when getReply would not return the reply to the caller or its topic is hidden.
+         */
+        delete: operations["removeReplyReaction"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/replies/{reply_id}/source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a reply's editable source
+         * @description Returns the stored Markdown of the reply, to fill an edit form. It needs can_edit. NOT_FOUND under the same conditions as getReply.
+         */
+        get: operations["getReplySource"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -97,7 +169,11 @@ export interface paths {
          */
         get: operations["listTopics"];
         put?: never;
-        post?: never;
+        /**
+         * Create a topic
+         * @description Creates a topic and returns it as getTopic would to its author. A caller may create as many topics in any 24 hours as their cached moemoepoint balance divided by 10, plus one. The sections g-seeking, g-other and t-help cost 10 moemoepoint and need that balance; the others earn 3. Mentions in the body notify up to 10 users.
+         */
+        post: operations["createTopic"];
         delete?: never;
         options?: never;
         head?: never;
@@ -121,6 +197,126 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
+        /**
+         * Update a topic
+         * @description Changes the fields present in the body and returns the topic as getTopic would. Absent fields keep their value. Editing needs can_edit; state needs can_hide or can_unhide. A change of the title or body sets edited_at and bumps the topic. Moving between paid and free sections charges or refunds the author the difference. NOT_FOUND under the same conditions as getTopic.
+         */
+        patch: operations["updateTopic"];
+        trace?: never;
+    };
+    "/topics/{topic_id}/best-answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the best answer
+         * @description Marks a reply of this topic as the best answer and returns the topic. It needs can_set_best_answer. Setting the current one changes nothing. It bumps the topic. The reply's author earns 7 moemoepoint and is notified, unless they are the topic's author; a replaced best answer's author loses the 7 it earned. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.
+         */
+        put: operations["setBestAnswer"];
+        post?: never;
+        /**
+         * Clear the best answer
+         * @description Removes the best-answer mark and returns the topic. It needs can_set_best_answer. Clearing when none is set changes nothing. The reply's author loses the 7 moemoepoint it earned. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.
+         */
+        delete: operations["clearBestAnswer"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/topics/{topic_id}/favorite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Favorite a topic
+         * @description Adds the topic to the caller's favorites. Favoriting it again changes nothing. Another user's favorite earns the author 1 moemoepoint and notifies them. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.
+         */
+        put: operations["favoriteTopic"];
+        post?: never;
+        /**
+         * Unfavorite a topic
+         * @description Removes the topic from the caller's favorites and returns its engagement. Removing one not favorited changes nothing. It takes back the moemoepoint the favorite earned. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.
+         */
+        delete: operations["unfavoriteTopic"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/topics/{topic_id}/pinned-reply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Pin a reply
+         * @description Pins a reply of this topic, replacing any pinned one, and returns the topic. It needs can_pin_reply. Pinning the pinned one changes nothing. The reply's author is notified unless they pinned it themselves. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.
+         */
+        put: operations["pinReply"];
+        post?: never;
+        /**
+         * Unpin the pinned reply
+         * @description Unpins the pinned reply and returns the topic. It needs can_pin_reply. Unpinning when none is pinned changes nothing. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.
+         */
+        delete: operations["unpinReply"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/topics/{topic_id}/reactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a topic's reactions
+         * @description Lists who reacted with what, newest first, as a cursor page. Reactions by banned users are left out; the server reads on to fill the page, so continue while next_cursor is present, whatever the page size. NOT_FOUND under the same conditions as getTopic.
+         */
+        get: operations["listTopicReactions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/topics/{topic_id}/reactions/{reaction}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * React to a topic
+         * @description Adds the caller's reaction with this token. Setting one already set changes nothing. like and dislike exclude each other: setting one removes the other. A like earns the author 1 moemoepoint and notifies them. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.
+         */
+        put: operations["setTopicReaction"];
+        post?: never;
+        /**
+         * Remove a reaction from a topic
+         * @description Removes the caller's reaction with this token and returns the topic's engagement. Removing one not set changes nothing. Removing a like takes back the moemoepoint it earned. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.
+         */
+        delete: operations["removeTopicReaction"];
+        options?: never;
+        head?: never;
         patch?: never;
         trace?: never;
     };
@@ -137,7 +333,55 @@ export interface paths {
          */
         get: operations["listTopicReplies"];
         put?: never;
+        /**
+         * Reply to a topic
+         * @description Creates a reply at the next floor and returns it as getReply would to its author. Floors are never reused, so deleting the last reply leaves a gap. The topic author earns 1 moemoepoint from another user's reply and is notified; mentions notify up to 10 users. NOT_FOUND under the same conditions as getTopic.
+         */
+        post: operations["createReply"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/topics/{topic_id}/source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a topic's editable source
+         * @description Returns the stored Markdown and every editable field, to fill an edit form. It needs can_edit. NOT_FOUND under the same conditions as getTopic.
+         */
+        get: operations["getTopicSource"];
+        put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/topics/{topic_id}/upvotes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a topic's upvotes
+         * @description Lists upvotes newest first as a cursor page. Upvotes by banned users are left out; the server reads on to fill the page, so continue while next_cursor is present, whatever the page size. NOT_FOUND under the same conditions as getTopic.
+         */
+        get: operations["listTopicUpvotes"];
+        put?: never;
+        /**
+         * Upvote a topic
+         * @description Records an upvote. It costs the caller 10 moemoepoint, earns the author 5, sets upvoted_at and bumps the topic. A user may upvote the same topic again; each upvote is charged. It cannot be undone. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.
+         */
+        post: operations["upvoteTopic"];
         delete?: never;
         options?: never;
         head?: never;
@@ -168,6 +412,12 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AccessGrants: {
+            /** @description Granted roles when access_scope is role. Empty array otherwise. */
+            roles: ("creator" | "moderator" | "admin" | "ren")[];
+            /** @description Granted users when access_scope is users, in grant order. The author is never listed. Banned and deleted users keep their entry with name null. Empty array otherwise. */
+            users: components["schemas"]["UserRef"][];
+        };
         /** @description A block node. Switch on object; render an unknown type's children, or its value as text. */
         BlockNode: components["schemas"]["ParagraphNode"] | components["schemas"]["HeadingNode"] | components["schemas"]["ThematicBreakNode"] | components["schemas"]["BlockquoteNode"] | components["schemas"]["ListNode"] | components["schemas"]["CodeNode"] | components["schemas"]["MathNode"] | components["schemas"]["TableNode"] | components["schemas"]["SpoilerNode"];
         BlockquoteNode: {
@@ -466,6 +716,17 @@ export interface components {
              */
             object: "list";
         };
+        ListReaction: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["Reaction"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
         ListReply: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["Reply"][];
@@ -480,6 +741,17 @@ export interface components {
         ListTopicSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["TopicSummary"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListTopicUpvote: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["TopicUpvote"][];
             /** @description Opaque keyset cursor. Omitted on the last page. */
             next_cursor?: string;
             /**
@@ -621,7 +893,7 @@ export interface components {
              * @description Type URI domain segment.
              * @enum {string}
              */
-            domain: "platform" | "kungal";
+            domain: "platform" | "kungal" | "moderation";
             /**
              * @description Type discriminant. Always problem_type.
              * @enum {string}
@@ -639,6 +911,24 @@ export interface components {
              * @description Problem type URI. The last path segment is the kebab-case form of code.
              */
             type: string;
+        };
+        Reaction: {
+            /**
+             * Format: date-time
+             * @description Time of the reaction.
+             */
+            created_at: string;
+            /** @description Reaction id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * @description Type discriminant. Always reaction.
+             * @enum {string}
+             */
+            object: "reaction";
+            /** @description Reaction token, such as like, dislike, heart or clap. The vocabulary grows; show an unknown token with a neutral fallback. */
+            reaction: string;
+            /** @description The user who reacted. */
+            reactor: components["schemas"]["UserRef"];
         };
         ReactionSummary: {
             /**
@@ -712,6 +1002,41 @@ export interface components {
             /** @description The caller's own state on this reply. null for an anonymous caller. */
             viewer: components["schemas"]["ReplyViewer"] | null;
         };
+        ReplyChoice: {
+            /** @description Id of a visible reply of this topic. */
+            reply_id: string;
+        };
+        ReplyCreate: {
+            /** @description Reply body as Markdown source, stored as sent. A body of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
+            content_markdown: string;
+        };
+        ReplyEngagement: {
+            /**
+             * Format: int64
+             * @description Dislike count. Equals the count of the dislike entry in reactions.
+             */
+            dislike_count: number;
+            /**
+             * Format: int64
+             * @description Like count. Equals the count of the like entry in reactions.
+             */
+            like_count: number;
+            /**
+             * @description Type discriminant. Always reply_engagement.
+             * @enum {string}
+             */
+            object: "reply_engagement";
+            /** @description One entry per reaction token that has at least one reaction, likes and dislikes included, in first-used order. Empty array if none. */
+            reactions: components["schemas"]["ReactionSummary"][];
+            /** @description Id of the reply. */
+            reply_id: string;
+            /** @description The caller's own state on the reply after the write. */
+            viewer: components["schemas"]["ReplyViewer"];
+        };
+        ReplyPatch: {
+            /** @description New body as Markdown source. Checked as in createReply. Free text; never use it as a decision input. */
+            content_markdown?: string;
+        };
         ReplyReferenceNode: {
             /**
              * Format: int64
@@ -726,7 +1051,26 @@ export interface components {
             /** @description Id of the referenced reply in the same topic. */
             reply_id: string;
         };
+        ReplySource: {
+            /** @description Reply body as the stored Markdown source. Free text; never use it as a decision input. */
+            content_markdown: string;
+            /**
+             * @description Type discriminant. Always reply_source.
+             * @enum {string}
+             */
+            object: "reply_source";
+            /** @description Id of the reply. */
+            reply_id: string;
+            /** @description Id of the topic the reply belongs to. */
+            topic_id: string;
+        };
         ReplyViewer: {
+            /** @description Whether the caller may delete the reply: its author, or staff holding the delete permission. */
+            can_delete: boolean;
+            /** @description Whether the caller may edit the reply: its author, or staff holding the edit permission. Requests authenticated with a Bearer token never carry staff powers. */
+            can_edit: boolean;
+            /** @description Whether the caller may like the reply: anyone but its author, while the topic is published. */
+            can_like: boolean;
             /** @description Whether the caller disliked the reply. */
             has_disliked: boolean;
             /** @description Whether the caller liked the reply. */
@@ -824,7 +1168,7 @@ export interface components {
             best_answer: components["schemas"]["Reply"] | null;
             /**
              * Format: date-time
-             * @description Bump time. Replies, comments, poll votes and lottery events set it to now, but only for topics created within the last 3 months. It is not a last-activity time.
+             * @description Bump time. Replies, comments, upvotes, a new best answer, edits of the title or body, poll votes and lottery events set it to now, but only for topics created within the last 3 months. It is not a last-activity time.
              */
             bumped_at: string;
             /**
@@ -918,12 +1262,138 @@ export interface components {
             /** @description The caller's own state on this topic. null for an anonymous caller. */
             viewer: components["schemas"]["TopicViewer"] | null;
         };
+        TopicCreate: {
+            /** @description Roles granted to read the topic. Required when access_scope is role; must be absent otherwise. */
+            access_roles?: ("creator" | "moderator" | "admin" | "ren")[];
+            /**
+             * @description Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may.
+             * @enum {string}
+             */
+            access_scope: "public" | "login" | "role" | "users";
+            /** @description Users granted to read the topic. Required when access_scope is users; must be absent otherwise. The author always reads their own topic and is dropped from the list, so a list of only the author leaves the topic readable by its author and staff alone. */
+            access_user_ids?: string[];
+            /**
+             * @description Topic category.
+             * @enum {string}
+             */
+            category: "galgame" | "technique" | "others";
+            /** @description Topic body as Markdown source, stored as sent. A body of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
+            content_markdown: string;
+            /** @description Cover images by image-service hash, in display order. When absent, the covers are the first nine distinct /image/{hash} tokens of the body in body order; an empty array means no covers. */
+            cover_image_hashes?: string[];
+            /** @description Whether the topic is NSFW. */
+            is_nsfw: boolean;
+            /** @description Section slugs. Each must belong to category: g- slugs to galgame, t- slugs to technique, o- slugs to others. */
+            sections: ("g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other")[];
+            /** @description Topic title. Leading and trailing whitespace is removed before it is stored, and a title of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
+            title: string;
+        };
+        TopicEngagement: {
+            /**
+             * Format: int64
+             * @description Dislike count. Equals the count of the dislike entry in reactions.
+             */
+            dislike_count: number;
+            /**
+             * Format: int64
+             * @description Number of users who favorited the topic.
+             */
+            favorite_count: number;
+            /**
+             * Format: int64
+             * @description Like count. Equals the count of the like entry in reactions.
+             */
+            like_count: number;
+            /**
+             * @description Type discriminant. Always topic_engagement.
+             * @enum {string}
+             */
+            object: "topic_engagement";
+            /** @description One entry per reaction token that has at least one reaction, likes and dislikes included, in first-used order. Empty array if none. */
+            reactions: components["schemas"]["ReactionSummary"][];
+            /** @description Id of the topic. */
+            topic_id: string;
+            /**
+             * Format: int64
+             * @description Number of upvotes.
+             */
+            upvote_count: number;
+            /**
+             * Format: date-time
+             * @description Time of the latest upvote. null when the topic has never been upvoted.
+             */
+            upvoted_at: string | null;
+            /** @description The caller's own state on the topic after the write. */
+            viewer: components["schemas"]["TopicViewer"];
+        };
+        TopicPatch: {
+            /** @description New granted roles, replacing the stored ones. Only with a resulting access_scope of role. */
+            access_roles?: ("creator" | "moderator" | "admin" | "ren")[];
+            /**
+             * @description New access scope. The resulting scope and grants are checked together as in createTopic. When the scope changes, the stored grants are dropped and access_roles or access_user_ids supplies the new ones.
+             * @enum {string}
+             */
+            access_scope?: "public" | "login" | "role" | "users";
+            /** @description New granted users, replacing the stored ones. Only with a resulting access_scope of users. The author is dropped as in createTopic. */
+            access_user_ids?: string[];
+            /**
+             * @description New category. The resulting sections must belong to the resulting category.
+             * @enum {string}
+             */
+            category?: "galgame" | "technique" | "others";
+            /** @description New body as Markdown source. Checked as in createTopic. Free text; never use it as a decision input. */
+            content_markdown?: string;
+            /** @description New cover images, replacing the stored ones. An empty array removes every cover. Unlike createTopic, nothing is derived from the body. */
+            cover_image_hashes?: string[];
+            /** @description New NSFW flag. */
+            is_nsfw?: boolean;
+            /** @description New section slugs, replacing the stored ones. */
+            sections?: ("g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other")[];
+            /**
+             * @description hidden hides the topic; published shows it again. Hiding needs can_hide and showing needs can_unhide. Sending the current state changes nothing.
+             * @enum {string}
+             */
+            state?: "published" | "hidden";
+            /** @description New title. Trimmed and checked as in createTopic. Free text; never use it as a decision input. */
+            title?: string;
+        };
+        TopicSource: {
+            /** @description The stored grants. */
+            access_grants: components["schemas"]["AccessGrants"];
+            /**
+             * @description Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may.
+             * @enum {string}
+             */
+            access_scope: "public" | "login" | "role" | "users";
+            /**
+             * @description Topic category.
+             * @enum {string}
+             */
+            category: "galgame" | "technique" | "others";
+            /** @description Topic body as the stored Markdown source. Free text; never use it as a decision input. */
+            content_markdown: string;
+            /** @description Cover images in stored token order. Tokens that do not parse are skipped. Empty array if none. */
+            cover_images: components["schemas"]["Image"][];
+            /** @description Whether the topic is NSFW. */
+            is_nsfw: boolean;
+            /**
+             * @description Type discriminant. Always topic_source.
+             * @enum {string}
+             */
+            object: "topic_source";
+            /** @description Section slugs, in stored order. Empty array if none. Hyphenated URL segments of /section/{key}. */
+            sections: ("g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other")[];
+            /** @description Topic title as stored. Free text; never use it as a decision input. */
+            title: string;
+            /** @description Id of the topic. */
+            topic_id: string;
+        };
         TopicSummary: {
             /** @description Topic author. */
             author: components["schemas"]["UserRef"];
             /**
              * Format: date-time
-             * @description Bump time. Replies, comments, poll votes and lottery events set it to now, but only for topics created within the last 3 months. It is not a last-activity time.
+             * @description Bump time. Replies, comments, upvotes, a new best answer, edits of the title or body, poll votes and lottery events set it to now, but only for topics created within the last 3 months. It is not a last-activity time.
              */
             bumped_at: string;
             /**
@@ -986,7 +1456,41 @@ export interface components {
              */
             view_count: number;
         };
+        TopicUpvote: {
+            /**
+             * Format: date-time
+             * @description Time of the upvote.
+             */
+            created_at: string;
+            /** @description Upvote id. JSON string of a decimal integer. */
+            id: string;
+            /** @description What the upvoter wrote with the upvote. null when they wrote nothing. Free text; never use it as a decision input. */
+            note: string | null;
+            /**
+             * @description Type discriminant. Always topic_upvote.
+             * @enum {string}
+             */
+            object: "topic_upvote";
+            /** @description Id of the upvoted topic. */
+            topic_id: string;
+            /** @description The user who upvoted. */
+            upvoter: components["schemas"]["UserRef"];
+        };
         TopicViewer: {
+            /** @description Whether the caller may edit the topic: its author, or staff holding the edit permission. Requests authenticated with a Bearer token never carry staff powers. */
+            can_edit: boolean;
+            /** @description Whether the caller may hide the topic now: its author or staff holding the hide permission, while it is published. */
+            can_hide: boolean;
+            /** @description Whether the caller may like the topic: anyone but its author, while it is published. Other reactions and favorites are open to every signed-in reader of a published topic and have no flag. */
+            can_like: boolean;
+            /** @description Whether the caller may pin or unpin a reply: its author or staff holding that permission, while the topic is published. */
+            can_pin_reply: boolean;
+            /** @description Whether the caller may set or clear the best answer: its author or staff holding that permission, while the topic is published. */
+            can_set_best_answer: boolean;
+            /** @description Whether the caller may publish the hidden topic again. Its author may undo only a hide of their own; staff holding the hide permission may undo any. */
+            can_unhide: boolean;
+            /** @description Whether the caller may upvote the topic: anyone but its author, while it is published. An upvote can still fail on the caller's moemoepoint balance. */
+            can_upvote: boolean;
             /** @description Whether the caller disliked the topic. */
             has_disliked: boolean;
             /** @description Whether the caller favorited the topic. */
@@ -995,6 +1499,10 @@ export interface components {
             has_liked: boolean;
             /** @description Whether the caller has upvoted the topic. */
             has_upvoted: boolean;
+        };
+        UpvoteCreate: {
+            /** @description A note shown with the upvote. Absent or null for none. Leading and trailing whitespace is removed, and a note of only whitespace counts as none. Free text; never use it as a decision input. */
+            note?: string | null;
         };
         UserRef: {
             /** @description Avatar image. null when the account has no image-service hash. */
@@ -1224,6 +1732,497 @@ export interface operations {
             };
         };
     };
+    deleteReply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Reply id. */
+                reply_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED, or MOEMOEPOINT_INSUFFICIENT when an author cannot pay for deleting their own reply; SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateReply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Reply id. */
+                reply_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplyPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reply"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller may read but not edit the reply; SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED, or CONTENT_REJECTED when the trust-and-safety check refuses the body. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listReplyReactions: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Reply id. */
+                reply_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListReaction"];
+                };
+            };
+            /** @description INVALID_PARAMETER, LIMIT_TOO_LARGE, or INVALID_CURSOR. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setReplyReaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Reply id. */
+                reply_id: string;
+                /** @description Reaction token the server currently accepts. like and dislike exclude each other: setting one removes the other. */
+                reaction: "like" | "dislike" | "heart" | "fire" | "party" | "love" | "clap" | "thinking" | "mindblown" | "scream" | "cry" | "pray" | "eyes" | "hundred" | "partyface" | "starstruck" | "angry" | "anxious" | "banana" | "eyebrow" | "voltage" | "hotdog" | "hot" | "sob" | "moai" | "newmoon" | "police" | "pouting" | "salute" | "shrimp" | "halo" | "sunglasses" | "whale";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReplyEngagement"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SELF_LIKE_FORBIDDEN when the caller likes their own reply; SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    removeReplyReaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Reply id. */
+                reply_id: string;
+                /** @description Reaction token the server currently accepts. like and dislike exclude each other: setting one removes the other. */
+                reaction: "like" | "dislike" | "heart" | "fire" | "party" | "love" | "clap" | "thinking" | "mindblown" | "scream" | "cry" | "pray" | "eyes" | "hundred" | "partyface" | "starstruck" | "angry" | "anxious" | "banana" | "eyebrow" | "voltage" | "hotdog" | "hot" | "sob" | "moai" | "newmoon" | "police" | "pouting" | "salute" | "shrimp" | "halo" | "sunglasses" | "whale";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReplyEngagement"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getReplySource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Reply id. */
+                reply_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReplySource"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller may read but not edit the reply; SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listTopics: {
         parameters: {
             query?: {
@@ -1300,6 +2299,115 @@ export interface operations {
             };
         };
     };
+    createTopic: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TopicCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Topic"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description MOEMOEPOINT_INSUFFICIENT when a paid section is chosen without the balance for it; SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED, or CONTENT_REJECTED when the trust-and-safety check refuses the title or body. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description TOPIC_DAILY_LIMIT_REACHED; limit is the caller's allowance. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     getTopic: {
         parameters: {
             query?: never;
@@ -1319,6 +2427,851 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Topic"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateTopic: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TopicPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Topic"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks the capability a present field needs; SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED, or CONTENT_REJECTED when the trust-and-safety check refuses the title or body. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setBestAnswer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplyChoice"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Topic"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks can_set_best_answer; SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED at /reply_id when the reply is not a visible reply of this topic. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    clearBestAnswer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Topic"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks can_set_best_answer; SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    favoriteTopic: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopicEngagement"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    unfavoriteTopic: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopicEngagement"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    pinReply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplyChoice"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Topic"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks can_pin_reply; SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED at /reply_id when the reply is not a visible reply of this topic. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    unpinReply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Topic"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller lacks can_pin_reply; SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listTopicReactions: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListReaction"];
+                };
+            };
+            /** @description INVALID_PARAMETER, LIMIT_TOO_LARGE, or INVALID_CURSOR. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setTopicReaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+                /** @description Reaction token the server currently accepts. like and dislike exclude each other: setting one removes the other. */
+                reaction: "like" | "dislike" | "heart" | "fire" | "party" | "love" | "clap" | "thinking" | "mindblown" | "scream" | "cry" | "pray" | "eyes" | "hundred" | "partyface" | "starstruck" | "angry" | "anxious" | "banana" | "eyebrow" | "voltage" | "hotdog" | "hot" | "sob" | "moai" | "newmoon" | "police" | "pouting" | "salute" | "shrimp" | "halo" | "sunglasses" | "whale";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopicEngagement"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SELF_LIKE_FORBIDDEN when the caller likes their own topic; SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    removeTopicReaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+                /** @description Reaction token the server currently accepts. like and dislike exclude each other: setting one removes the other. */
+                reaction: "like" | "dislike" | "heart" | "fire" | "party" | "love" | "clap" | "thinking" | "mindblown" | "scream" | "cry" | "pray" | "eyes" | "hundred" | "partyface" | "starstruck" | "angry" | "anxious" | "banana" | "eyebrow" | "voltage" | "hotdog" | "hot" | "sob" | "moai" | "newmoon" | "police" | "pouting" | "salute" | "shrimp" | "halo" | "sunglasses" | "whale";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopicEngagement"];
                 };
             };
             /** @description Bad Request */
@@ -1436,6 +3389,388 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createReply: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplyCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reply"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED, or CONTENT_REJECTED when the trust-and-safety check refuses the body. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getTopicSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopicSource"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller may read but not edit the topic; SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listTopicUpvotes: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListTopicUpvote"];
+                };
+            };
+            /** @description INVALID_PARAMETER, LIMIT_TOO_LARGE, or INVALID_CURSOR. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    upvoteTopic: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpvoteCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopicUpvote"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SELF_UPVOTE_FORBIDDEN, or MOEMOEPOINT_INSUFFICIENT when the caller's cached balance is below 10; SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
