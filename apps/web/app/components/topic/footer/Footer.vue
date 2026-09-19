@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import type { Topic } from '#shared/utils/api/schemas'
+import { toKunUser } from '~/utils/userRef'
+
 defineProps<{
-  topic: TopicDetail
+  topic: Topic
 }>()
 
 const { id } = usePersistUserStore()
@@ -9,27 +12,17 @@ const { id } = usePersistUserStore()
 <template>
   <div class="mt-auto hidden items-center justify-between leading-none md:flex">
     <div class="flex items-center gap-1">
-      <TopicFooterUpvote
-        :topic-id="topic.id"
-        :target-user-id="topic.user.id"
-        :upvote-count="topic.upvote_count"
-        :is-upvoted="topic.is_upvoted"
-      />
+      <TopicFooterUpvote :topic="topic" />
 
-      <TopicFooterFavorite
-        :topic-id="topic.id"
-        :target-user-id="topic.user.id"
-        :favorite-count="topic.favorite_count"
-        :is-favorite="topic.is_favorited"
-      />
+      <TopicFooterFavorite :topic="topic" />
 
       <TopicReactionTrigger />
     </div>
 
     <div class="flex items-center gap-1">
       <TopicFooterReply
-        :target-user-name="topic.user.name"
-        :target-user-id="topic.user.id"
+        :target-user-name="toKunUser(topic.author).name"
+        :target-user-id="Number(topic.author.id)"
         :target-floor="0"
       />
 
@@ -57,15 +50,15 @@ const { id } = usePersistUserStore()
           </KunButton>
           <TopicFooterHide
             v-if="id"
-            :topic-id="topic.id"
-            :status="topic.status"
+            :topic-id="Number(topic.id)"
+            :state="topic.state"
             :hidden-by="topic.hidden_by"
           />
           <ReportButton
-            v-if="topic.user.id !== id"
+            v-if="Number(topic.author.id) !== id"
             menu
             subject-kind="forum_topic"
-            :subject-id="topic.id"
+            :subject-id="Number(topic.id)"
             :snapshot="topic.title"
             :subject-url="`${kungal.domain.main}/topic/${topic.id}`"
           />

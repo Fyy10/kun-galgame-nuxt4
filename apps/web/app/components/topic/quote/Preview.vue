@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { QuotePreviewState } from '~/composables/topic/useQuoteContent'
+import { contentPlainText } from '~/utils/contentPlainText'
+import { toKunUser } from '~/utils/userRef'
 
 const props = defineProps<{
   preview: QuotePreviewState
@@ -11,12 +13,14 @@ const emit = defineEmits<{
 }>()
 
 const excerpt = computed(() => {
-  const text = markdownToText(
-    props.preview.reply?.content_markdown ?? ''
-  ).trim()
+  const text = contentPlainText(props.preview.reply?.content ?? null).trim()
   const runes = [...text]
   return runes.length > 120 ? `${runes.slice(0, 120).join('')}…` : text
 })
+
+const author = computed(() =>
+  props.preview.reply ? toKunUser(props.preview.reply.author) : null
+)
 </script>
 
 <template>
@@ -38,15 +42,11 @@ const excerpt = computed(() => {
       >
         <KunLoading v-if="preview.loading" description="加载中..." />
 
-        <template v-else-if="preview.reply">
+        <template v-else-if="preview.reply && author">
           <div class="mb-1.5 flex items-center gap-2">
-            <KunAvatar
-              :user="preview.reply.user"
-              size="sm"
-              :disable-floating="true"
-            />
+            <KunAvatar :user="author" size="sm" :disable-floating="true" />
             <span class="text-default-800 truncate text-sm font-medium">
-              {{ preview.reply.user.name }}
+              {{ author.name }}
             </span>
             <span class="text-default-400 ml-auto shrink-0 text-xs">
               #{{ preview.reply.floor }}

@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import type { Comment } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
-  comment: TopicComment
+  comment: Comment
+  topicId: number
 }>()
 
 const emits = defineEmits<{
-  removeComment: [commentId: number]
+  removeComment: []
 }>()
 
 const { id, moemoepoint } = usePersistUserStore()
@@ -12,7 +15,7 @@ const canDeleteTopicComment = useCan('comment.topic.delete')
 
 const isCommonUser = !canDeleteTopicComment.value
 const canDelete = computed(
-  () => id === props.comment.user.id || canDeleteTopicComment.value
+  () => id === Number(props.comment.author.id) || canDeleteTopicComment.value
 )
 
 const handleDeleteComment = async () => {
@@ -38,16 +41,13 @@ const handleDeleteComment = async () => {
     return
   }
 
-  const result = await kunFetch<string>(
-    `/topic/${props.comment.topic_id}/comment`,
-    {
-      method: 'DELETE',
-      query: { commentId: props.comment.id }
-    }
-  )
+  const result = await kunFetch<string>(`/topic/${props.topicId}/comment`, {
+    method: 'DELETE',
+    query: { commentId: Number(props.comment.id) }
+  })
 
   if (result) {
-    emits('removeComment', props.comment.id)
+    emits('removeComment')
     useMessage('删除评论成功', 'success')
   }
 }

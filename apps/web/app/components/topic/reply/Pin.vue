@@ -1,11 +1,16 @@
 <script setup lang="ts">
+import type { Reply } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
-  reply: TopicReply
+  reply: Reply
 }>()
 
 const { id } = usePersistUserStore()
 const canPinReply = useCan('reply.pin')
 const topicUserId = inject<number>('topicUserId')
+const refreshTopic = inject<() => Promise<unknown>>('refreshTopic', () =>
+  Promise.resolve()
+)
 
 const isDisabled = !canPinReply.value && topicUserId !== id
 
@@ -20,10 +25,13 @@ const handleUpdateReplyPin = async () => {
   }
 
   const result = await kunFetch<string>(
-    `/topic/${props.reply.topic_id}/reply/pin`,
+    `/topic/${Number(props.reply.topic_id)}/reply/pin`,
     {
       method: 'PUT',
-      body: { topic_id: props.reply.topic_id, reply_id: props.reply.id }
+      body: {
+        topic_id: Number(props.reply.topic_id),
+        reply_id: Number(props.reply.id)
+      }
     }
   )
 
@@ -32,6 +40,7 @@ const handleUpdateReplyPin = async () => {
       props.reply.is_pinned ? '取消置顶回复成功' : '置顶回复成功',
       'success'
     )
+    await refreshTopic()
   }
 }
 </script>

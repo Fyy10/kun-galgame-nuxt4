@@ -1,22 +1,25 @@
 <script setup lang="ts">
+import ContentDocument from '~/components/content/Document.vue'
+import type { Topic } from '#shared/utils/api/schemas'
+import { documentImageHashes } from '#shared/utils/content/plainText'
+import { toKunReactions } from '~/utils/reactionSummary'
+import { toKunUserWithPoints } from '~/utils/userRef'
+
 const props = defineProps<{
-  topic: TopicDetail
+  topic: Topic
 }>()
 
 const unseenCovers = computed(() => {
-  const body = props.topic.content_markdown ?? ''
-  return (props.topic.cover_images ?? []).filter((token) => {
-    const hash = token.split('/').pop()
-    return hash ? !body.includes(hash) : false
-  })
+  const hashes = documentImageHashes(props.topic.content)
+  return props.topic.cover_images.filter((image) => !hashes.has(image.hash))
 })
 
 provide(
   reactionsKey,
   useReactions({
-    topicId: props.topic.id,
-    targetUserId: props.topic.user.id,
-    reactions: props.topic.reactions,
+    topicId: Number(props.topic.id),
+    targetUserId: Number(props.topic.author.id),
+    reactions: toKunReactions(props.topic.reactions),
     showReactors: true
   })
 )
@@ -38,8 +41,8 @@ provide(
         </h1>
 
         <TopicBadgeGroup
-          :section="topic.section"
-          :upvote-time="topic.upvote_time"
+          :section="topic.sections"
+          :upvote-time="topic.upvoted_at"
           :has-best-answer="false"
           :mini-apps="topic.mini_apps"
           :is-n-s-f-w-topic="topic.is_nsfw"
@@ -51,15 +54,16 @@ provide(
         >
           <span class="flex items-center gap-1.5">
             <KunIcon name="lucide:eye" class="size-4" />
-            {{ topic.view }}
+            {{ topic.view_count }}
           </span>
           <span class="flex items-center gap-1.5">
             <KunIcon name="lucide:clock" class="size-4" />
-            <KunTime :time="topic.created" type="datetime" show-year />
+            <KunTime :time="topic.created_at" type="datetime" show-year />
           </span>
-          <span v-if="topic.edited" class="flex items-center gap-1.5">
+          <span v-if="topic.edited_at" class="flex items-center gap-1.5">
             <KunIcon name="lucide:pencil-line" class="size-4" />
-            编辑于 <KunTime :time="topic.edited" type="datetime" show-year />
+            编辑于
+            <KunTime :time="topic.edited_at" type="datetime" show-year />
           </span>
         </div>
       </header>
@@ -71,10 +75,10 @@ provide(
 
       <TopicDetailUser
         class-name="lg:hidden"
-        :user="topic.user"
-        :created="topic.created"
-        :edited="topic.edited"
-        :topic-id="topic.id"
+        :user="toKunUserWithPoints(topic.author, topic.author_moemoepoint)"
+        :created="topic.created_at"
+        :edited="topic.edited_at"
+        :topic-id="Number(topic.id)"
         :floor="0"
         :show-addition="false"
       />
@@ -84,18 +88,14 @@ provide(
       <TopicCoverGrid
         v-if="unseenCovers.length"
         :images="unseenCovers"
-        :meta="topic.cover_image_meta"
         zoomable
       />
 
-      <KunContent
-        class="kun-master"
-        :content="renderKatex(topic.content_html)"
-      />
+      <ContentDocument class-name="kun-master" :document="topic.content" />
 
       <KunDivider />
 
-      <TopicUpvoteRecords :topic-id="topic.id" />
+      <TopicUpvoteRecords :topic-id="Number(topic.id)" />
 
       <div class="flex flex-wrap items-center gap-1.5">
         <TopicReactionBar />

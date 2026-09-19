@@ -1,64 +1,29 @@
 <script setup lang="ts">
 import { useMediaQuery } from '@vueuse/core'
+import type { Comment } from '#shared/utils/api/schemas'
+import { useTopicReplies } from '~/composables/topic/useTopicReplies'
+import { toKunUser } from '~/utils/userRef'
+import { threadComments } from './threadComments'
 
 const props = defineProps<{
-  replyId: number
-  commentsData: TopicComment[]
+  replyId: string
+  commentsData: Comment[]
 }>()
 
 const currentUserId = usePersistUserStore().id
+const topicId = inject<number>('topicId', 0)
+const { refreshReply } = useTopicReplies(String(topicId))
 const canEditTopicComment = useCan('comment.topic.edit')
-const canEdit = (comment: TopicComment) =>
-  comment.user.id === currentUserId || canEditTopicComment.value
-const comments = ref(props.commentsData)
-const activeCommentId = ref<number | null>(null)
+const canEdit = (comment: Comment) =>
+  Number(comment.author.id) === currentUserId || canEditTopicComment.value
+const comments = computed(() => props.commentsData)
+const activeCommentId = ref<string | null>(null)
 const targetUserForPanel = ref<KunUser | null>(null)
 const parentCommentIdForPanel = ref<number | null>(null)
 
-const threadedComments = computed(() => {
-  const list = comments.value
-  const byId = new Map(list.map((c) => [c.id, c]))
-  const rootOf = (c: TopicComment): TopicComment => {
-    let cur = c
-    const seen = new Set<number>()
-    while (
-      cur.parent_comment_id != null &&
-      byId.has(cur.parent_comment_id) &&
-      !seen.has(cur.id)
-    ) {
-      seen.add(cur.id)
-      cur = byId.get(cur.parent_comment_id)!
-    }
-    return cur
-  }
-  const byTime = (a: TopicComment, b: TopicComment) =>
-    new Date(a.created).getTime() - new Date(b.created).getTime()
+const threadedComments = computed(() => threadComments(comments.value))
 
-  const roots: TopicComment[] = []
-  const childrenOf = new Map<number, TopicComment[]>()
-  for (const c of list) {
-    const root = rootOf(c)
-    if (root.id === c.id) {
-      roots.push(c)
-    } else {
-      const arr = childrenOf.get(root.id) ?? []
-      arr.push(c)
-      childrenOf.set(root.id, arr)
-    }
-  }
-  roots.sort(byTime)
-
-  const out: { comment: TopicComment; depth: number }[] = []
-  for (const root of roots) {
-    out.push({ comment: root, depth: 0 })
-    for (const kid of (childrenOf.get(root.id) ?? []).slice().sort(byTime)) {
-      out.push({ comment: kid, depth: 1 })
-    }
-  }
-  return out
-})
-
-const editingId = ref<number | null>(null)
+const editingId = ref<string | null>(null)
 const editValue = ref('')
 const isSaving = ref(false)
 
@@ -77,7 +42,7 @@ const isCommentPanelOpen = computed({
   }
 })
 
-const handleClickComment = (comment: TopicComment) => {
+const handleClickComment = (comment: Comment) => {
   if (!currentUserId) {
     useAuthModal().open()
     return
@@ -89,28 +54,25 @@ const handleClickComment = (comment: TopicComment) => {
     parentCommentIdForPanel.value = null
   } else {
     activeCommentId.value = comment.id
-    targetUserForPanel.value = comment.user
-    parentCommentIdForPanel.value = comment.id
+    targetUserForPanel.value = toKunUser(comment.author)
+    parentCommentIdForPanel.value = Number(comment.id)
   }
 }
 
-const handleNewComment = (newComment: TopicComment) => {
-  comments.value.push(newComment)
+const handleNewComment = () => {
+  void refreshReply(props.replyId)
   activeCommentId.value = null
   targetUserForPanel.value = null
   parentCommentIdForPanel.value = null
 }
 
-const handleRemoveComment = (commentId: number) => {
-  const index = comments.value.findIndex((c) => c.id === commentId)
-  if (index !== -1) {
-    comments.value.splice(index, 1)
-  }
+const handleRemoveComment = () => {
+  void refreshReply(props.replyId)
 }
 
-const handleStartEdit = (comment: TopicComment) => {
+const handleStartEdit = (comment: Comment) => {
   editingId.value = comment.id
-  editValue.value = comment.content
+  editValue.value = comment.text
 }
 
 const handleCancelEdit = () => {
@@ -118,7 +80,7 @@ const handleCancelEdit = () => {
   editValue.value = ''
 }
 
-const handleSaveEdit = async (comment: TopicComment) => {
+const handleSaveEdit = async (comment: Comment) => {
   const content = editValue.value.trim()
   if (!content) {
     useMessage(10221, 'warn')
@@ -130,20 +92,14 @@ const handleSaveEdit = async (comment: TopicComment) => {
   }
 
   isSaving.value = true
-  const updated = await kunFetch<TopicComment>(
-    `/topic/${comment.topic_id}/comment`,
-    {
-      method: 'PUT',
-      body: { comment_id: comment.id, content }
-    }
-  )
+  const updated = await kunFetch<TopicComment>(`/topic/${topicId}/comment`, {
+    method: 'PUT',
+    body: { comment_id: Number(comment.id), content }
+  })
   isSaving.value = false
 
   if (updated) {
-    const index = comments.value.findIndex((c) => c.id === comment.id)
-    if (index !== -1) {
-      comments.value[index] = updated
-    }
+    await refreshReply(props.replyId)
     editingId.value = null
     useMessage('编辑评论成功', 'success')
   }
@@ -162,20 +118,20 @@ const handleSaveEdit = async (comment: TopicComment) => {
         :class="depth === 1 ? 'ml-9' : ''"
       >
         <div class="flex items-start space-x-3">
-          <KunAvatar :user="comment.user" />
+          <KunAvatar :user="toKunUser(comment.author)" />
 
           <div class="flex w-full flex-col space-y-1">
             <div class="text-sm">
-              <span>{{ comment.user.name }}</span>
+              <span>{{ toKunUser(comment.author).name }}</span>
               <span class="text-default-500 mx-1">
                 {{ depth === 1 ? '回复' : '评论' }}
               </span>
               <KunLink
                 size="sm"
                 underline="hover"
-                :to="`/user/${comment.target_user.id}`"
+                :to="`/user/${comment.in_reply_to_user.id}`"
               >
-                {{ comment.target_user.name }}
+                {{ toKunUser(comment.in_reply_to_user).name }}
               </KunLink>
             </div>
 
@@ -209,15 +165,19 @@ const handleSaveEdit = async (comment: TopicComment) => {
               style="overflow-wrap: break-word"
               class="text-default-700 text-sm whitespace-pre-wrap"
             >
-              {{ comment.content }}
+              {{ comment.text }}
             </p>
 
             <div class="flex items-center justify-between">
               <span class="text-default-500 text-xs">
-                <KunTime :time="comment.created" type="datetime" show-year />
-                <span v-if="comment.edited" class="ml-1">
+                <KunTime :time="comment.created_at" type="datetime" show-year />
+                <span v-if="comment.edited_at" class="ml-1">
                   (编辑于
-                  <KunTime :time="comment.edited" type="datetime" show-year />)
+                  <KunTime
+                    :time="comment.edited_at"
+                    type="datetime"
+                    show-year
+                  />)
                 </span>
               </span>
 
@@ -256,15 +216,16 @@ const handleSaveEdit = async (comment: TopicComment) => {
                     </KunButton>
                     <TopicCommentDelete
                       :comment="comment"
+                      :topic-id="topicId"
                       @remove-comment="handleRemoveComment"
                     />
                     <ReportButton
-                      v-if="comment.user.id !== currentUserId"
+                      v-if="Number(comment.author.id) !== currentUserId"
                       menu
                       subject-kind="forum_comment"
-                      :subject-id="comment.id"
-                      :snapshot="comment.content"
-                      :subject-url="`${kungal.domain.main}/topic/${comment.topic_id}?comment=${comment.id}`"
+                      :subject-id="Number(comment.id)"
+                      :snapshot="comment.text"
+                      :subject-url="`${kungal.domain.main}/topic/${topicId}?comment=${comment.id}`"
                     />
                   </div>
                 </KunPopover>
@@ -276,7 +237,7 @@ const handleSaveEdit = async (comment: TopicComment) => {
         <KunFadeCard v-if="!isMobile">
           <LazyTopicCommentPanel
             v-if="activeCommentId === comment.id && targetUserForPanel"
-            :reply-id="replyId"
+            :reply-id="Number(replyId)"
             :target-user="targetUserForPanel"
             :parent-comment-id="parentCommentIdForPanel ?? undefined"
             @get-comment="handleNewComment"
@@ -295,7 +256,7 @@ const handleSaveEdit = async (comment: TopicComment) => {
     >
       <LazyTopicCommentPanel
         v-if="targetUserForPanel"
-        :reply-id="replyId"
+        :reply-id="Number(replyId)"
         :target-user="targetUserForPanel"
         :parent-comment-id="parentCommentIdForPanel ?? undefined"
         @get-comment="handleNewComment"

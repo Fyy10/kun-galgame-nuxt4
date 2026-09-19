@@ -1,11 +1,16 @@
 <script setup lang="ts">
+import type { Reply } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
-  reply: TopicReply
+  reply: Reply
 }>()
 
 const { id } = usePersistUserStore()
 const canSetBestAnswer = useCan('topic.set_best_answer')
 const topicUserId = inject<number>('topicUserId')
+const refreshTopic = inject<() => Promise<unknown>>('refreshTopic', () =>
+  Promise.resolve()
+)
 
 const isDisabled = !canSetBestAnswer.value && topicUserId !== id
 
@@ -20,10 +25,13 @@ const handleUpdateTopicBestAnswer = async () => {
   }
 
   const result = await kunFetch<string>(
-    `/topic/${props.reply.topic_id}/best-answer`,
+    `/topic/${Number(props.reply.topic_id)}/best-answer`,
     {
       method: 'PUT',
-      body: { topic_id: props.reply.topic_id, reply_id: props.reply.id }
+      body: {
+        topic_id: Number(props.reply.topic_id),
+        reply_id: Number(props.reply.id)
+      }
     }
   )
 
@@ -32,6 +40,7 @@ const handleUpdateTopicBestAnswer = async () => {
       props.reply.is_best_answer ? '取消设置最佳答案成功' : '设置最佳答案成功',
       'success'
     )
+    await refreshTopic()
   }
 }
 </script>

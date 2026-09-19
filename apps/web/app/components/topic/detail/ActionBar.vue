@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import type { Topic } from '#shared/utils/api/schemas'
+import { toKunUser } from '~/utils/userRef'
+
 const props = defineProps<{
-  topic: TopicDetail
+  topic: Topic
 }>()
 
 const { id } = usePersistUserStore()
@@ -38,11 +41,7 @@ const handleShare = () => {
       发布一条可爱的回复吧～
     </button>
 
-    <TopicFooterFavorite
-      :topic-id="topic.id"
-      :favorite-count="topic.favorite_count"
-      :is-favorite="topic.is_favorited"
-    />
+    <TopicFooterFavorite :topic="topic" />
 
     <KunTooltip text="跳到评论区">
       <KunReaction
@@ -59,13 +58,7 @@ const handleShare = () => {
       </template>
 
       <div class="flex flex-col gap-1">
-        <TopicFooterUpvote
-          menu
-          :topic-id="topic.id"
-          :target-user-id="topic.user.id"
-          :upvote-count="topic.upvote_count"
-          :is-upvoted="topic.is_upvoted"
-        />
+        <TopicFooterUpvote menu :topic="topic" />
         <KunButton
           variant="light"
           color="default"
@@ -78,15 +71,15 @@ const handleShare = () => {
         </KunButton>
         <TopicFooterRewrite menu :topic="topic" />
         <TopicFooterHide
-          :topic-id="topic.id"
-          :status="topic.status"
+          :topic-id="Number(topic.id)"
+          :state="topic.state"
           :hidden-by="topic.hidden_by"
         />
         <ReportButton
-          v-if="topic.user.id !== id"
+          v-if="Number(topic.author.id) !== id"
           menu
           subject-kind="forum_topic"
-          :subject-id="topic.id"
+          :subject-id="Number(topic.id)"
           :snapshot="topic.title"
           :subject-url="`${kungal.domain.main}/topic/${topic.id}`"
         />

@@ -1,24 +1,17 @@
 <script setup lang="ts">
+import type { Reply } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
-  initialReplies: TopicReply[]
+  initialReplies: Reply[]
   topicId: number
   title: string
 }>()
-
-const replies = ref<TopicReply[]>([])
-watch(
-  () => props.initialReplies,
-  (newVal) => {
-    replies.value = JSON.parse(JSON.stringify(newVal))
-  },
-  { immediate: true, deep: true }
-)
 </script>
 
 <template>
   <div class="flex flex-col gap-4">
     <TopicReply
-      v-for="reply in replies"
+      v-for="reply in props.initialReplies"
       :key="reply.id"
       :reply="reply"
       :title="title"

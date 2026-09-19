@@ -1,5 +1,7 @@
 import { ref, computed } from 'vue'
 import type { InjectionKey } from 'vue'
+import type { ContentDocument, Reply } from '#shared/utils/api/schemas'
+import { contentHeadings, contentPlainText } from '~/utils/contentPlainText'
 
 export interface TOCItem {
   id: string
@@ -10,8 +12,8 @@ export interface TOCItem {
 }
 
 export interface TopicTocSource {
-  getContentHtml: () => string
-  getReplies: () => { floor: number; content_markdown: string }[]
+  getContent: () => ContentDocument
+  getReplies: () => Pick<Reply, 'floor' | 'content'>[]
   getTargetFloor?: () => number
 }
 
@@ -20,33 +22,21 @@ export const TOPIC_TOC_SOURCE: InjectionKey<TopicTocSource> =
 
 const TOP_BAR_OFFSET = 88
 
-const htmlToText = (html: string) =>
-  html
-    .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .trim()
-
-const HEADING_RE = /<h([1-3])\b[^>]*\bid="([^"]*)"[^>]*>([\s\S]*?)<\/h\1>/gi
-
 export const useTopicTOC = (source: TopicTocSource) => {
   const headings = computed<TOCItem[]>(() => {
     const items: TOCItem[] = []
 
-    for (const m of source.getContentHtml().matchAll(HEADING_RE)) {
+    for (const heading of contentHeadings(source.getContent())) {
       items.push({
-        id: m[2]!,
-        level: Number(m[1]),
-        text: htmlToText(m[3]!),
+        id: heading.anchor,
+        level: heading.depth,
+        text: heading.text,
         type: 'heading'
       })
     }
 
     for (const reply of source.getReplies()) {
-      const slug = truncateRunes(markdownToText(reply.content_markdown), 20)
+      const slug = truncateRunes(contentPlainText(reply.content), 20)
       items.push({
         id: `${reply.floor}.${slug}`,
         level: 2,
@@ -112,7 +102,7 @@ export const useTopicTOC = (source: TopicTocSource) => {
   const refreshTOC = () => {
     headingEls = Array.from(
       document.querySelectorAll<HTMLElement>(
-        '.kun-master h1, .kun-master h2, .kun-master h3'
+        '.kun-master h1, .kun-master h2, .kun-master h3, .kun-master h4, .kun-master h5, .kun-master h6'
       )
     )
     replyEls = Array.from(document.querySelectorAll<HTMLElement>('.kun-reply'))

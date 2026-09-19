@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { useContentLightbox } from '@kungal/ui-vue'
+import type { Image } from '#shared/utils/api/schemas'
+
+type Cover = string | Image
 
 const props = defineProps<{
-  images: string[]
+  images: Cover[]
   meta?: Record<string, KunImageMeta>
   zoomable?: boolean
 }>()
@@ -10,18 +13,34 @@ const props = defineProps<{
 const shown = computed(() => props.images.slice(0, 9))
 const isSingle = computed(() => shown.value.length === 1)
 
-const metaOf = (token: string): KunImageMeta | undefined => props.meta?.[token]
+const resolved = (item: Cover) => {
+  if (typeof item === 'string') {
+    const m = props.meta?.[item]
+    return {
+      src: imageTokenUrl(item),
+      thumbhash: m?.thumbhash,
+      width: m?.width,
+      height: m?.height
+    }
+  }
+  return {
+    src: item.url,
+    thumbhash: item.thumbhash ?? undefined,
+    width: item.width ?? undefined,
+    height: item.height ?? undefined
+  }
+}
 
-const aspectOf = (token: string): string | undefined => {
-  const m = metaOf(token)
-  return m?.width && m?.height ? `${m.width} / ${m.height}` : undefined
+const aspectOf = (item: Cover): string | undefined => {
+  const m = resolved(item)
+  return m.width && m.height ? `${m.width} / ${m.height}` : undefined
 }
 
 const SINGLE_MAX_HEIGHT_PX = 384
 
 const singleWidth = computed(() => {
-  const m = metaOf(shown.value[0]!)
-  if (!m?.width || !m?.height) {
+  const m = resolved(shown.value[0]!)
+  if (!m.width || !m.height) {
     return undefined
   }
   const heightCapped = Math.round((SINGLE_MAX_HEIGHT_PX * m.width) / m.height)
@@ -43,11 +62,11 @@ const {
     <div ref="root">
       <KunImage
         v-if="isSingle"
-        :src="imageTokenUrl(shown[0]!)"
-        :thumbhash="metaOf(shown[0]!)?.thumbhash"
+        :src="resolved(shown[0]!).src"
+        :thumbhash="resolved(shown[0]!).thumbhash"
         :aspect-ratio="aspectOf(shown[0]!)"
-        :width="metaOf(shown[0]!)?.width"
-        :height="metaOf(shown[0]!)?.height"
+        :width="resolved(shown[0]!).width"
+        :height="resolved(shown[0]!).height"
         :style="singleWidth"
         alt="话题封面"
         loading="lazy"
@@ -63,11 +82,11 @@ const {
       >
         <div class="flex gap-1.5">
           <KunImage
-            v-for="(token, idx) in shown"
-            :key="`${idx}-${token}`"
-            :src="imageTokenUrl(token)"
-            :thumbhash="metaOf(token)?.thumbhash"
-            :aspect-ratio="aspectOf(token)"
+            v-for="(item, idx) in shown"
+            :key="`${idx}-${resolved(item).src}`"
+            :src="resolved(item).src"
+            :thumbhash="resolved(item).thumbhash"
+            :aspect-ratio="aspectOf(item)"
             alt="话题封面"
             loading="lazy"
             object-fit="contain"
