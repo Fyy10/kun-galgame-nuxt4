@@ -1,6 +1,178 @@
 {
   "components": {
     "schemas": {
+      "BlockNode": {
+        "description": "A block node. Switch on object; render an unknown type's children, or its value as text.",
+        "discriminator": {
+          "mapping": {
+            "blockquote": "#/components/schemas/BlockquoteNode",
+            "code": "#/components/schemas/CodeNode",
+            "heading": "#/components/schemas/HeadingNode",
+            "list": "#/components/schemas/ListNode",
+            "math": "#/components/schemas/MathNode",
+            "paragraph": "#/components/schemas/ParagraphNode",
+            "spoiler": "#/components/schemas/SpoilerNode",
+            "table": "#/components/schemas/TableNode",
+            "thematic_break": "#/components/schemas/ThematicBreakNode"
+          },
+          "propertyName": "object"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ParagraphNode"
+          },
+          {
+            "$ref": "#/components/schemas/HeadingNode"
+          },
+          {
+            "$ref": "#/components/schemas/ThematicBreakNode"
+          },
+          {
+            "$ref": "#/components/schemas/BlockquoteNode"
+          },
+          {
+            "$ref": "#/components/schemas/ListNode"
+          },
+          {
+            "$ref": "#/components/schemas/CodeNode"
+          },
+          {
+            "$ref": "#/components/schemas/MathNode"
+          },
+          {
+            "$ref": "#/components/schemas/TableNode"
+          },
+          {
+            "$ref": "#/components/schemas/SpoilerNode"
+          }
+        ]
+      },
+      "BlockquoteNode": {
+        "properties": {
+          "children": {
+            "description": "Quoted block nodes.",
+            "items": {
+              "$ref": "#/components/schemas/BlockNode"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always blockquote.",
+            "enum": [
+              "blockquote"
+            ],
+            "maxLength": 10,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "children"
+        ],
+        "type": "object"
+      },
+      "BreakNode": {
+        "properties": {
+          "object": {
+            "description": "Type discriminant. Always break.",
+            "enum": [
+              "break"
+            ],
+            "maxLength": 5,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object"
+        ],
+        "type": "object"
+      },
+      "CodeNode": {
+        "properties": {
+          "lang": {
+            "description": "Language named on the fence, lowercased. null when the fence names none or the block is indented.",
+            "maxLength": 32,
+            "minLength": 1,
+            "pattern": "^\\S+$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "description": "Type discriminant. Always code.",
+            "enum": [
+              "code"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "value": {
+            "description": "Source text of the block, without the fences. Free text; never use it as a decision input.",
+            "maxLength": 100007,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "lang",
+          "value"
+        ],
+        "type": "object"
+      },
+      "ContentDocument": {
+        "properties": {
+          "children": {
+            "description": "Top-level block nodes in document order. Empty array for an empty body.",
+            "items": {
+              "$ref": "#/components/schemas/BlockNode"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always document.",
+            "enum": [
+              "document"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "children"
+        ],
+        "type": "object"
+      },
+      "EmphasisNode": {
+        "properties": {
+          "children": {
+            "description": "Emphasized inline nodes.",
+            "items": {
+              "$ref": "#/components/schemas/InlineNode"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always emphasis.",
+            "enum": [
+              "emphasis"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "children"
+        ],
+        "type": "object"
+      },
       "FieldError": {
         "properties": {
           "detail": {
@@ -97,6 +269,47 @@
         },
         "type": "object"
       },
+      "HeadingNode": {
+        "properties": {
+          "anchor": {
+            "description": "Fragment identifier of this heading, unique within the document. Links in the same body point at it as #anchor.",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^\\S+$",
+            "type": "string"
+          },
+          "children": {
+            "description": "Inline nodes of the heading text.",
+            "items": {
+              "$ref": "#/components/schemas/InlineNode"
+            },
+            "type": "array"
+          },
+          "depth": {
+            "description": "Heading level, 2 to 6. The page title is the only level 1, so a level-1 heading in the source arrives as 2.",
+            "format": "int64",
+            "maximum": 6,
+            "minimum": 2,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always heading.",
+            "enum": [
+              "heading"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "depth",
+          "anchor",
+          "children"
+        ],
+        "type": "object"
+      },
       "Image": {
         "properties": {
           "hash": {
@@ -164,6 +377,291 @@
           "height",
           "thumbhash",
           "sexual"
+        ],
+        "type": "object"
+      },
+      "ImageNode": {
+        "properties": {
+          "alt": {
+            "description": "Alternative text. Empty when the author gave none. Free text; never use it as a decision input.",
+            "maxLength": 512,
+            "type": "string"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Image-service record of the picture, whose url is the full-size original. null for a picture hosted elsewhere."
+          },
+          "object": {
+            "description": "Type discriminant. Always image.",
+            "enum": [
+              "image"
+            ],
+            "maxLength": 5,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "url": {
+            "description": "Absolute URL to display inline. For an image-service picture it may be a smaller variant of image.url.",
+            "format": "uri",
+            "maxLength": 2048,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "url",
+          "alt",
+          "image"
+        ],
+        "type": "object"
+      },
+      "InlineCodeNode": {
+        "properties": {
+          "object": {
+            "description": "Type discriminant. Always inline_code.",
+            "enum": [
+              "inline_code"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "value": {
+            "description": "Code text. Free text; never use it as a decision input.",
+            "maxLength": 100007,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "value"
+        ],
+        "type": "object"
+      },
+      "InlineMathNode": {
+        "properties": {
+          "object": {
+            "description": "Type discriminant. Always inline_math.",
+            "enum": [
+              "inline_math"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "value": {
+            "description": "TeX source of an inline formula, without the delimiters. Free text; never use it as a decision input.",
+            "maxLength": 100007,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "value"
+        ],
+        "type": "object"
+      },
+      "InlineNode": {
+        "description": "An inline node. Switch on object; render an unknown type's children, or its value as text.",
+        "discriminator": {
+          "mapping": {
+            "break": "#/components/schemas/BreakNode",
+            "emphasis": "#/components/schemas/EmphasisNode",
+            "image": "#/components/schemas/ImageNode",
+            "inline_code": "#/components/schemas/InlineCodeNode",
+            "inline_math": "#/components/schemas/InlineMathNode",
+            "inline_spoiler": "#/components/schemas/InlineSpoilerNode",
+            "link": "#/components/schemas/LinkNode",
+            "mention": "#/components/schemas/MentionNode",
+            "reply_reference": "#/components/schemas/ReplyReferenceNode",
+            "strikethrough": "#/components/schemas/StrikethroughNode",
+            "strong": "#/components/schemas/StrongNode",
+            "text": "#/components/schemas/TextNode",
+            "video": "#/components/schemas/VideoNode"
+          },
+          "propertyName": "object"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/TextNode"
+          },
+          {
+            "$ref": "#/components/schemas/EmphasisNode"
+          },
+          {
+            "$ref": "#/components/schemas/StrongNode"
+          },
+          {
+            "$ref": "#/components/schemas/StrikethroughNode"
+          },
+          {
+            "$ref": "#/components/schemas/InlineCodeNode"
+          },
+          {
+            "$ref": "#/components/schemas/InlineMathNode"
+          },
+          {
+            "$ref": "#/components/schemas/BreakNode"
+          },
+          {
+            "$ref": "#/components/schemas/LinkNode"
+          },
+          {
+            "$ref": "#/components/schemas/ImageNode"
+          },
+          {
+            "$ref": "#/components/schemas/VideoNode"
+          },
+          {
+            "$ref": "#/components/schemas/InlineSpoilerNode"
+          },
+          {
+            "$ref": "#/components/schemas/MentionNode"
+          },
+          {
+            "$ref": "#/components/schemas/ReplyReferenceNode"
+          }
+        ]
+      },
+      "InlineSpoilerNode": {
+        "properties": {
+          "children": {
+            "description": "Inline nodes hidden until the reader reveals them.",
+            "items": {
+              "$ref": "#/components/schemas/InlineNode"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always inline_spoiler.",
+            "enum": [
+              "inline_spoiler"
+            ],
+            "maxLength": 14,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "children"
+        ],
+        "type": "object"
+      },
+      "LinkNode": {
+        "properties": {
+          "children": {
+            "description": "Inline nodes of the link text.",
+            "items": {
+              "$ref": "#/components/schemas/InlineNode"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always link.",
+            "enum": [
+              "link"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "url": {
+            "description": "Absolute http, https or mailto URL.",
+            "format": "uri",
+            "maxLength": 2048,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "url",
+          "children"
+        ],
+        "type": "object"
+      },
+      "ListItemNode": {
+        "properties": {
+          "children": {
+            "description": "Block nodes of the item.",
+            "items": {
+              "$ref": "#/components/schemas/BlockNode"
+            },
+            "type": "array"
+          },
+          "is_checked": {
+            "description": "Task-list state: true when ticked, false when not. null when the item is not a task.",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "object": {
+            "description": "Type discriminant. Always list_item.",
+            "enum": [
+              "list_item"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "is_checked",
+          "children"
+        ],
+        "type": "object"
+      },
+      "ListNode": {
+        "properties": {
+          "children": {
+            "description": "Items of the list.",
+            "items": {
+              "$ref": "#/components/schemas/ListItemNode"
+            },
+            "type": "array"
+          },
+          "is_ordered": {
+            "description": "Whether the items are numbered.",
+            "type": "boolean"
+          },
+          "is_spread": {
+            "description": "Whether the source separates items with blank lines, which renders them with paragraph spacing.",
+            "type": "boolean"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "start": {
+            "description": "Number of the first item of an ordered list. null for an unordered list.",
+            "format": "int64",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "object",
+          "is_ordered",
+          "start",
+          "is_spread",
+          "children"
         ],
         "type": "object"
       },
@@ -257,6 +755,76 @@
         "required": [
           "object",
           "items"
+        ],
+        "type": "object"
+      },
+      "MathNode": {
+        "properties": {
+          "object": {
+            "description": "Type discriminant. Always math.",
+            "enum": [
+              "math"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "value": {
+            "description": "TeX source of a display formula, without the delimiters. Free text; never use it as a decision input.",
+            "maxLength": 100007,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "value"
+        ],
+        "type": "object"
+      },
+      "MentionNode": {
+        "properties": {
+          "mentioned_user": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "The user mentioned, with the current display name. Render it as @name."
+          },
+          "object": {
+            "description": "Type discriminant. Always mention.",
+            "enum": [
+              "mention"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "mentioned_user"
+        ],
+        "type": "object"
+      },
+      "ParagraphNode": {
+        "properties": {
+          "children": {
+            "description": "Inline nodes of the paragraph. Empty array for a blank line the author kept.",
+            "items": {
+              "$ref": "#/components/schemas/InlineNode"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always paragraph.",
+            "enum": [
+              "paragraph"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "children"
         ],
         "type": "object"
       },
@@ -437,6 +1005,244 @@
           "type",
           "title",
           "description"
+        ],
+        "type": "object"
+      },
+      "ReplyReferenceNode": {
+        "properties": {
+          "floor": {
+            "description": "Floor number of the referenced reply as the author saw it. Render it as #floor.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always reply_reference.",
+            "enum": [
+              "reply_reference"
+            ],
+            "maxLength": 15,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "reply_id": {
+            "description": "Id of the referenced reply in the same topic.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "reply_id",
+          "floor"
+        ],
+        "type": "object"
+      },
+      "SpoilerNode": {
+        "properties": {
+          "children": {
+            "description": "Block nodes hidden until the reader reveals them.",
+            "items": {
+              "$ref": "#/components/schemas/BlockNode"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always spoiler.",
+            "enum": [
+              "spoiler"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "children"
+        ],
+        "type": "object"
+      },
+      "StrikethroughNode": {
+        "properties": {
+          "children": {
+            "description": "Struck-through inline nodes.",
+            "items": {
+              "$ref": "#/components/schemas/InlineNode"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always strikethrough.",
+            "enum": [
+              "strikethrough"
+            ],
+            "maxLength": 13,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "children"
+        ],
+        "type": "object"
+      },
+      "StrongNode": {
+        "properties": {
+          "children": {
+            "description": "Strongly emphasized inline nodes.",
+            "items": {
+              "$ref": "#/components/schemas/InlineNode"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always strong.",
+            "enum": [
+              "strong"
+            ],
+            "maxLength": 6,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "children"
+        ],
+        "type": "object"
+      },
+      "TableCellNode": {
+        "properties": {
+          "align": {
+            "description": "Horizontal alignment of the column. null for the default.",
+            "enum": [
+              "left",
+              "center",
+              "right",
+              null
+            ],
+            "maxLength": 6,
+            "type": [
+              "string",
+              "null"
+            ],
+            "x-vocabulary-closed": true
+          },
+          "children": {
+            "description": "Inline nodes of the cell.",
+            "items": {
+              "$ref": "#/components/schemas/InlineNode"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always table_cell.",
+            "enum": [
+              "table_cell"
+            ],
+            "maxLength": 10,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "align",
+          "children"
+        ],
+        "type": "object"
+      },
+      "TableNode": {
+        "properties": {
+          "children": {
+            "description": "Rows of the table. The first row is the header row.",
+            "items": {
+              "$ref": "#/components/schemas/TableRowNode"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always table.",
+            "enum": [
+              "table"
+            ],
+            "maxLength": 5,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "children"
+        ],
+        "type": "object"
+      },
+      "TableRowNode": {
+        "properties": {
+          "children": {
+            "description": "Cells of the row, one per column.",
+            "items": {
+              "$ref": "#/components/schemas/TableCellNode"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always table_row.",
+            "enum": [
+              "table_row"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "children"
+        ],
+        "type": "object"
+      },
+      "TextNode": {
+        "properties": {
+          "object": {
+            "description": "Type discriminant. Always text.",
+            "enum": [
+              "text"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "value": {
+            "description": "Literal text. Escapes and entities are already decoded; render it as text, never as markup. Free text; never use it as a decision input.",
+            "maxLength": 100007,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "value"
+        ],
+        "type": "object"
+      },
+      "ThematicBreakNode": {
+        "properties": {
+          "object": {
+            "description": "Type discriminant. Always thematic_break.",
+            "enum": [
+              "thematic_break"
+            ],
+            "maxLength": 14,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object"
         ],
         "type": "object"
       },
@@ -676,6 +1482,30 @@
           "id",
           "name",
           "avatar"
+        ],
+        "type": "object"
+      },
+      "VideoNode": {
+        "properties": {
+          "object": {
+            "description": "Type discriminant. Always video.",
+            "enum": [
+              "video"
+            ],
+            "maxLength": 5,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "url": {
+            "description": "Absolute URL of the video file.",
+            "format": "uri",
+            "maxLength": 2048,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "url"
         ],
         "type": "object"
       }
@@ -942,5 +1772,8 @@
     {
       "url": "https://www.kungal.com/api/v1"
     }
-  ]
+  ],
+  "x-content-document": {
+    "$ref": "#/components/schemas/ContentDocument"
+  }
 }

@@ -68,6 +68,53 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description A block node. Switch on object; render an unknown type's children, or its value as text. */
+        BlockNode: components["schemas"]["ParagraphNode"] | components["schemas"]["HeadingNode"] | components["schemas"]["ThematicBreakNode"] | components["schemas"]["BlockquoteNode"] | components["schemas"]["ListNode"] | components["schemas"]["CodeNode"] | components["schemas"]["MathNode"] | components["schemas"]["TableNode"] | components["schemas"]["SpoilerNode"];
+        BlockquoteNode: {
+            /** @description Quoted block nodes. */
+            children: components["schemas"]["BlockNode"][];
+            /**
+             * @description Type discriminant. Always blockquote. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "blockquote";
+        };
+        BreakNode: {
+            /**
+             * @description Type discriminant. Always break. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "break";
+        };
+        CodeNode: {
+            /** @description Language named on the fence, lowercased. null when the fence names none or the block is indented. */
+            lang: string | null;
+            /**
+             * @description Type discriminant. Always code. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "code";
+            /** @description Source text of the block, without the fences. Free text; never use it as a decision input. */
+            value: string;
+        };
+        ContentDocument: {
+            /** @description Top-level block nodes in document order. Empty array for an empty body. */
+            children: components["schemas"]["BlockNode"][];
+            /**
+             * @description Type discriminant. Always document.
+             * @enum {string}
+             */
+            object: "document";
+        };
+        EmphasisNode: {
+            /** @description Emphasized inline nodes. */
+            children: components["schemas"]["InlineNode"][];
+            /**
+             * @description Type discriminant. Always emphasis. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "emphasis";
+        };
         FieldError: {
             /** @description English diagnostic for this location. Free text; never use it as a decision input. */
             detail: string;
@@ -116,6 +163,22 @@ export interface components {
              */
             minimum?: number;
         };
+        HeadingNode: {
+            /** @description Fragment identifier of this heading, unique within the document. Links in the same body point at it as #anchor. */
+            anchor: string;
+            /** @description Inline nodes of the heading text. */
+            children: components["schemas"]["InlineNode"][];
+            /**
+             * Format: int64
+             * @description Heading level, 2 to 6. The page title is the only level 1, so a level-1 heading in the source arrives as 2.
+             */
+            depth: number;
+            /**
+             * @description Type discriminant. Always heading. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "heading";
+        };
         Image: {
             /** @description Image-service content hash. */
             hash: string;
@@ -141,6 +204,94 @@ export interface components {
              * @description Pixel width. null if unknown.
              */
             width: number | null;
+        };
+        ImageNode: {
+            /** @description Alternative text. Empty when the author gave none. Free text; never use it as a decision input. */
+            alt: string;
+            /** @description Image-service record of the picture, whose url is the full-size original. null for a picture hosted elsewhere. */
+            image: components["schemas"]["Image"] | null;
+            /**
+             * @description Type discriminant. Always image. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "image";
+            /**
+             * Format: uri
+             * @description Absolute URL to display inline. For an image-service picture it may be a smaller variant of image.url.
+             */
+            url: string;
+        };
+        InlineCodeNode: {
+            /**
+             * @description Type discriminant. Always inline_code. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "inline_code";
+            /** @description Code text. Free text; never use it as a decision input. */
+            value: string;
+        };
+        InlineMathNode: {
+            /**
+             * @description Type discriminant. Always inline_math. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "inline_math";
+            /** @description TeX source of an inline formula, without the delimiters. Free text; never use it as a decision input. */
+            value: string;
+        };
+        /** @description An inline node. Switch on object; render an unknown type's children, or its value as text. */
+        InlineNode: components["schemas"]["TextNode"] | components["schemas"]["EmphasisNode"] | components["schemas"]["StrongNode"] | components["schemas"]["StrikethroughNode"] | components["schemas"]["InlineCodeNode"] | components["schemas"]["InlineMathNode"] | components["schemas"]["BreakNode"] | components["schemas"]["LinkNode"] | components["schemas"]["ImageNode"] | components["schemas"]["VideoNode"] | components["schemas"]["InlineSpoilerNode"] | components["schemas"]["MentionNode"] | components["schemas"]["ReplyReferenceNode"];
+        InlineSpoilerNode: {
+            /** @description Inline nodes hidden until the reader reveals them. */
+            children: components["schemas"]["InlineNode"][];
+            /**
+             * @description Type discriminant. Always inline_spoiler. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "inline_spoiler";
+        };
+        LinkNode: {
+            /** @description Inline nodes of the link text. */
+            children: components["schemas"]["InlineNode"][];
+            /**
+             * @description Type discriminant. Always link. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "link";
+            /**
+             * Format: uri
+             * @description Absolute http, https or mailto URL.
+             */
+            url: string;
+        };
+        ListItemNode: {
+            /** @description Block nodes of the item. */
+            children: components["schemas"]["BlockNode"][];
+            /** @description Task-list state: true when ticked, false when not. null when the item is not a task. */
+            is_checked: boolean | null;
+            /**
+             * @description Type discriminant. Always list_item.
+             * @enum {string}
+             */
+            object: "list_item";
+        };
+        ListNode: {
+            /** @description Items of the list. */
+            children: components["schemas"]["ListItemNode"][];
+            /** @description Whether the items are numbered. */
+            is_ordered: boolean;
+            /** @description Whether the source separates items with blank lines, which renders them with paragraph spacing. */
+            is_spread: boolean;
+            /**
+             * @description Type discriminant. Always list. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Number of the first item of an ordered list. null for an unordered list.
+             */
+            start: number | null;
         };
         ListProblemReason: {
             /** @description Members of this page. Empty array, never null. */
@@ -174,6 +325,33 @@ export interface components {
              * @enum {string}
              */
             object: "list";
+        };
+        MathNode: {
+            /**
+             * @description Type discriminant. Always math. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "math";
+            /** @description TeX source of a display formula, without the delimiters. Free text; never use it as a decision input. */
+            value: string;
+        };
+        MentionNode: {
+            /** @description The user mentioned, with the current display name. Render it as @name. */
+            mentioned_user: components["schemas"]["UserRef"];
+            /**
+             * @description Type discriminant. Always mention. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "mention";
+        };
+        ParagraphNode: {
+            /** @description Inline nodes of the paragraph. Empty array for a blank line the author kept. */
+            children: components["schemas"]["InlineNode"][];
+            /**
+             * @description Type discriminant. Always paragraph. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "paragraph";
         };
         Problem: {
             /** @description Top-level error code. UPPER_SNAKE. */
@@ -241,6 +419,95 @@ export interface components {
              * @description Problem type URI. The last path segment is the kebab-case form of code.
              */
             type: string;
+        };
+        ReplyReferenceNode: {
+            /**
+             * Format: int64
+             * @description Floor number of the referenced reply as the author saw it. Render it as #floor.
+             */
+            floor: number;
+            /**
+             * @description Type discriminant. Always reply_reference. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "reply_reference";
+            /** @description Id of the referenced reply in the same topic. */
+            reply_id: string;
+        };
+        SpoilerNode: {
+            /** @description Block nodes hidden until the reader reveals them. */
+            children: components["schemas"]["BlockNode"][];
+            /**
+             * @description Type discriminant. Always spoiler. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "spoiler";
+        };
+        StrikethroughNode: {
+            /** @description Struck-through inline nodes. */
+            children: components["schemas"]["InlineNode"][];
+            /**
+             * @description Type discriminant. Always strikethrough. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "strikethrough";
+        };
+        StrongNode: {
+            /** @description Strongly emphasized inline nodes. */
+            children: components["schemas"]["InlineNode"][];
+            /**
+             * @description Type discriminant. Always strong. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "strong";
+        };
+        TableCellNode: {
+            /**
+             * @description Horizontal alignment of the column. null for the default.
+             * @enum {string|null}
+             */
+            align: "left" | "center" | "right" | null;
+            /** @description Inline nodes of the cell. */
+            children: components["schemas"]["InlineNode"][];
+            /**
+             * @description Type discriminant. Always table_cell.
+             * @enum {string}
+             */
+            object: "table_cell";
+        };
+        TableNode: {
+            /** @description Rows of the table. The first row is the header row. */
+            children: components["schemas"]["TableRowNode"][];
+            /**
+             * @description Type discriminant. Always table. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "table";
+        };
+        TableRowNode: {
+            /** @description Cells of the row, one per column. */
+            children: components["schemas"]["TableCellNode"][];
+            /**
+             * @description Type discriminant. Always table_row.
+             * @enum {string}
+             */
+            object: "table_row";
+        };
+        TextNode: {
+            /**
+             * @description Type discriminant. Always text. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "text";
+            /** @description Literal text. Escapes and entities are already decoded; render it as text, never as markup. Free text; never use it as a decision input. */
+            value: string;
+        };
+        ThematicBreakNode: {
+            /**
+             * @description Type discriminant. Always thematic_break. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "thematic_break";
         };
         TopicSummary: {
             /** @description Topic author. */
@@ -322,6 +589,18 @@ export interface components {
              * @enum {string}
              */
             object: "user";
+        };
+        VideoNode: {
+            /**
+             * @description Type discriminant. Always video. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            object: "video";
+            /**
+             * Format: uri
+             * @description Absolute URL of the video file.
+             */
+            url: string;
         };
     };
     responses: never;

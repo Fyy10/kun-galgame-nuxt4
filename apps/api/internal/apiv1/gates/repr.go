@@ -12,9 +12,10 @@ import (
 )
 
 var g8Allow = map[string]bool{
-	"items":  true,
-	"object": true,
-	"state":  true,
+	"children": true,
+	"items":    true,
+	"object":   true,
+	"state":    true,
 }
 
 var g8Forbidden = []string{
