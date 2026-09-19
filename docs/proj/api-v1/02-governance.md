@@ -50,7 +50,7 @@ G 编号沿用 infra 07 §2 的同名门，F 编号是论坛补的。**每道门
 | **G5 / G13** | 注册表七项检查（infra 10 §7）；code ↔ type URI 双向一一对应；`problems.json` 与注册表一致；代码里构造的每个 code / reason 都在注册表里 | Go 测试 + AST 扫描 | api |
 | **G6** | 2xx schema 顶层不含 `code` / `message` / `data` / `success` / `status` / `timestamp` / `error` | spec 测试 | api |
 | **G7** | 名为 `id`、以 `_id` 结尾的 property 与参数是字符串；以 `_ids` 结尾的是字符串数组 | spec 测试 | api |
-| **G8** | 同名 property 全 spec 内 schema 一致：类型、format、可空性、枚举值、`$ref` 目标、数组元素。例外只走具名清单：`object`（各资源各一个单值判别枚举）、`state`（各资源各自的生命周期封闭枚举）、`items`（列表容器的成员，元素类型随列表而变）、`children`（正文节点的子节点，元素类型随父节点而变，[03 §1](03-content-doc.md)）。查询 / 路径参数不参与一致性比较（`sort` 等是各集合自己的词表），但禁用名照查 | spec 测试 | api |
+| **G8** | 同名 property 全 spec 内 schema 一致：类型、format、可空性、枚举值、`$ref` 目标、数组元素。例外只走具名清单：`object`（各资源各一个单值判别枚举）、`state`（各资源各自的生命周期封闭枚举）、`items`（列表容器的成员，元素类型随列表而变）、`children`（正文节点的子节点，元素类型随父节点而变，[03 §1](03-content-doc.md)）、`viewer`（K9：每种资源各带自己的查看者状态，字段必然不同）。查询 / 路径参数不参与一致性比较（`sort` 等是各集合自己的词表），但禁用名照查 | spec 测试 | api |
 | **G9** | 数组 / map 不允许 `null`；没有 `additionalProperties: false`；请求体里没有可空对象（huma 把 `{"type":"null"}` 分支当作匹配任何值，等于关掉该字段的校验，改用 `omitempty`）；v1 包里 `omitempty` / `omitzero` 只在指针字段上 | spec 测试 + Go AST | api |
 | **G14** | 字符串必须有 `enum` / `format` / `pattern` 之一或自由文本声明，且全部有 `maxLength`；数值有 `minimum` | spec 测试 | api |
 | **G16** | `request_id` 匹配 `^req_[0-9A-HJKMNP-TV-Z]{26}$`；游标匹配 `^cur_` | spec 测试 + 契约测试 | api · db |
@@ -58,6 +58,7 @@ G 编号沿用 infra 07 §2 的同名门，F 编号是论坛补的。**每道门
 | **F1** | 命名规则（[01 §3](01-standard.md)），property 与参数都查：布尔以 `is_` / `has_` / `can_` 开头（查询参数另允许 `include_`）、`_at` ↔ date-time、`_date` ↔ date、`_count` 为非负整数、封闭枚举值是 snake_case（具名例外只有 `sections`：论坛的 URL slug） | spec 测试 | api |
 | **F8** | v1 源码（与 G5 同一组目录）里没有中日韩文字的字符串字面量：给人看的文字由客户端按语言出，服务端发 code 或 `null`。W0a-5 验收时发现删号作者经 `userclient.Placeholder` 以「已注销用户」上了线，现在 `UserRef.name` 为 `null` | Go AST | api |
 | **F9** | 列表响应声明 `total` 当且仅当操作接受 `include_total`：`repr.List` 不带 `total`，嵌了 `collect.Total` 的集合返回 `repr.CountedList`。W0b-3 之前 `List` 自带 `total`，三个端点都声明了一个永远不会出现的字段，生成的类型里是一个读出来恒为 `undefined` 的 `total?: number` | spec 测试 | api |
+| **F10** | 路径模板里的每个 `{变量}` 恰有一个同名 `in: path` 参数，反之亦然。W2 契约初稿把路径参数放进未导出类型的嵌入结构体，huma 静默丢掉，`/topics/{topic_id}` 没有参数也没推导出 400，其余各门全部放行 | spec 测试 | api |
 | **F2** | 注册表的每个 code 与 reason 在 `zh-CN/problem.json` 里都有译文，目录里没有多余键。reason 的译文按参数分变体（`default` 必有，其余键是所用参数名升序以 `__` 连接，占位符恰好是这些参数），`status` 至少覆盖注册表里出现的每个状态与 429 / 502 / 504，文本里不许出现 vue-i18n 的特殊字符 `@` `$` `\|` | vitest（`tests/api/problemCatalog.spec.ts`），读 `problems.json` | web |
 | **F3** | 旧路由数**等于**基线：`routes.golden` 里 `/api/v1` 以外的路由数 = `legacy_route_baseline`。删路由的提交必须同时下调基线，理由同 F4 | Go 测试 | api |
 | **F4** | `kunFetch` / `useKunFetch` 调用点数**等于**基线 `tests/api/legacy-fetch-baseline`：少了也红，删调用点的提交必须同时下调基线，否则基线留下的余量会让新调用悄悄长回来 | vitest 源码扫描（`tests/api/legacyFetchRatchet.spec.ts`） | web |
