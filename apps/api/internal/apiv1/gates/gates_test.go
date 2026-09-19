@@ -48,7 +48,7 @@ func TestTheProbeDocumentPassesEveryGate(t *testing.T) {
 		Cover    *repr.Image    `json:"cover" doc:"Cover. null when there is none."`
 		IsPinned bool           `json:"is_pinned" doc:"Whether the thing is pinned."`
 	}
-	if errs := gates.CheckAll(spec(t, get[thing]("/things/{thing_id}"))); len(errs) > 0 {
+	if errs := gates.CheckAll(spec(t, get[thing]("/things"))); len(errs) > 0 {
 		t.Fatalf("a well-formed document failed:\n%s", strings.Join(errs, "\n"))
 	}
 }
