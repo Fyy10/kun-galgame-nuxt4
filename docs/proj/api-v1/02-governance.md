@@ -50,7 +50,7 @@ G 编号沿用 infra 07 §2 的同名门，F 编号是论坛补的。**每道门
 | **G5 / G13** | 注册表七项检查（infra 10 §7）；code ↔ type URI 双向一一对应；`problems.json` 与注册表一致；代码里构造的每个 code / reason 都在注册表里 | Go 测试 + AST 扫描 | api |
 | **G6** | 2xx schema 顶层不含 `code` / `message` / `data` / `success` / `status` / `timestamp` / `error` | spec 测试 | api |
 | **G7** | 名为 `id`、以 `_id` 结尾的 property 与参数是字符串；以 `_ids` 结尾的是字符串数组 | spec 测试 | api |
-| **G8** | 同名 property 全 spec 内 schema 一致：类型、format、可空性、枚举值、`$ref` 目标、数组元素。例外只走具名清单：`object`（各资源各一个单值判别枚举）、`state`（各资源各自的生命周期封闭枚举）、`items`（列表容器的成员，元素类型随列表而变）。查询 / 路径参数不参与一致性比较（`sort` 等是各集合自己的词表），但禁用名照查 | spec 测试 | api |
+| **G8** | 同名 property 全 spec 内 schema 一致：类型、format、可空性、枚举值、`$ref` 目标、数组元素。例外只走具名清单：`object`（各资源各一个单值判别枚举）、`state`（各资源各自的生命周期封闭枚举）、`items`（列表容器的成员，元素类型随列表而变）、`children`（正文节点的子节点，元素类型随父节点而变，[03 §1](03-content-doc.md)）。查询 / 路径参数不参与一致性比较（`sort` 等是各集合自己的词表），但禁用名照查 | spec 测试 | api |
 | **G9** | 数组 / map 不允许 `null`；没有 `additionalProperties: false`；请求体里没有可空对象（huma 把 `{"type":"null"}` 分支当作匹配任何值，等于关掉该字段的校验，改用 `omitempty`）；v1 包里 `omitempty` / `omitzero` 只在指针字段上 | spec 测试 + Go AST | api |
 | **G14** | 字符串必须有 `enum` / `format` / `pattern` 之一或自由文本声明，且全部有 `maxLength`；数值有 `minimum` | spec 测试 | api |
 | **G16** | `request_id` 匹配 `^req_[0-9A-HJKMNP-TV-Z]{26}$`；游标匹配 `^cur_` | spec 测试 + 契约测试 | api · db |

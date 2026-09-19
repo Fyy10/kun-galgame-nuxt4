@@ -254,7 +254,7 @@ infra 的 `errors[]` 只有英文 `detail`。客户端要本地化「标题最�
 
 ## §6 正文文档（K13）
 
-帖子、回复、评论等 Markdown 正文，v1 以**结构化节点树**下发，字段名 `content`。完整规格在 W1 定（`03-content-doc.md`），这里只定原则：
+帖子、回复、评论等 Markdown 正文，v1 以**结构化节点树**下发，字段名 `content`。完整规格见 [03-content-doc.md](03-content-doc.md)（W1 定稿），这里只定原则：
 
 - 节点词表以 **mdast**（unified / remark 的 Markdown AST 规范）为基础，含 GFM（表格、删除线、任务列表、脚注）与 math。kun-editor 的 Milkdown 内部就是 remark / mdast，编辑器与渲染器用的是同一套模型。
 - 论坛扩展用具名节点表达，不塞进 `html` 节点：

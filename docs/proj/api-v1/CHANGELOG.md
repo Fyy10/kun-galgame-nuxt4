@@ -25,3 +25,9 @@ Both changes break clients generated from the earlier document. No deployment se
 
 - `TopicSummary.user` is now `author`. A field that refers to a person is named for the role that person plays in the resource; `user` is a forbidden name (gate G8).
 - List bodies no longer declare `total`. None of the three collections accepts `include_total`, so the field could never appear. A collection that offers `include_total` returns a counted list that declares `total`, and gate F9 keeps the parameter and the field together.
+
+## 2026-09-18 (W1 contract)
+
+Additive.
+
+- The document now defines the content node vocabulary: `ContentDocument`, the `BlockNode` and `InlineNode` unions (`oneOf`, discriminated on `object`) and their member schemas. No operation returns a document yet; the root extension `x-content-document` references it so it stays in the published document, and it goes away when the topic detail read returns `content`. Rules for rendering, including unknown node types, are in `docs/proj/api-v1/03-content-doc.md`.
