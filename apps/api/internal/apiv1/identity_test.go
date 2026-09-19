@@ -1,9 +1,11 @@
 package apiv1
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync/atomic"
@@ -200,5 +202,53 @@ func TestResolvedUserIsAttachedToTheFiberContext(t *testing.T) {
 	}
 	if seen == nil || seen.ID != 7 {
 		t.Fatalf("fiber locals user %+v, want id 7", seen)
+	}
+}
+
+func TestIdentityLogsOnlyServerFailuresAsErrors(t *testing.T) {
+	cases := []struct {
+		outcome middleware.IdentityOutcome
+		error   bool
+	}{
+		{middleware.IdentityAnonymous, false},
+		{middleware.IdentitySessionMissing, false},
+		{middleware.IdentitySessionRefreshDead, false},
+		{middleware.IdentityBearerInvalid, false},
+		{middleware.IdentityBanned, false},
+		{middleware.IdentitySessionStoreError, true},
+		{middleware.IdentitySessionRefreshTransient, true},
+		{middleware.IdentitySessionInternalError, true},
+		{middleware.IdentityBearerKeysUnavailable, true},
+		{middleware.IdentityBearerProvisioningFailed, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.outcome.String(), func(t *testing.T) {
+			var logs bytes.Buffer
+			prev := slog.Default()
+			slog.SetDefault(slog.New(slog.NewJSONHandler(&logs, &slog.HandlerOptions{Level: slog.LevelDebug})))
+			defer slog.SetDefault(prev)
+
+			var ran atomic.Int32
+			app, _ := newTestAPI(t, Deps{Resolver: &fakeResolver{id: identityFor(tc.outcome)}}, whoami(TierOptional, &ran))
+			do(t, app, http.MethodGet, "/api/v1/_test/whoami", "", nil)
+
+			var line struct {
+				Level   string `json:"level"`
+				Outcome string `json:"outcome"`
+			}
+			found := false
+			for _, raw := range bytes.Split(logs.Bytes(), []byte("\n")) {
+				if json.Unmarshal(raw, &line) == nil && line.Outcome == tc.outcome.String() {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("no identity log line for %s in %s", tc.outcome, logs.String())
+			}
+			if (line.Level == "ERROR") != tc.error {
+				t.Errorf("level %s, want error=%v", line.Level, tc.error)
+			}
+		})
 	}
 }

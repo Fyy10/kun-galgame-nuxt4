@@ -155,7 +155,8 @@ func newIdentityMiddleware(resolver IdentityResolver) func(ctx huma.Context, nex
 
 		id := resolver.ResolveIdentity(fc)
 		if id.Err != nil {
-			slog.Error("apiv1 identity", "request_id", problem.RequestID(fc), "outcome", id.Outcome.String(), "err", id.Err)
+			slog.Log(ctx.Context(), identityLogLevel(id.Outcome), "apiv1 identity",
+				"request_id", problem.RequestID(fc), "outcome", id.Outcome.String(), "err", id.Err)
 		}
 
 		code := mapOutcome(tier, id.Outcome)
@@ -172,6 +173,19 @@ func newIdentityMiddleware(resolver IdentityResolver) func(ctx huma.Context, nex
 }
 
 var errNoResolver = errors.New("apiv1: identity resolver is not configured")
+
+// Every visitor with an expired cookie produces one of the client outcomes on a
+// public page; at ERROR they buried the store and key failures in production logs.
+func identityLogLevel(outcome middleware.IdentityOutcome) slog.Level {
+	switch outcome {
+	case middleware.IdentityAnonymous, middleware.IdentitySessionMissing,
+		middleware.IdentitySessionRefreshDead, middleware.IdentityBearerInvalid,
+		middleware.IdentityBanned:
+		return slog.LevelDebug
+	default:
+		return slog.LevelError
+	}
+}
 
 func mapOutcome(tier Tier, outcome middleware.IdentityOutcome) string {
 	switch outcome {
