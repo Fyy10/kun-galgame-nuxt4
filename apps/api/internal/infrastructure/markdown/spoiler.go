@@ -20,9 +20,9 @@ type spoilerInline struct {
 	ast.BaseInline
 }
 
-var kindSpoilerInline = ast.NewNodeKind("KunSpoilerInline")
+var KindSpoilerInline = ast.NewNodeKind("KunSpoilerInline")
 
-func (n *spoilerInline) Kind() ast.NodeKind { return kindSpoilerInline }
+func (n *spoilerInline) Kind() ast.NodeKind { return KindSpoilerInline }
 
 func (n *spoilerInline) Dump(source []byte, level int) {
 	ast.DumpHelper(n, source, level, nil, nil)
@@ -33,9 +33,9 @@ type spoilerBlock struct {
 	fence int
 }
 
-var kindSpoilerBlock = ast.NewNodeKind("KunSpoilerBlock")
+var KindSpoilerBlock = ast.NewNodeKind("KunSpoilerBlock")
 
-func (n *spoilerBlock) Kind() ast.NodeKind { return kindSpoilerBlock }
+func (n *spoilerBlock) Kind() ast.NodeKind { return KindSpoilerBlock }
 
 func (n *spoilerBlock) Dump(source []byte, level int) {
 	ast.DumpHelper(n, source, level, nil, nil)
@@ -133,8 +133,8 @@ func matchSpoilerFence(line []byte, lineOffset int) (int, string) {
 type spoilerRenderer struct{}
 
 func (r *spoilerRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
-	reg.Register(kindSpoilerInline, r.renderInline)
-	reg.Register(kindSpoilerBlock, r.renderBlock)
+	reg.Register(KindSpoilerInline, r.renderInline)
+	reg.Register(KindSpoilerBlock, r.renderBlock)
 }
 
 func (r *spoilerRenderer) renderInline(

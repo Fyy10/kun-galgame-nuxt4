@@ -33,6 +33,7 @@ var (
 
 	md         goldmark.Markdown
 	mdHardWrap goldmark.Markdown
+	mdContent  goldmark.Markdown
 	sanitizer  *bluemonday.Policy
 )
 
@@ -103,16 +104,23 @@ type TocLink struct {
 }
 
 func init() {
-	md = newGoldmark(false)
-	mdHardWrap = newGoldmark(true)
+	md = newGoldmark(false, true)
+	mdHardWrap = newGoldmark(true, true)
+	mdContent = newGoldmark(false, false)
 
 	sanitizer = newSanitizePolicy()
 }
 
-func newGoldmark(hardWraps bool) goldmark.Markdown {
+func newGoldmark(hardWraps, imageMeta bool) goldmark.Markdown {
 	rendererOpts := []renderer.Option{html.WithUnsafe()}
 	if hardWraps {
 		rendererOpts = append(rendererOpts, html.WithHardWraps())
+	}
+	parserOpts := []parser.Option{parser.WithAutoHeadingID()}
+	if imageMeta {
+		parserOpts = append(parserOpts, parser.WithASTTransformers(
+			util.Prioritized(&contentImageMetaTransformer{}, 100),
+		))
 	}
 	return goldmark.New(
 		goldmark.WithExtensions(
@@ -122,12 +130,7 @@ func newGoldmark(hardWraps bool) goldmark.Markdown {
 			&lazyImageExtension{},
 			&spoilerExtension{},
 		),
-		goldmark.WithParserOptions(
-			parser.WithAutoHeadingID(),
-			parser.WithASTTransformers(
-				util.Prioritized(&contentImageMetaTransformer{}, 100),
-			),
-		),
+		goldmark.WithParserOptions(parserOpts...),
 		goldmark.WithRendererOptions(rendererOpts...),
 	)
 }
