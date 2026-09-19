@@ -60,11 +60,6 @@ type TopicCard struct {
 	UpvoteTime       *time.Time                       `json:"upvote_time"`
 }
 
-type TopicListResponse struct {
-	Topics []TopicCard `json:"topics"`
-	Total  int64       `json:"total"`
-}
-
 type ReactionSummary struct {
 	Reaction string    `json:"reaction"`
 	Count    int       `json:"count"`

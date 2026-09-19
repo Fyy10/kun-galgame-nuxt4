@@ -79,7 +79,7 @@ App 用 AppAuth + PKCE 直接从 OP 换出 access token，然后 `Authorization:
 
 | 端点 | 方式 | 说明 |
 |---|---|---|
-| `GET /api/topic` | 匿名+ | `page` `limit`（≤50）`sort_order=asc\|desc` `category`；`sort_field` 取 `status_update_time`（最新）`created` `view` `view_7d` `view_30d` `like` `favorite` `upvote`，其他值静默回落默认 |
+| `GET /api/v1/topics` | 匿名+ | 话题列表。旧 `GET /api/topic` 已于 2026-09-19 删除。参数与响应以 `apps/api/openapi/kungal-v1.json` 为准（`listTopics`）：`cursor` + `limit`（1–100），`sort` 取声明的 token（如 `bumped_desc`），`include_nsfw=true` 才含 NSFW；错误是 problem+json，见 `docs/proj/api-v1/` |
 | `GET /api/topic/:tid`、`GET /api/topic/:tid/reply` | 匿名+ | |
 | `GET /api/galgame` | 公开 | 列表 |
 | `GET /api/galgame/:gid` | 匿名+ | 详情 |
@@ -124,7 +124,7 @@ App 用 AppAuth + PKCE 直接从 OP 换出 access token，然后 `Authorization:
 
 ```sh
 # 匿名
-curl -s 'https://www.kungal.com/api/topic?page=1&limit=10&sort_field=status_update_time&sort_order=desc'
+curl -s 'https://www.kungal.com/api/v1/topics?limit=10&sort=bumped_desc'
 # Bearer：未读红点
 curl -s 'https://www.kungal.com/api/user/status' -H "Authorization: Bearer $AT"
 # Bearer：发回复（带幂等键）

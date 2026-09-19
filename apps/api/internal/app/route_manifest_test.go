@@ -312,8 +312,9 @@ func TestLegacyRouteCountRatchet(t *testing.T) {
 			n++
 		}
 	}
-	if n > baseline {
-		t.Fatalf("legacy route count %d exceeds baseline %d", n, baseline)
+	if n != baseline {
+		t.Fatalf("legacy route count %d, baseline %d: a removed route lowers the baseline in the same commit, "+
+			"or the slack lets a new legacy route in unnoticed", n, baseline)
 	}
 }
 

@@ -147,7 +147,6 @@ GET    /api/toolset/:id                               cors.New → middleware.Na
 GET    /api/toolset/:id/comments                      cors.New → middleware.NamePreference → OptionalAuth → ResourceCommentHandler.ToolsetList
 GET    /api/toolset/:id/practicality                  cors.New → middleware.NamePreference → OptionalAuth → PracticalityHandler.GetPracticality
 GET    /api/toolset/:id/resource/detail               cors.New → middleware.NamePreference → ResourceHandler.GetResourceDetail
-GET    /api/topic                                     cors.New → middleware.NamePreference → OptionalAuth → TopicHandler.GetList
 GET    /api/topic/:tid                                cors.New → middleware.NamePreference → OptionalAuth → TopicHandler.GetDetail
 GET    /api/topic/:tid/lottery/entrants               cors.New → middleware.NamePreference → OptionalAuth → LotteryHandler.GetEntrants
 GET    /api/topic/:tid/lottery/topic                  cors.New → middleware.NamePreference → OptionalAuth → LotteryHandler.GetLotteriesByTopic

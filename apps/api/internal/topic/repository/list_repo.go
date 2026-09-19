@@ -36,40 +36,6 @@ type TopicCardRow struct {
 	UserAvatar       string
 }
 
-func (r *TopicListRepository) FindList(
-	page, limit int,
-	sortField, sortOrder, category string,
-	isNSFW, authenticated bool,
-) ([]TopicCardRow, int64, error) {
-	var rows []TopicCardRow
-	var total int64
-
-	query := r.db.Table("topic").
-		Select(`topic.id, topic.title, topic.view, topic.status,
-			topic.is_nsfw, topic.like_count, topic.reply_count,
-			topic.comment_count, topic.best_answer_id,
-			topic.status_update_time, topic.created, topic.upvote_time,
-			topic.cover_images, topic.user_id`).
-		Where("topic.status != 1").
-		Where(SharedListPredicate("topic", authenticated))
-
-	if !isNSFW {
-		query = query.Where("topic.is_nsfw = false")
-	}
-	if category != "" && category != "all" {
-		query = query.Where("topic.category = ?", category)
-	}
-
-	query.Count(&total)
-
-	query = query.Order(topicOrderCol(sortField) + " " + sortOrder).
-		Offset((page - 1) * limit).
-		Limit(limit)
-
-	err := query.Find(&rows).Error
-	return rows, total, err
-}
-
 func topicOrderCol(sortField string) string {
 	if sortField == "view_1d" {
 		return "COALESCE((SELECT SUM(d.count) FROM topic_view_daily d " +

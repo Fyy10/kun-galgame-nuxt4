@@ -102,23 +102,6 @@ func (s *TopicService) GetTopicReactionHistory(ctx context.Context, topicID int)
 	return out, nil
 }
 
-func (s *TopicService) GetList(
-	ctx context.Context,
-	req *dto.ListTopicsRequest,
-	isNSFW, authenticated bool,
-) ([]dto.TopicCard, int64, *errors.AppError) {
-	rows, total, err := s.listRepo.FindList(
-		req.Page, req.Limit,
-		req.SortField, req.SortOrder, req.Category,
-		isNSFW, authenticated,
-	)
-	if err != nil {
-		return nil, 0, errors.ErrInternal("获取话题列表失败")
-	}
-
-	return s.mapListRows(ctx, rows, total)
-}
-
 func (s *TopicService) GetResourceList(
 	ctx context.Context,
 	req *dto.ListTopicsRequest,

@@ -200,7 +200,6 @@ func (a *App) setupRoutes() {
 	api.Get("/topic/draft/:id", topicDraftAuth, a.TopicDraftHandler.Get)
 	api.Delete("/topic/draft/:id", topicDraftAuth, a.TopicDraftHandler.Delete)
 
-	optAuth.Get("/topic", a.TopicHandler.GetList)
 	optAuth.Get("/topic/:tid", a.TopicHandler.GetDetail)
 	optAuth.Get("/topic/:tid/upvotes", a.TopicHandler.GetUpvotes)
 	optAuth.Get("/topic/:tid/reaction/history", a.TopicHandler.GetTopicReactionHistory)
