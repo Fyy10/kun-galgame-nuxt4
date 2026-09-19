@@ -30,6 +30,7 @@ const (
 		"Clients must tolerate unseen values of open vocabularies; an unknown content node type renders its children or plain text.\n" +
 		"Clients must handle an unknown error `code` with a fallback keyed on `status`."
 	productionServer = "https://www.kungal.com/api/v1"
+	SiteOrigin       = "https://www.kungal.com"
 )
 
 type Deps struct {

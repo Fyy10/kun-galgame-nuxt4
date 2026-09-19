@@ -5,20 +5,23 @@ import (
 	"testing"
 )
 
-func TestTopicStateMapsOnlyZeroAndOne(t *testing.T) {
-	got, err := topicState(0)
-	if err != nil || got != "published" {
-		t.Fatalf("status 0: %q %v", got, err)
+func TestTopicLifecycle(t *testing.T) {
+	state, by, err := topicLifecycle(0, "author")
+	if err != nil || state != "published" || by != nil {
+		t.Fatalf("published: %q %v %v", state, by, err)
 	}
-	got, err = topicState(1)
-	if err != nil || got != "hidden" {
-		t.Fatalf("status 1: %q %v", got, err)
+	state, by, err = topicLifecycle(1, "moderator")
+	if err != nil || state != "hidden" || by == nil || *by != "moderator" {
+		t.Fatalf("hidden: %q %v %v", state, by, err)
 	}
-	if _, err := topicState(2); err == nil {
-		t.Fatal("status 2 must not map to published")
+	if _, _, err := topicLifecycle(1, ""); err == nil {
+		t.Fatal("hidden with empty hidden_by must be a defect")
 	}
-	if _, err := topicState(3); err == nil {
-		t.Fatal("status 3 must not map")
+	if _, _, err := topicLifecycle(1, "spam"); err == nil {
+		t.Fatal("hidden with unknown hidden_by must be a defect")
+	}
+	if _, _, err := topicLifecycle(2, "author"); err == nil {
+		t.Fatal("status 2 must be a defect")
 	}
 }
 

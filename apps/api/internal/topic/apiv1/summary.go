@@ -81,6 +81,45 @@ func topicState(status int) (string, error) {
 	}
 }
 
+func topicLifecycle(status int, hiddenBy string) (string, *string, error) {
+	state, err := topicState(status)
+	if err != nil {
+		return "", nil, err
+	}
+	if status == 0 {
+		return state, nil, nil
+	}
+	switch hiddenBy {
+	case "author", "moderator", "trust":
+		s := hiddenBy
+		return state, &s, nil
+	default:
+		return "", nil, fmt.Errorf("hidden topic has invalid hidden_by %q", hiddenBy)
+	}
+}
+
+func coverImagesWithMeta(cdn string, tokens model.ImageTokens, metaByHash map[string]imageclient.ImageMeta) []repr.Image {
+	if len(tokens) == 0 {
+		return []repr.Image{}
+	}
+	out := make([]repr.Image, 0, len(tokens))
+	for _, tok := range tokens {
+		var meta *imageclient.ImageMeta
+		if hash, _, ok := markdown.ParseContentImageRef(tok); ok {
+			if m, found := metaByHash[hash]; found {
+				cp := m
+				meta = &cp
+			}
+		}
+		img := repr.NewImageFromToken(cdn, tok, meta)
+		if img == nil {
+			continue
+		}
+		out = append(out, *img)
+	}
+	return out
+}
+
 func mapSummary(cdn string, row repository.TopicKeysetRow, author repr.UserRef, sections, miniApps []string) (TopicSummary, error) {
 	state, err := topicState(row.Status)
 	if err != nil {

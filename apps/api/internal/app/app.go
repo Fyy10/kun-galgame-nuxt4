@@ -106,6 +106,7 @@ type App struct {
 	UserState   *repository.StateRepository
 	UserClient  *userclient.Client
 	Authn       *middleware.Authenticator
+	ImageMeta   func(hashes []string) map[string]imageclient.ImageMeta
 
 	OAuthHandler                   *handler.OAuthHandler
 	UserHandler                    *handler.UserHandler
@@ -572,6 +573,7 @@ func New(cfg *config.Config) *App {
 		UserState:                      userStateRepo,
 		UserClient:                     uc,
 		Authn:                          authn,
+		ImageMeta:                      imageMetaResolve(imageMeta),
 		OAuthHandler:                   handler.NewOAuthHandler(authService, cfg.Server.Mode == "prod", communityBooster),
 		UserHandler:                    handler.NewUserHandler(userService, userContentService),
 		UserProfileHandler:             handler.NewProfileHandler(oauthClient, uc),
@@ -683,4 +685,11 @@ func globalErrorHandler(c fiber.Ctx, err error) error {
 	}
 	slog.Error("未处理的错误", "error", err.Error(), "path", c.Path(), "method", c.Method())
 	return response.Error(c, errors.ErrInternal("服务器内部错误"))
+}
+
+func imageMetaResolve(r *imageclient.MetaResolver) func([]string) map[string]imageclient.ImageMeta {
+	if r == nil {
+		return nil
+	}
+	return r.Resolve
 }

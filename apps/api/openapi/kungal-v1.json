@@ -2922,8 +2922,5 @@
     {
       "url": "https://www.kungal.com/api/v1"
     }
-  ],
-  "x-content-document": {
-    "$ref": "#/components/schemas/ContentDocument"
-  }
+  ]
 }
