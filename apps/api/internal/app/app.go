@@ -215,7 +215,7 @@ func New(cfg *config.Config) *App {
 	if moyuCli.Configured() {
 		slog.Info("moyu patch face client configured", "base_url", cfg.MoyuAPI.BaseURL)
 	} else {
-		slog.Warn("moyu patch face client NOT configured; the galgame patch tab stays hidden — set KUN_MOYU_API_KEY")
+		slog.Warn("moyu patch face client NOT configured; the galgame patch tab stays hidden — set KUN_NEXTMOE_API_KEY or KUN_MOYU_API_KEY")
 	}
 
 	oauthClient := oauth.NewClient(cfg.OAuth)

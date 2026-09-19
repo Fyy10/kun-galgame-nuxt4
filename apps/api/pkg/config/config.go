@@ -121,8 +121,9 @@ type NewsAPIConfig struct {
 // KUN_NEXTMOE_API_BASE the way news and store do: that is the catalog process
 // (http://catalog:9281 in prod), and /v2/moyu exists only on the api.nextmoe.dev
 // gateway, which checks the key and forwards to moyu's backend. The face admits
-// any valid key without a scope; it gets its own so the patch tab cannot spend
-// the catalogue key's rate budget. An empty key hides the tab.
+// any valid key without a scope, so the key defaults to the catalog one; the
+// gateway's rate tier belongs to the OAuth client, and the forum's is internal
+// (unlimited), so sharing it costs nothing.
 type MoyuAPIConfig struct {
 	BaseURL string
 	APIKey  string
@@ -279,7 +280,7 @@ func Load() (*Config, error) {
 		},
 		MoyuAPI: MoyuAPIConfig{
 			BaseURL: envOrDefault("KUN_MOYU_API_BASE", "https://api.nextmoe.dev"),
-			APIKey:  envOrDefault("KUN_MOYU_API_KEY", ""),
+			APIKey:  envOrDefault("KUN_MOYU_API_KEY", nextMoeKey),
 		},
 		ImageClient: ImageClientConfig{
 			BaseURL:      envOrDefault("KUN_IMAGE_CLIENT_BASE_URL", "http://127.0.0.1:9278"),
