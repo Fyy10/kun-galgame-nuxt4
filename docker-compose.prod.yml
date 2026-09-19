@@ -121,6 +121,12 @@ x-kungal-api-env: &kungal-api-env
   # KUN_NEWS_API_BASE is deliberately unset: it defaults to KUN_NEXTMOE_API_BASE,
   # and /v2/news is served by the same catalog process.
   KUN_NEWS_API_KEY: ${KUN_NEWS_API_KEY:-}
+  # NextMoe moyu face (/v2/moyu) — the galgame page's 补丁资源下载 tab. A FOURTH
+  # key: the face admits any valid key without a scope, but the catalog key's
+  # rate budget must not be spent on patch lookups. Its base is the public
+  # gateway (the default https://api.nextmoe.dev), NOT KUN_NEXTMOE_API_BASE:
+  # catalog:9281 does not serve /v2/moyu. Empty → the tab stays hidden.
+  KUN_MOYU_API_KEY: ${KUN_MOYU_API_KEY:-}
   # catalog read proxy (step 36): credits / entity reverse-lookups. Reuses the
   # OAuth client pair for S2S Basic auth; unset → those routes degrade to 503.
   KUN_CATALOG_API_BASE: http://catalog:9281

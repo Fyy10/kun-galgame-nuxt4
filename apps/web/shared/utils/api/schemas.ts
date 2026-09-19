@@ -11,6 +11,8 @@ export type CommentViewer = components['schemas']['CommentViewer']
 export type ReactionSummary = components['schemas']['ReactionSummary']
 export type ListReply = components['schemas']['ListReply']
 export type UserRef = components['schemas']['UserRef']
+export type ListMoyuPatch = components['schemas']['ListMoyuPatch']
+export type MoyuPatchResource = components['schemas']['MoyuPatchResource']
 
 export type ContentDocument = components['schemas']['ContentDocument']
 export type BlockNode = components['schemas']['BlockNode']

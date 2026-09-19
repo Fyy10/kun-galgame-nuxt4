@@ -167,13 +167,9 @@ const hasContributorCard = computed(
               <GalgameResource @update:loading="resourceLoading = $event" />
             </KunTabPanel>
 
-            <KunTabPanel
-              v-if="galgame.vndb_id"
-              value="patch"
-              :loading="patchLoading"
-            >
+            <KunTabPanel value="patch" :loading="patchLoading">
               <GalgamePatchContainer
-                :vndb-id="galgame.vndb_id"
+                :galgame-id="galgame.id"
                 @has-resource="hasPatchResource = $event"
                 @update:loading="patchLoading = $event"
               />

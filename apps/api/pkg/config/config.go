@@ -18,6 +18,7 @@ type Config struct {
 	CORS           CORSConfig
 	NextMoeAPI     NextMoeAPIConfig
 	NewsAPI        NewsAPIConfig
+	MoyuAPI        MoyuAPIConfig
 	ImageClient    ImageClientConfig
 	ArtifactClient ArtifactClientConfig
 	LinkChecker    LinkCheckerConfig
@@ -112,6 +113,17 @@ type NextMoeAPIConfig struct {
 // An empty APIKey leaves /news answering 503 instead of failing startup — the
 // forum's catalogue must not stop booting over a partner index.
 type NewsAPIConfig struct {
+	BaseURL string
+	APIKey  string
+}
+
+// MoyuAPIConfig reaches the /v2/moyu patch face. Its base must NOT default to
+// KUN_NEXTMOE_API_BASE the way news and store do: that is the catalog process
+// (http://catalog:9281 in prod), and /v2/moyu exists only on the api.nextmoe.dev
+// gateway, which checks the key and forwards to moyu's backend. The face admits
+// any valid key without a scope; it gets its own so the patch tab cannot spend
+// the catalogue key's rate budget. An empty key hides the tab.
+type MoyuAPIConfig struct {
 	BaseURL string
 	APIKey  string
 }
@@ -264,6 +276,10 @@ func Load() (*Config, error) {
 		NewsAPI: NewsAPIConfig{
 			BaseURL: envOrDefault("KUN_NEWS_API_BASE", nextMoeBase),
 			APIKey:  envOrDefault("KUN_NEWS_API_KEY", ""),
+		},
+		MoyuAPI: MoyuAPIConfig{
+			BaseURL: envOrDefault("KUN_MOYU_API_BASE", "https://api.nextmoe.dev"),
+			APIKey:  envOrDefault("KUN_MOYU_API_KEY", ""),
 		},
 		ImageClient: ImageClientConfig{
 			BaseURL:      envOrDefault("KUN_IMAGE_CLIENT_BASE_URL", "http://127.0.0.1:9278"),

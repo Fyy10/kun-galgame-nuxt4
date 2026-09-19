@@ -1,14 +1,14 @@
 <script setup lang="ts">
+import type { ListMoyuPatch } from '#shared/utils/api/schemas'
 import {
   SUPPORTED_TYPE_MAP,
   SUPPORTED_PLATFORM_MAP,
   SUPPORTED_LANGUAGE_MAP
 } from './constant'
-import type { KunPatchResourceResponse, HikariResponse } from './types'
 import { patchNoteText } from './noteText'
 
 const props = defineProps<{
-  vndbId: string
+  galgameId: number
 }>()
 
 const emit = defineEmits<{
@@ -16,13 +16,31 @@ const emit = defineEmits<{
   'update:loading': [boolean]
 }>()
 
-const resources = ref<KunPatchResourceResponse[]>([])
-const isLoading = ref(false)
-watchEffect(() => emit('update:loading', isLoading.value))
+// A failed lookup is not reported: moyu is another site, and the tab is only
+// drawn when there is something in it.
+const { data, status } = useApi<ListMoyuPatch>(
+  () => `galgame-moyu-patches:${props.galgameId}`,
+  (api, { signal }) =>
+    api.GET('/galgames/{galgame_id}/moyu-patches', {
+      params: { path: { galgame_id: String(props.galgameId) } },
+      signal
+    }),
+  { lazy: true, server: false }
+)
 
-const expandedNotes = ref<Set<number>>(new Set())
-const isNoteExpanded = (id: number) => expandedNotes.value.has(id)
-const toggleNote = (id: number) => {
+const pageUrl = computed(() => data.value?.items[0]?.web_url)
+const resources = computed(
+  () => data.value?.items.flatMap((patch) => patch.resources) ?? []
+)
+
+watchEffect(() => emit('update:loading', status.value === 'pending'))
+watch(resources, (list) => emit('has-resource', list.length > 0), {
+  immediate: true
+})
+
+const expandedNotes = ref<Set<string>>(new Set())
+const isNoteExpanded = (id: string) => expandedNotes.value.has(id)
+const toggleNote = (id: string) => {
   if (expandedNotes.value.has(id)) {
     expandedNotes.value.delete(id)
   } else {
@@ -35,29 +53,6 @@ const STORAGE_MAP: Record<string, string> = {
   s3: 'S3 对象存储',
   user: '网盘下载'
 }
-
-const fetchKunPatchResource = async (vndbId: string) => {
-  isLoading.value = true
-  try {
-    const data = await fetch(
-      `https://www.moyu.moe/api/hikari?vndb_id=${vndbId}`
-    )
-    const res = (await data.json()) as HikariResponse
-    if (res.success) {
-      resources.value = res.data ? res.data.resource : []
-    }
-  } catch {
-    // A third-party host being down must not break the page; the section just
-    // renders empty.
-  } finally {
-    isLoading.value = false
-  }
-}
-
-onMounted(async () => {
-  await fetchKunPatchResource(props.vndbId)
-  emit('has-resource', resources.value.length > 0)
-})
 </script>
 
 <template>
@@ -66,7 +61,7 @@ onMounted(async () => {
       <template #endContent>
         <p class="text-default-500 text-sm">
           下面是从
-          <KunLink size="sm" href="https://www.moyu.moe/">
+          <KunLink size="sm" :href="pageUrl" target="_blank">
             鲲 Galgame 补丁
           </KunLink>
           获取到的 Galgame 补丁资源, 请杂鱼点击前往本站的补丁网站下载
@@ -92,37 +87,42 @@ onMounted(async () => {
       <div class="flex flex-wrap items-center justify-between">
         <div class="flex flex-wrap items-center gap-1 rounded-lg">
           <KunChip
-            v-for="(t, index) in resource.type"
-            :key="index"
+            v-for="t in resource.types"
+            :key="t"
             size="sm"
             variant="flat"
             color="primary"
           >
-            {{ SUPPORTED_TYPE_MAP[t] }}
+            {{ SUPPORTED_TYPE_MAP[t] ?? t }}
           </KunChip>
           <KunChip size="sm" variant="flat" color="warning">
             <KunIcon name="lucide:database" />
             {{ resource.size }}
           </KunChip>
           <KunChip
-            v-for="(p, index) in resource.platform"
-            :key="index"
+            v-for="p in resource.platforms"
+            :key="p"
             size="sm"
             variant="flat"
             color="success"
           >
-            {{ SUPPORTED_PLATFORM_MAP[p] }}
+            {{ SUPPORTED_PLATFORM_MAP[p] ?? p }}
           </KunChip>
           <KunChip
-            v-for="(l, index) in resource.language"
-            :key="index"
+            v-for="l in resource.languages"
+            :key="l"
             size="sm"
             variant="flat"
             color="secondary"
           >
-            {{ SUPPORTED_LANGUAGE_MAP[l] }}
+            {{ SUPPORTED_LANGUAGE_MAP[l] ?? l }}
           </KunChip>
-          <KunChip v-if="resource.model_name" size="sm" variant="flat" color="danger">
+          <KunChip
+            v-if="resource.model_name"
+            size="sm"
+            variant="flat"
+            color="danger"
+          >
             <KunIcon name="lucide:bot" />
             {{ resource.model_name }}
           </KunChip>
@@ -141,14 +141,14 @@ onMounted(async () => {
               class-name="gap-1"
             >
               <KunIcon name="lucide:download" />
-              <span>{{ resource.download }}</span>
+              <span>{{ resource.download_count }}</span>
             </KunButton>
           </KunTooltip>
         </div>
       </div>
 
       <KunInfo
-        v-if="resource.note"
+        v-if="resource.note_markdown"
         color="info"
         variant="flat"
         title="发布者备注 — 请先阅读"
@@ -158,10 +158,10 @@ onMounted(async () => {
             class="text-sm break-words whitespace-pre-wrap"
             :class="{ 'line-clamp-3': !isNoteExpanded(resource.id) }"
           >
-            {{ patchNoteText(resource.note) }}
+            {{ patchNoteText(resource.note_markdown) }}
           </p>
           <button
-            v-if="isNoteLong(resource.note)"
+            v-if="isNoteLong(resource.note_markdown)"
             type="button"
             class="text-default-500 hover:text-primary flex items-center gap-1 px-1 text-xs transition-colors"
             @click="toggleNote(resource.id)"
@@ -180,29 +180,15 @@ onMounted(async () => {
 
       <div class="flex justify-between">
         <div class="flex gap-2">
-          <a
-            :href="`https://www.moyu.moe/user/${resource.user.id}/resource`"
-            target="_blank"
-            rel="noopener noreferrer"
-            :class="
-              cn(
-                'flex size-8 shrink-0 cursor-pointer justify-center',
-                'hover:ring-primary-500 rounded-full transition duration-150 ease-in-out hover:ring-2'
-              )
-            "
-          >
-            <KunImage
-              :class="cn('inline-block rounded-full', 'size-8')"
-              :src="resource.user.avatar"
-              :alt="resource.user.name"
-            />
-          </a>
+          <KunAvatar :user="toKunUser(resource.publisher)" />
 
           <div class="flex flex-col">
-            <span class="text-xs">{{ resource.user.name }}</span>
+            <span class="text-xs">
+              {{ toKunUser(resource.publisher).name }}
+            </span>
             <span class="text-default-500 text-xs">
               资源更新于
-              <KunTime :time="resource.update_time" type="datetime" show-year />
+              <KunTime :time="resource.updated_at" type="datetime" show-year />
             </span>
           </div>
         </div>
@@ -211,7 +197,7 @@ onMounted(async () => {
           size="sm"
           variant="flat"
           target="_blank"
-          :href="`https://www.moyu.moe/resource/${resource.id}`"
+          :href="resource.web_url"
           :icon="true"
         >
           前往下载页面

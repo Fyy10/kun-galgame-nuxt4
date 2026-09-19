@@ -23,6 +23,7 @@ import (
 	docService "kun-galgame-api/internal/doc/service"
 	friendHandler "kun-galgame-api/internal/friendlink/handler"
 	friendRepo "kun-galgame-api/internal/friendlink/repository"
+	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
 	"kun-galgame-api/internal/galgame/client"
 	galgameHandler "kun-galgame-api/internal/galgame/handler"
 	galgameRepo "kun-galgame-api/internal/galgame/repository"
@@ -83,6 +84,7 @@ import (
 	"kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/imageclient"
 	"kun-galgame-api/pkg/linkcheck"
+	"kun-galgame-api/pkg/moyuclient"
 	"kun-galgame-api/pkg/newsclient"
 	"kun-galgame-api/pkg/response"
 	"kun-galgame-api/pkg/secretbox"
@@ -107,6 +109,7 @@ type App struct {
 	UserClient  *userclient.Client
 	Authn       *middleware.Authenticator
 	ImageMeta   func(hashes []string) map[string]imageclient.ImageMeta
+	GalgameV1   *galgameapiv1.Service
 
 	OAuthHandler                   *handler.OAuthHandler
 	UserHandler                    *handler.UserHandler
@@ -203,6 +206,16 @@ func New(cfg *config.Config) *App {
 		slog.Info("news face client configured", "base_url", cfg.NewsAPI.BaseURL)
 	} else {
 		slog.Warn("news face client NOT configured; /news returns 503 — set KUN_NEWS_API_KEY (scope news:read)")
+	}
+
+	moyuCli := moyuclient.New(moyuclient.Config{
+		BaseURL: cfg.MoyuAPI.BaseURL,
+		APIKey:  cfg.MoyuAPI.APIKey,
+	})
+	if moyuCli.Configured() {
+		slog.Info("moyu patch face client configured", "base_url", cfg.MoyuAPI.BaseURL)
+	} else {
+		slog.Warn("moyu patch face client NOT configured; the galgame patch tab stays hidden — set KUN_MOYU_API_KEY")
 	}
 
 	oauthClient := oauth.NewClient(cfg.OAuth)
@@ -574,6 +587,7 @@ func New(cfg *config.Config) *App {
 		UserClient:                     uc,
 		Authn:                          authn,
 		ImageMeta:                      imageMetaResolve(imageMeta),
+		GalgameV1:                      galgameapiv1.New(gc, moyuCli, uc, rdb, cfg.NextMoeAPI.ImageCDNBase),
 		OAuthHandler:                   handler.NewOAuthHandler(authService, cfg.Server.Mode == "prod", communityBooster),
 		UserHandler:                    handler.NewUserHandler(userService, userContentService),
 		UserProfileHandler:             handler.NewProfileHandler(oauthClient, uc),

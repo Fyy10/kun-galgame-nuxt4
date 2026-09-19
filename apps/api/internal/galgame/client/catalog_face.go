@@ -183,6 +183,15 @@ func (c *GalgameClient) catalogIDsForGIDs(ctx context.Context, gids []int) (map[
 	return out, nil
 }
 
+func (c *GalgameClient) CatalogWorkIDForGID(ctx context.Context, gid int) (int64, bool, *errors.AppError) {
+	idMap, appErr := c.catalogIDsForGIDs(ctx, []int{gid})
+	if appErr != nil {
+		return 0, false, appErr
+	}
+	id, ok := idMap[gid]
+	return id, ok, nil
+}
+
 // The second half of the gid bridge. A work minted through the submission face
 // carries NO external_ref anchor — there is no upstream to have issued one — so
 // the anchor lookup answers "no such work" rather than an error, and every page

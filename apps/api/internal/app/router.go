@@ -3,6 +3,7 @@ package app
 import (
 	"kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/content"
+	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
 	"kun-galgame-api/internal/middleware"
 	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
 	topicRepo "kun-galgame-api/internal/topic/repository"
@@ -25,7 +26,10 @@ func (a *App) setupRoutes() {
 	if a.Authn != nil {
 		deps.Resolver = a.Authn
 	}
-	a.APIv1 = apiv1.Setup(a.Fiber, deps, topicapiv1.Register(a.newTopicV1()))
+	a.APIv1 = apiv1.Setup(a.Fiber, deps,
+		topicapiv1.Register(a.newTopicV1()),
+		galgameapiv1.Register(a.GalgameV1),
+	)
 
 	// Deliberately touches neither DB nor Redis: the container HEALTHCHECK reads
 	// this, and a transient backing-store blip must not flap the container.

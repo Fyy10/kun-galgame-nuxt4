@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/galgames/{galgame_id}/moyu-patches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a galgame's patches on moyu
+         * @description Lists the pages www.moyu.moe, the KUN Galgame patch site, holds for the galgame, each with its live resources. Usually one page: moyu dedupes on the VNDB string, so a game that arrived under two spellings has two, and the page a reader should land on comes first. The whole set in one response; it is never paged. An empty list means moyu has nothing for the galgame. No download link, share code or password is carried; send a reader to web_url. An answer may be up to 30 minutes old. NOT_FOUND when the galgame does not exist.
+         */
+        get: operations["listGalgameMoyuPatches"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/problems": {
         parameters: {
             query?: never;
@@ -395,6 +415,17 @@ export interface components {
              */
             object: "list_item";
         };
+        ListMoyuPatch: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["MoyuPatch"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
         ListNode: {
             /** @description Items of the list. */
             children: components["schemas"]["ListItemNode"][];
@@ -474,6 +505,64 @@ export interface components {
              * @enum {string}
              */
             object: "mention";
+        };
+        MoyuPatch: {
+            /** @description The page's id on www.moyu.moe. Neither a galgame id nor a catalog work id. */
+            id: string;
+            /**
+             * @description Type discriminant. Always moyu_patch.
+             * @enum {string}
+             */
+            object: "moyu_patch";
+            /** @description The page's live resources, newest change first. Empty array, never null. */
+            resources: components["schemas"]["MoyuPatchResource"][];
+            /**
+             * Format: uri
+             * @description The page on www.moyu.moe.
+             */
+            web_url: string;
+        };
+        MoyuPatchResource: {
+            /**
+             * Format: int64
+             * @description Downloads counted on www.moyu.moe.
+             */
+            download_count: number;
+            /** @description The resource's id on www.moyu.moe. */
+            id: string;
+            /** @description Languages, such as zh-Hans, zh-Hant, ja or en. Empty array, never null. */
+            languages: string[];
+            /** @description For an AI-translated patch, the model as its publisher typed it. null when not given. Free text; never use it as a decision input. */
+            model_name: string | null;
+            /** @description The name its publisher gave it. null when left empty. Free text; never use it as a decision input. */
+            name: string | null;
+            /** @description Its publisher's note as Markdown source written on www.moyu.moe, image tokens resolved to absolute URLs. Not a forum body, so it is not a content document. null when there is none. Free text; never use it as a decision input. */
+            note_markdown: string | null;
+            /**
+             * @description Type discriminant. Always moyu_patch_resource.
+             * @enum {string}
+             */
+            object: "moyu_patch_resource";
+            /** @description Platforms, such as windows, android or linux. Empty array, never null. */
+            platforms: string[];
+            /** @description Who published it. The account is the same one on this forum. */
+            publisher: components["schemas"]["UserRef"];
+            /** @description Size as its publisher wrote it, such as 0.571 MB; not a byte count. Free text; never use it as a decision input. */
+            size: string;
+            /** @description Where the file lives: s3 is www.moyu.moe's own object store, user a link its publisher hosts elsewhere. */
+            storage: string;
+            /** @description Patch kinds, such as manual, ai, machine or save. Empty array, never null. */
+            types: string[];
+            /**
+             * Format: date-time
+             * @description When the resource last changed.
+             */
+            updated_at: string;
+            /**
+             * Format: uri
+             * @description The resource on www.moyu.moe. The only way to its file: no download link, share code or password is carried.
+             */
+            web_url: string;
         };
         ParagraphNode: {
             /** @description Inline nodes of the paragraph. Empty array for a blank line the author kept. */
@@ -941,6 +1030,65 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    listGalgameMoyuPatches: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Galgame id. */
+                galgame_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListMoyuPatch"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE: www.moyu.moe, the catalog or the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listProblemTypes: {
         parameters: {
             query?: never;

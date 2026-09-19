@@ -732,6 +732,37 @@
         ],
         "type": "object"
       },
+      "ListMoyuPatch": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/MoyuPatch"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "ListNode": {
         "properties": {
           "children": {
@@ -943,6 +974,180 @@
         "required": [
           "object",
           "mentioned_user"
+        ],
+        "type": "object"
+      },
+      "MoyuPatch": {
+        "properties": {
+          "id": {
+            "description": "The page's id on www.moyu.moe. Neither a galgame id nor a catalog work id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always moyu_patch.",
+            "enum": [
+              "moyu_patch"
+            ],
+            "maxLength": 10,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "resources": {
+            "description": "The page's live resources, newest change first. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/MoyuPatchResource"
+            },
+            "type": "array"
+          },
+          "web_url": {
+            "description": "The page on www.moyu.moe.",
+            "format": "uri",
+            "maxLength": 512,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "web_url",
+          "resources"
+        ],
+        "type": "object"
+      },
+      "MoyuPatchResource": {
+        "properties": {
+          "download_count": {
+            "description": "Downloads counted on www.moyu.moe.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "id": {
+            "description": "The resource's id on www.moyu.moe.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "languages": {
+            "description": "Languages, such as zh-Hans, zh-Hant, ja or en. Empty array, never null.",
+            "items": {
+              "description": "A token of www.moyu.moe's own vocabulary, such as machine_polishing or zh-Hans. That site may add tokens; show an unknown one as it is.",
+              "maxLength": 32,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "type": "string",
+              "x-vocabulary": "moyu_patch_vocabulary",
+              "x-vocabulary-closed": false
+            },
+            "type": "array"
+          },
+          "model_name": {
+            "description": "For an AI-translated patch, the model as its publisher typed it. null when not given. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "description": "The name its publisher gave it. null when left empty. Free text; never use it as a decision input.",
+            "maxLength": 300,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "note_markdown": {
+            "description": "Its publisher's note as Markdown source written on www.moyu.moe, image tokens resolved to absolute URLs. Not a forum body, so it is not a content document. null when there is none. Free text; never use it as a decision input.",
+            "maxLength": 10007,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "description": "Type discriminant. Always moyu_patch_resource.",
+            "enum": [
+              "moyu_patch_resource"
+            ],
+            "maxLength": 19,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "platforms": {
+            "description": "Platforms, such as windows, android or linux. Empty array, never null.",
+            "items": {
+              "description": "A token of www.moyu.moe's own vocabulary, such as machine_polishing or zh-Hans. That site may add tokens; show an unknown one as it is.",
+              "maxLength": 32,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "type": "string",
+              "x-vocabulary": "moyu_patch_vocabulary",
+              "x-vocabulary-closed": false
+            },
+            "type": "array"
+          },
+          "publisher": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Who published it. The account is the same one on this forum."
+          },
+          "size": {
+            "description": "Size as its publisher wrote it, such as 0.571 MB; not a byte count. Free text; never use it as a decision input.",
+            "maxLength": 64,
+            "type": "string"
+          },
+          "storage": {
+            "description": "Where the file lives: s3 is www.moyu.moe's own object store, user a link its publisher hosts elsewhere.",
+            "maxLength": 32,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "type": "string",
+            "x-vocabulary": "moyu_patch_vocabulary",
+            "x-vocabulary-closed": false
+          },
+          "types": {
+            "description": "Patch kinds, such as manual, ai, machine or save. Empty array, never null.",
+            "items": {
+              "description": "A token of www.moyu.moe's own vocabulary, such as machine_polishing or zh-Hans. That site may add tokens; show an unknown one as it is.",
+              "maxLength": 32,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "type": "string",
+              "x-vocabulary": "moyu_patch_vocabulary",
+              "x-vocabulary-closed": false
+            },
+            "type": "array"
+          },
+          "updated_at": {
+            "description": "When the resource last changed.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "web_url": {
+            "description": "The resource on www.moyu.moe. The only way to its file: no download link, share code or password is carried.",
+            "format": "uri",
+            "maxLength": 512,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "name",
+          "storage",
+          "size",
+          "model_name",
+          "note_markdown",
+          "types",
+          "languages",
+          "platforms",
+          "download_count",
+          "web_url",
+          "updated_at",
+          "publisher"
         ],
         "type": "object"
       },
@@ -2215,6 +2420,82 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/galgames/{galgame_id}/moyu-patches": {
+      "get": {
+        "description": "Lists the pages www.moyu.moe, the KUN Galgame patch site, holds for the galgame, each with its live resources. Usually one page: moyu dedupes on the VNDB string, so a game that arrived under two spellings has two, and the page a reader should land on comes first. The whole set in one response; it is never paged. An empty list means moyu has nothing for the galgame. No download link, share code or password is carried; send a reader to web_url. An answer may be up to 30 minutes old. NOT_FOUND when the galgame does not exist.",
+        "operationId": "listGalgameMoyuPatches",
+        "parameters": [
+          {
+            "description": "Galgame id.",
+            "in": "path",
+            "name": "galgame_id",
+            "required": true,
+            "schema": {
+              "description": "Galgame id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListMoyuPatch"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE: www.moyu.moe, the catalog or the account service cannot be reached."
+          }
+        },
+        "summary": "List a galgame's patches on moyu",
+        "tags": [
+          "galgames"
+        ]
+      }
+    },
     "/problems": {
       "get": {
         "description": "The closed registry of top-level error codes. Unauthenticated. Sorted by domain, then code.",

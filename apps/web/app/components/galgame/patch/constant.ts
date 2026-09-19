@@ -10,6 +10,7 @@ export const SUPPORTED_TYPE_MAP: Record<string, string> = {
   mod: '魔改补丁',
   r18: 'R18 成人内容补丁',
   decensor: '去马赛克补丁',
+  image: '修图补丁',
   other: '其它'
 }
 

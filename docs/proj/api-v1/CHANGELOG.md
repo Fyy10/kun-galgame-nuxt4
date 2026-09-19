@@ -40,3 +40,13 @@ Additive, apart from the removed extension.
 - Reading a topic does not count a view. A client calls `recordTopicView` once when a reader actually opens the topic, and never when it prefetches or renders elsewhere.
 - Replies are in floor order with a cursor; `from_floor` opens the list at a floor, and `sort=floor_desc` with `from_floor` one below reads back from it. The pinned reply and the best answer come with the topic and also appear at their floors.
 - The root extension `x-content-document` is gone: `Topic.content` references `ContentDocument`.
+
+## 2026-09-19 (moyu patches)
+
+Additive.
+
+- `GET /api/v1/galgames/{galgame_id}/moyu-patches` (`listGalgameMoyuPatches`): the pages www.moyu.moe holds for a galgame, each with its live resources. Public, never paged, and an answer may be up to 30 minutes old. It replaces the website's browser call to moyu's retired `/api/hikari`; the forum reads NextMoe's `/v2/moyu` face server-side.
+- `types`, `languages`, `platforms` and `storage` are moyu's own vocabulary and are open (`x-vocabulary: moyu_patch_vocabulary`): show an unknown token as it is.
+- `note_markdown` is moyu's Markdown source, not a content document. No download link, share code or password is carried; send a reader to `web_url`.
+- `publisher` is a `UserRef` resolved from this forum's account service; the account is the same one on the forum.
+- `SERVICE_UNAVAILABLE` when moyu, the catalog or the account service cannot be reached.
