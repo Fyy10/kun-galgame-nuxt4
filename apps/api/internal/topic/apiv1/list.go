@@ -8,6 +8,7 @@ import (
 
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/collect"
+	"kun-galgame-api/internal/apiv1/content"
 	"kun-galgame-api/internal/apiv1/repr"
 	"kun-galgame-api/internal/topic/repository"
 	"kun-galgame-api/pkg/problem"
@@ -18,7 +19,10 @@ type Service struct {
 	list     *repository.TopicListRepository
 	topics   *repository.TopicRepository
 	taxonomy *repository.TopicTaxonomyRepository
+	replies  *repository.ReplyRepository
+	comments *repository.CommentRepository
 	users    *userclient.Client
+	convert  *content.Converter
 	cdn      string
 }
 
@@ -26,10 +30,17 @@ func New(
 	list *repository.TopicListRepository,
 	topics *repository.TopicRepository,
 	taxonomy *repository.TopicTaxonomyRepository,
+	replies *repository.ReplyRepository,
+	comments *repository.CommentRepository,
 	users *userclient.Client,
+	convert *content.Converter,
 	cdn string,
 ) *Service {
-	return &Service{list: list, topics: topics, taxonomy: taxonomy, users: users, cdn: cdn}
+	return &Service{
+		list: list, topics: topics, taxonomy: taxonomy,
+		replies: replies, comments: comments, users: users,
+		convert: convert, cdn: cdn,
+	}
 }
 
 type listTopicsInput struct {

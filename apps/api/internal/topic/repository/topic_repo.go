@@ -39,10 +39,11 @@ func (r *TopicRepository) UpdateFields(id int, fields map[string]any) error {
 }
 
 func (r *TopicRepository) IncrementView(id int) error {
-	err := r.db.Model(&model.Topic{}).Where("id = ?", id).
-		Update("view", gorm.Expr("view + 1")).Error
-	_ = viewstats.BumpDaily(r.db, viewstats.TopicDaily, id)
-	return err
+	if err := r.db.Model(&model.Topic{}).Where("id = ?", id).
+		Update("view", gorm.Expr("view + 1")).Error; err != nil {
+		return err
+	}
+	return viewstats.BumpDaily(r.db, viewstats.TopicDaily, id)
 }
 
 func (r *TopicRepository) HasUserLiked(userID, topicID int) (bool, error) {

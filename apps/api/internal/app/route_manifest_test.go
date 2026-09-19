@@ -238,6 +238,8 @@ var publicWrites = map[string]string{
 	"POST /api/trust/callback":      "HMAC X-Trust-Signature over the raw body",
 	"POST /api/auth/oauth/callback": "the OAuth authorization code itself",
 	"POST /api/auth/logout":         "destroys a session; nothing to protect",
+	"POST /api/v1/topics/:topic_id/views": "an anonymous view beacon; it moves only a counter the same reader " +
+		"could move by reloading the page",
 }
 
 // Checked against the RESOLVED table, not against where the line happens to sit
@@ -277,6 +279,9 @@ func unauthenticatedWrites(t *testing.T, a *App) []string {
 			continue
 		}
 		if apiv1.IsV1Path(r.Path) {
+			if _, ok := publicWrites[r.Method+" "+r.Path]; ok {
+				continue
+			}
 			if apiv1.TierOf(a.APIv1, r.Method, r.Path) != apiv1.TierRequired {
 				bad = append(bad, fmt.Sprintf("%s %s mutates without the required v1 tier", r.Method, r.Path))
 			}

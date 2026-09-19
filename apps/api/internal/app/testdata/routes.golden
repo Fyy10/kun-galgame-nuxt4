@@ -181,7 +181,10 @@ GET    /api/user/search                               cors.New → middleware.Na
 GET    /api/user/status                               cors.New → middleware.NamePreference → Auth → UserHandler.GetStatus
 GET    /api/v1/problems                               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/problems/reasons                       cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/replies/:reply_id                      cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics                                 cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/topics/:topic_id                       cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/topics/:topic_id/replies               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/website                                   cors.New → middleware.NamePreference → OptionalAuth → WebsiteHandler.GetWebsites
 GET    /api/website-category                          cors.New → middleware.NamePreference → CategoryHandler.GetWebsiteCategories
 GET    /api/website-category/:name                    cors.New → middleware.NamePreference → CategoryHandler.GetWebsiteCategory
@@ -256,6 +259,7 @@ POST   /api/update/todo/discard                       cors.New → middleware.Na
 POST   /api/user/avatar                               cors.New → middleware.NamePreference → Auth → ProfileHandler.UploadAvatar
 POST   /api/user/check-in                             cors.New → middleware.NamePreference → Auth → UserHandler.CheckIn
 POST   /api/user/creator/apply                        cors.New → middleware.NamePreference → Auth → CreatorHandler.Apply
+POST   /api/v1/topics/:topic_id/views                 cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/website                                   cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → WebsiteHandler.CreateWebsite
 POST   /api/website-category                          cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → CategoryHandler.CreateWebsiteCategory
 POST   /api/website-tag                               cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → TagHandler.CreateWebsiteTag

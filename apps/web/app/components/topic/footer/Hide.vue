@@ -1,16 +1,19 @@
 <script setup lang="ts">
 const props = defineProps<{
   topicId: number
-  status: number
-  hiddenBy: string
+  state: 'published' | 'hidden'
+  hiddenBy: 'author' | 'moderator' | 'trust' | null
 }>()
 
 const { id } = usePersistUserStore()
 const canHideTopic = useCan('topic.hide')
 const topicUserId = inject<number>('topicUserId')
+const refreshTopic = inject<() => Promise<unknown>>('refreshTopic', () =>
+  Promise.resolve()
+)
 
 const isAuthor = computed(() => !!id && topicUserId === id)
-const isHidden = computed(() => props.status === 1)
+const isHidden = computed(() => props.state === 'hidden')
 
 type HideMode = 'hide' | 'unhide' | 'blocked' | 'none'
 
@@ -66,7 +69,7 @@ const handleUpdateTopicHideStatus = async () => {
 
   if (result) {
     useMessage(wasHidden ? '取消隐藏话题成功' : '隐藏话题成功', 'success')
-    await refreshNuxtData(`topic-detail-${props.topicId}`)
+    await refreshTopic()
   }
 }
 </script>

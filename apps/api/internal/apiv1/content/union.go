@@ -121,15 +121,3 @@ func Discriminant(t reflect.Type) string {
 	}
 	return f.Tag.Get("enum")
 }
-
-// huma drops every component no operation references when it marshals the spec,
-// and nothing returns a document until the topic detail read lands; the extension
-// is the reference that keeps the node vocabulary in the committed contract.
-func Register(api huma.API) {
-	oapi := api.OpenAPI()
-	ref := oapi.Components.Schemas.Schema(reflect.TypeFor[ContentDocument](), true, "")
-	if oapi.Extensions == nil {
-		oapi.Extensions = map[string]any{}
-	}
-	oapi.Extensions["x-content-document"] = ref
-}

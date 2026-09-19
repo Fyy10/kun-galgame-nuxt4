@@ -31,3 +31,12 @@ Both changes break clients generated from the earlier document. No deployment se
 Additive.
 
 - The document now defines the content node vocabulary: `ContentDocument`, the `BlockNode` and `InlineNode` unions (`oneOf`, discriminated on `object`) and their member schemas. No operation returns a document yet; the root extension `x-content-document` references it so it stays in the published document, and it goes away when the topic detail read returns `content`. Rules for rendering, including unknown node types, are in `docs/proj/api-v1/03-content-doc.md`.
+
+## 2026-09-19 (W2)
+
+Additive, apart from the removed extension.
+
+- `GET /api/v1/topics/{topic_id}` (`getTopic`), `GET /api/v1/topics/{topic_id}/replies` (`listTopicReplies`), `GET /api/v1/replies/{reply_id}` (`getReply`) and `POST /api/v1/topics/{topic_id}/views` (`recordTopicView`).
+- Reading a topic does not count a view. A client calls `recordTopicView` once when a reader actually opens the topic, and never when it prefetches or renders elsewhere.
+- Replies are in floor order with a cursor; `from_floor` opens the list at a floor, and `sort=floor_desc` with `from_floor` one below reads back from it. The pinned reply and the best answer come with the topic and also appear at their floors.
+- The root extension `x-content-document` is gone: `Topic.content` references `ContentDocument`.

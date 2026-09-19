@@ -22,6 +22,7 @@ func CheckAll(doc *huma.OpenAPI) []string {
 	errs = append(errs, CheckG17(doc)...)
 	errs = append(errs, CheckF1(doc)...)
 	errs = append(errs, CheckF9(doc)...)
+	errs = append(errs, CheckF10(doc)...)
 	errs = append(errs, CheckF8()...)
 	return errs
 }

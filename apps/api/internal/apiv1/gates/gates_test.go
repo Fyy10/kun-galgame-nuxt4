@@ -48,7 +48,7 @@ func TestTheProbeDocumentPassesEveryGate(t *testing.T) {
 		Cover    *repr.Image    `json:"cover" doc:"Cover. null when there is none."`
 		IsPinned bool           `json:"is_pinned" doc:"Whether the thing is pinned."`
 	}
-	if errs := gates.CheckAll(spec(t, get[thing]("/things/{thing_id}"))); len(errs) > 0 {
+	if errs := gates.CheckAll(spec(t, get[thing]("/things"))); len(errs) > 0 {
 		t.Fatalf("a well-formed document failed:\n%s", strings.Join(errs, "\n"))
 	}
 }
@@ -414,4 +414,32 @@ func TestG13FieldErrorWithACode(t *testing.T) {
 	doc := spec(t)
 	doc.Components.Schemas.Map()["FieldError"].Properties["code"] = &huma.Schema{Type: huma.TypeString}
 	expect(t, gates.CheckG5G13(doc), "FieldError schema has a code property")
+}
+
+type unexportedPath struct {
+	ThingID string `path:"thing_id" pattern:"^[0-9]+$" maxLength:"19" doc:"Thing id."`
+}
+
+func TestF10PathVariableWithoutParameter(t *testing.T) {
+	doc := spec(t, func(api huma.API) {
+		huma.Register(api, apiv1.Public(huma.Operation{OperationID: "getThing", Method: http.MethodGet, Path: "/things/{thing_id}", Summary: "Get"}),
+			func(context.Context, *struct{ unexportedPath }) (*struct{}, error) {
+				return nil, nil
+			})
+	})
+	expect(t, gates.CheckF10(doc), "F10: GET /things/{thing_id} has no path parameter thing_id")
+}
+
+func TestF10DeclaredPathParameterPasses(t *testing.T) {
+	doc := spec(t, func(api huma.API) {
+		huma.Register(api, apiv1.Public(huma.Operation{OperationID: "getThing", Method: http.MethodGet, Path: "/things/{thing_id}", Summary: "Get"}),
+			func(context.Context, *struct {
+				ThingID string `path:"thing_id" pattern:"^[0-9]+$" maxLength:"19" doc:"Thing id."`
+			}) (*struct{}, error) {
+				return nil, nil
+			})
+	})
+	if errs := gates.CheckF10(doc); len(errs) > 0 {
+		t.Fatalf("declared path parameter flagged: %v", errs)
+	}
 }

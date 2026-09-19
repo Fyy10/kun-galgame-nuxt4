@@ -1,15 +1,20 @@
 <script setup lang="ts">
+import type { Reply } from '#shared/utils/api/schemas'
+import { contentPlainText } from '~/utils/contentPlainText'
+import { toKunUser } from '~/utils/userRef'
+
 defineProps<{
   title: string
-  reply: TopicReply
+  reply: Reply
 }>()
 
 const emits = defineEmits<{
-  handleNewComment: [comment: TopicComment]
+  handleNewComment: []
 }>()
 
 const { id } = usePersistUserStore()
 const isCommentPanelVisible = ref(false)
+const author = (reply: Reply) => toKunUser(reply.author)
 
 const handleClickComment = () => {
   if (!id) {
@@ -19,8 +24,8 @@ const handleClickComment = () => {
   isCommentPanelVisible.value = !isCommentPanelVisible.value
 }
 
-const handleNewComment = (comment: TopicComment) => {
-  emits('handleNewComment', comment)
+const handleNewComment = () => {
+  emits('handleNewComment')
   isCommentPanelVisible.value = false
 }
 </script>
@@ -32,10 +37,10 @@ const handleNewComment = (comment: TopicComment) => {
 
       <div class="flex items-center gap-1">
         <TopicFooterReply
-          :target-user-name="reply.user.name"
-          :target-user-id="reply.user.id"
+          :target-user-name="author(reply).name"
+          :target-user-id="Number(reply.author.id)"
           :target-floor="reply.floor"
-          :target-reply-id="reply.id"
+          :target-reply-id="Number(reply.id)"
         />
         <KunTooltip text="评论">
           <KunReaction
@@ -72,11 +77,11 @@ const handleNewComment = (comment: TopicComment) => {
               <TopicReplyDelete :reply="reply" />
             </template>
             <ReportButton
-              v-if="reply.user.id !== id"
+              v-if="Number(reply.author.id) !== id"
               menu
               subject-kind="forum_reply"
-              :subject-id="reply.id"
-              :snapshot="reply.content_markdown"
+              :subject-id="Number(reply.id)"
+              :snapshot="contentPlainText(reply.content)"
               :subject-url="`${kungal.domain.main}/topic/${reply.topic_id}?reply=${reply.floor}`"
             />
           </div>
@@ -88,8 +93,8 @@ const handleNewComment = (comment: TopicComment) => {
       <LazyTopicCommentPanel
         v-if="isCommentPanelVisible"
         class="mt-4"
-        :reply-id="reply.id"
-        :target-user="reply.user"
+        :reply-id="Number(reply.id)"
+        :target-user="author(reply)"
         @get-comment="handleNewComment"
         @close-panel="isCommentPanelVisible = false"
       />

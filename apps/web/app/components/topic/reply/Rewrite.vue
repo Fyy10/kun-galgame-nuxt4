@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import type { Reply } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
-  reply: TopicReply
+  reply: Reply
 }>()
 
 const { setRewriteData } = useTempReplyStore()
@@ -9,11 +11,21 @@ const { id } = usePersistUserStore()
 
 const canEditAnyReply = useCan('reply.edit_any')
 const isShowRewrite = computed(
-  () => id === props.reply.user.id || canEditAnyReply.value
+  () => id === Number(props.reply.author.id) || canEditAnyReply.value
 )
 
-const handleClickRewrite = () => {
-  setRewriteData(props.reply)
+const handleClickRewrite = async () => {
+  const detail = await kunFetch<TopicReply>(
+    `/topic/${Number(props.reply.topic_id)}/reply/detail`,
+    {
+      method: 'GET',
+      query: { replyId: Number(props.reply.id) }
+    }
+  )
+  if (!detail) {
+    return
+  }
+  setRewriteData(detail)
   isEdit.value = true
 }
 </script>

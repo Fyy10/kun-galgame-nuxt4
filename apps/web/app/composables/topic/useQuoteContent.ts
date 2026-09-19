@@ -1,21 +1,19 @@
 import type { Ref } from 'vue'
+import type { Reply } from '#shared/utils/api/schemas'
+import { settle } from '#shared/utils/api/problem'
 
-const previewCache = new Map<number, TopicReply | null>()
+const previewCache = new Map<string, Reply | null>()
 
 export interface QuotePreviewState {
   visible: boolean
   top: number
   left: number
   loading: boolean
-  reply: TopicReply | null
+  reply: Reply | null
 }
 
 export const useQuoteContent = (containerRef: Ref<HTMLElement | null>) => {
-  const route = useRoute()
-  const topicId = computed(
-    () => Number((route.params as { id?: string }).id) || 0
-  )
-
+  const api = useApiClient()
   const preview = reactive<QuotePreviewState>({
     visible: false,
     top: 0,
@@ -51,7 +49,7 @@ export const useQuoteContent = (containerRef: Ref<HTMLElement | null>) => {
     setTimeout(() => el.classList.remove(...FLASH), 1500)
   }
 
-  const showPreview = async (el: HTMLElement, replyId: number) => {
+  const showPreview = async (el: HTMLElement, replyId: string) => {
     clearHideTimer()
     const rect = el.getBoundingClientRect()
     preview.top = rect.bottom + 8
@@ -67,14 +65,18 @@ export const useQuoteContent = (containerRef: Ref<HTMLElement | null>) => {
     preview.reply = null
     preview.loading = true
     const seq = ++fetchSeq
-    const data = await kunFetch<TopicReply>(
-      `/topic/${topicId.value}/reply/detail`,
-      { method: 'GET', query: { replyId } }
+    const result = await settle(
+      api.GET('/replies/{reply_id}', {
+        params: { path: { reply_id: replyId } }
+      })
     )
     if (seq !== fetchSeq) {
       return
     }
-    previewCache.set(replyId, data)
+    const data = result.ok ? result.data : null
+    if (result.ok || result.problem.status === 404) {
+      previewCache.set(replyId, data)
+    }
     preview.reply = data
     preview.loading = false
   }
@@ -110,8 +112,8 @@ export const useQuoteContent = (containerRef: Ref<HTMLElement | null>) => {
     if (!quote) {
       return
     }
-    const replyId = Number(quote.dataset.replyId)
-    if (replyId > 0) {
+    const replyId = quote.dataset.replyId
+    if (replyId) {
       showPreview(quote, replyId)
     }
   }

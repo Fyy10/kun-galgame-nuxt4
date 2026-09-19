@@ -1,15 +1,27 @@
 <script setup lang="ts">
+import type { Topic } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
-  topicId?: number
-  targetUserId: number
-  upvoteCount: number
-  isUpvoted: boolean
+  topic: Topic
   menu?: boolean
 }>()
 
 const { id, moemoepoint } = usePersistUserStore()
-const isUpvoted = ref(props.isUpvoted)
-const upvoteCount = ref(props.upvoteCount)
+const isUpvoted = ref(props.topic.viewer?.has_upvoted ?? false)
+const upvoteCount = ref(props.topic.upvote_count)
+
+watch(
+  () => props.topic.viewer?.has_upvoted,
+  (value) => {
+    isUpvoted.value = value ?? false
+  }
+)
+watch(
+  () => props.topic.upvote_count,
+  (value) => {
+    upvoteCount.value = value
+  }
+)
 
 const { open } = useUpvoteModal()
 
@@ -18,7 +30,7 @@ const handleClickUpvote = async () => {
     useAuthModal().open()
     return
   }
-  if (id === props.targetUserId) {
+  if (id === Number(props.topic.author.id)) {
     useMessage(10241, 'warn')
     return
   }
@@ -26,12 +38,9 @@ const handleClickUpvote = async () => {
     useMessage(10242, 'warn')
     return
   }
-  if (!props.topicId) {
-    return
-  }
   const pushed = await open({
-    topicId: props.topicId,
-    targetUserId: props.targetUserId
+    topicId: Number(props.topic.id),
+    targetUserId: Number(props.topic.author.id)
   })
   if (pushed) {
     upvoteCount.value++

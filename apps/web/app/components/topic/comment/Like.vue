@@ -1,12 +1,28 @@
 <script setup lang="ts">
+import type { Comment } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
-  comment: TopicComment
+  comment: Comment
 }>()
 
 const { id } = usePersistUserStore()
-const isLiked = ref(props.comment.is_liked)
+const topicId = inject<number>('topicId', 0)
+const isLiked = ref(props.comment.viewer?.has_liked ?? false)
 const likeCount = ref(props.comment.like_count)
 const pending = ref(false)
+
+watch(
+  () => props.comment.viewer?.has_liked,
+  (value) => {
+    isLiked.value = value ?? false
+  }
+)
+watch(
+  () => props.comment.like_count,
+  (value) => {
+    likeCount.value = value
+  }
+)
 
 const revert = (next: boolean) => {
   isLiked.value = !next
@@ -19,16 +35,16 @@ const onChange = async (next: boolean) => {
     revert(next)
     return
   }
-  if (id === props.comment.user.id) {
+  if (id === Number(props.comment.author.id)) {
     useMessage(10218, 'warn')
     revert(next)
     return
   }
   pending.value = true
-  const result = await kunFetch<string>(
-    `/topic/${props.comment.topic_id}/comment/like`,
-    { method: 'PUT', body: { comment_id: props.comment.id } }
-  )
+  const result = await kunFetch<string>(`/topic/${topicId}/comment/like`, {
+    method: 'PUT',
+    body: { comment_id: Number(props.comment.id) }
+  })
   pending.value = false
   if (!result) {
     revert(next)

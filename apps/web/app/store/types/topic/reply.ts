@@ -4,7 +4,7 @@ export interface ReplyRewriteData {
 }
 
 export interface SuccessfulReplyEvent {
-  data: TopicReply
+  data: { id: number | string; floor: number }
   type: 'created' | 'updated' | 'deleted'
 }
 

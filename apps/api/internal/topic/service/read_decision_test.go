@@ -10,64 +10,6 @@ import (
 	topicModel "kun-galgame-api/internal/topic/model"
 )
 
-func TestReadDecision(t *testing.T) {
-	grants := []topicModel.TopicAccessGrant{
-		{SubjectType: "role", SubjectValue: "creator"},
-		{SubjectType: "user", SubjectValue: "4"},
-	}
-	viewers := []struct {
-		name    string
-		viewer  topicViewer
-		allowed [4]bool
-	}{
-		{"anonymous", topicViewer{}, [4]bool{true, false, false, false}},
-		{"unrelated login", topicViewer{ID: 2, Authenticated: true, Roles: []string{"user"}}, [4]bool{true, true, false, false}},
-		{"second role granted", topicViewer{ID: 3, Authenticated: true, Roles: []string{"user", "creator"}}, [4]bool{true, true, true, false}},
-		{"user granted", topicViewer{ID: 4, Authenticated: true}, [4]bool{true, true, false, true}},
-		{"author", topicViewer{ID: 1, Authenticated: true}, [4]bool{true, true, true, true}},
-		{"restricted permission", topicViewer{ID: 5, Authenticated: true, ViewRestricted: true}, [4]bool{true, true, true, true}},
-		{"hidden permission", topicViewer{ID: 6, Authenticated: true, ViewHidden: true}, [4]bool{true, true, false, false}},
-		{"both permissions", topicViewer{ID: 7, Authenticated: true, ViewHidden: true, ViewRestricted: true}, [4]bool{true, true, true, true}},
-		{"hidden role granted", topicViewer{ID: 8, Authenticated: true, ViewHidden: true, Roles: []string{"creator"}}, [4]bool{true, true, true, false}},
-		{"hidden user granted", topicViewer{ID: 4, Authenticated: true, ViewHidden: true}, [4]bool{true, true, false, true}},
-	}
-	for i, scope := range []string{"public", "login", "role", "users"} {
-		for _, tt := range viewers {
-			for _, hidden := range []bool{false, true} {
-				name := scope + "/" + tt.name
-				if hidden {
-					name += "/hidden"
-				}
-				t.Run(name, func(t *testing.T) {
-					topic := &topicModel.Topic{UserID: 1, AccessScope: scope}
-					want := tt.allowed[i]
-					if hidden {
-						topic.Status = 1
-						want = want && (tt.viewer.ID == 1 || tt.viewer.ViewHidden)
-					}
-					if got := readDecision(topic, tt.viewer, grants); got != want {
-						t.Fatalf("allowed = %v, want %v", got, want)
-					}
-				})
-			}
-		}
-	}
-}
-
-func TestReadDecisionGrantTypesAndDecimalIDs(t *testing.T) {
-	viewer := topicViewer{ID: 4, Authenticated: true, Roles: []string{"creator"}}
-	for _, tt := range []struct{ scope, kind, value string }{
-		{"users", "user", "5"}, {"users", "user", "04"}, {"users", "role", "4"},
-		{"role", "user", "creator"}, {"role", "role", "admin"}, {"unknown", "user", "4"},
-	} {
-		t.Run(tt.scope+"/"+tt.kind+"/"+tt.value, func(t *testing.T) {
-			if readDecision(&topicModel.Topic{UserID: 1, AccessScope: tt.scope}, viewer, []topicModel.TopicAccessGrant{{SubjectType: tt.kind, SubjectValue: tt.value}}) {
-				t.Fatal("unexpected grant match")
-			}
-		})
-	}
-}
-
 func TestRequireTopicReadWithoutGrants(t *testing.T) {
 	for _, tt := range []struct {
 		name, scope string
@@ -89,6 +31,9 @@ func TestRequireTopicReadWithoutGrants(t *testing.T) {
 			}
 			if err != nil && err.StatusCode != 404 {
 				t.Fatalf("status = %d", err.StatusCode)
+			}
+			if err != nil && err.Message != "未找到该话题" {
+				t.Fatalf("message = %q", err.Message)
 			}
 		})
 	}

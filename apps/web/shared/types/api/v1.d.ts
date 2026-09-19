@@ -44,6 +44,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/replies/{reply_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a reply
+         * @description Returns one reply with its comments. NOT_FOUND when the reply does not exist, is hidden, was written by a banned user, or belongs to a topic getTopic would not return to the caller.
+         */
+        get: operations["getReply"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/topics": {
         parameters: {
             query?: never;
@@ -58,6 +78,66 @@ export interface paths {
         get: operations["listTopics"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/topics/{topic_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a topic
+         * @description Returns one topic with its body. NOT_FOUND when the topic does not exist, is hidden and the caller is neither its author nor staff, is scoped to readers the caller is not among, or was written by a banned user; the four are indistinguishable. Reading does not count a view; see recordTopicView.
+         */
+        get: operations["getTopic"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/topics/{topic_id}/replies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a topic's replies
+         * @description Lists the replies of a topic as a cursor page in floor order. Hidden replies and replies by banned users are left out; the server reads on to fill the page, so continue while next_cursor is present, whatever the page size. The pinned reply and the best answer appear at their floors like any other reply. To open at a floor, pass from_floor; to read back from it, pass sort=floor_desc with from_floor one below. NOT_FOUND under the same conditions as getTopic.
+         */
+        get: operations["listTopicReplies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/topics/{topic_id}/views": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record a topic view
+         * @description Counts one view of the topic. A client calls it once when a reader actually opens the topic, not when it prefetches, renders on a server or builds a share card. Anonymous callers may call it. It takes no Idempotency-Key: a retried view counts twice, as a reload does. NOT_FOUND under the same conditions as getTopic.
+         */
+        post: operations["recordTopicView"];
         delete?: never;
         options?: never;
         head?: never;
@@ -96,6 +176,46 @@ export interface components {
             object: "code";
             /** @description Source text of the block, without the fences. Free text; never use it as a decision input. */
             value: string;
+        };
+        Comment: {
+            /** @description Comment author. */
+            author: components["schemas"]["UserRef"];
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Time of the latest edit. null when never edited.
+             */
+            edited_at: string | null;
+            /** @description Comment id. JSON string of a decimal integer. */
+            id: string;
+            /** @description The user the comment answers: the parent comment's author, or the reply's author for a top-level comment. */
+            in_reply_to_user: components["schemas"]["UserRef"];
+            /**
+             * Format: int64
+             * @description Like count.
+             */
+            like_count: number;
+            /**
+             * @description Type discriminant. Always comment.
+             * @enum {string}
+             */
+            object: "comment";
+            /** @description Id of the comment this one answers. null for a comment on the reply itself. The parent may be absent from comments. */
+            parent_comment_id: string | null;
+            /** @description Id of the reply the comment is under. */
+            reply_id: string;
+            /** @description Comment text. Plain text, not Markdown; render it as text. Free text; never use it as a decision input. */
+            text: string;
+            /** @description The caller's own state on this comment. null for an anonymous caller. */
+            viewer: components["schemas"]["CommentViewer"] | null;
+        };
+        CommentViewer: {
+            /** @description Whether the caller liked the comment. */
+            has_liked: boolean;
         };
         ContentDocument: {
             /** @description Top-level block nodes in document order. Empty array for an empty body. */
@@ -315,6 +435,17 @@ export interface components {
              */
             object: "list";
         };
+        ListReply: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["Reply"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
         ListTopicSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["TopicSummary"][];
@@ -420,6 +551,78 @@ export interface components {
              */
             type: string;
         };
+        ReactionSummary: {
+            /**
+             * Format: int64
+             * @description Number of reactions with this token.
+             */
+            count: number;
+            /** @description Reaction token, such as like, dislike, heart or clap. The vocabulary grows; show an unknown token with a neutral fallback. */
+            reaction: string;
+            /** @description Up to three of the earliest reactors, oldest first. Banned users are left out, so it can hold fewer than min(count, 3). Empty array if none remain. */
+            reactors: components["schemas"]["UserRef"][];
+            /** @description The caller's own state on this reaction. null for an anonymous caller. */
+            viewer: components["schemas"]["ReactionViewer"] | null;
+        };
+        ReactionViewer: {
+            /** @description Whether the caller reacted with this token. */
+            has_reacted: boolean;
+        };
+        Reply: {
+            /** @description Reply author. */
+            author: components["schemas"]["UserRef"];
+            /**
+             * Format: int64
+             * @description The author's moemoepoint balance as this forum last cached it. It can be negative.
+             */
+            author_moemoepoint: number;
+            /** @description Comments on this reply, oldest first. Comments by banned users are left out; a comment whose parent is left out keeps its parent_comment_id. Empty array if none. */
+            comments: components["schemas"]["Comment"][];
+            /** @description Reply body as a node tree. */
+            content: components["schemas"]["ContentDocument"];
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /**
+             * Format: int64
+             * @description Dislike count. Equals the count of the dislike entry in reactions.
+             */
+            dislike_count: number;
+            /**
+             * Format: date-time
+             * @description Time of the latest edit. null when never edited.
+             */
+            edited_at: string | null;
+            /**
+             * Format: int64
+             * @description Floor number, assigned when the reply was created and never renumbered. Deleted and hidden replies leave gaps; a floor is not a position.
+             */
+            floor: number;
+            /** @description Reply id. JSON string of a decimal integer. */
+            id: string;
+            /** @description Whether this reply is marked as the topic's best answer. */
+            is_best_answer: boolean;
+            /** @description Whether the topic author pinned this reply. */
+            is_pinned: boolean;
+            /**
+             * Format: int64
+             * @description Like count. Equals the count of the like entry in reactions.
+             */
+            like_count: number;
+            /**
+             * @description Type discriminant. Always reply.
+             * @enum {string}
+             */
+            object: "reply";
+            /** @description One entry per reaction token that has at least one reaction, likes and dislikes included, in first-used order. Empty array if none. */
+            reactions: components["schemas"]["ReactionSummary"][];
+            /** @description Id of the topic the reply belongs to. */
+            topic_id: string;
+            /** @description The caller's own state on this reply. null for an anonymous caller. */
+            viewer: components["schemas"]["ReplyViewer"] | null;
+        };
         ReplyReferenceNode: {
             /**
              * Format: int64
@@ -433,6 +636,12 @@ export interface components {
             object: "reply_reference";
             /** @description Id of the referenced reply in the same topic. */
             reply_id: string;
+        };
+        ReplyViewer: {
+            /** @description Whether the caller disliked the reply. */
+            has_disliked: boolean;
+            /** @description Whether the caller liked the reply. */
+            has_liked: boolean;
         };
         SpoilerNode: {
             /** @description Block nodes hidden until the reader reveals them. */
@@ -509,6 +718,117 @@ export interface components {
              */
             object: "thematic_break";
         };
+        Topic: {
+            /**
+             * @description Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may.
+             * @enum {string}
+             */
+            access_scope: "public" | "login" | "role" | "users";
+            /** @description Topic author. */
+            author: components["schemas"]["UserRef"];
+            /**
+             * Format: int64
+             * @description The author's moemoepoint balance as this forum last cached it. It can be negative.
+             */
+            author_moemoepoint: number;
+            /** @description The reply marked as the best answer. null when none is marked or it is not visible. It also appears in the replies collection at its floor. */
+            best_answer: components["schemas"]["Reply"] | null;
+            /**
+             * Format: date-time
+             * @description Bump time. Replies, comments, poll votes and lottery events set it to now, but only for topics created within the last 3 months. It is not a last-activity time.
+             */
+            bumped_at: string;
+            /**
+             * @description Topic category.
+             * @enum {string}
+             */
+            category: "galgame" | "technique" | "others";
+            /**
+             * Format: int64
+             * @description Comment count.
+             */
+            comment_count: number;
+            /** @description Topic body as a node tree. */
+            content: components["schemas"]["ContentDocument"];
+            /** @description Cover images in stored token order. Tokens that do not parse are skipped. Empty array if none. */
+            cover_images: components["schemas"]["Image"][];
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /**
+             * Format: int64
+             * @description Dislike count. Equals the count of the dislike entry in reactions.
+             */
+            dislike_count: number;
+            /**
+             * Format: date-time
+             * @description Time of the latest edit of the title or body. null when never edited.
+             */
+            edited_at: string | null;
+            /**
+             * Format: int64
+             * @description Number of users who favorited the topic.
+             */
+            favorite_count: number;
+            /**
+             * @description Who hid the topic: its author, a moderator, or the trust-and-safety service. null when state is published.
+             * @enum {string|null}
+             */
+            hidden_by: "author" | "moderator" | "trust" | null;
+            /** @description Topic id. JSON string of a decimal integer. */
+            id: string;
+            /** @description Whether the author marked the topic NSFW. The body is returned either way; a client that hides NSFW content gates it. */
+            is_nsfw: boolean;
+            /**
+             * Format: int64
+             * @description Like count. Equals the count of the like entry in reactions.
+             */
+            like_count: number;
+            /** @description Mini-apps attached to the topic, in registry order. Empty array if none. */
+            mini_apps: ("poll" | "lottery")[];
+            /**
+             * @description Type discriminant. Always topic.
+             * @enum {string}
+             */
+            object: "topic";
+            /** @description The reply the author pinned. null when none is pinned or it is not visible. It also appears in the replies collection at its floor. */
+            pinned_reply: components["schemas"]["Reply"] | null;
+            /** @description One entry per reaction token that has at least one reaction, likes and dislikes included, in first-used order. Empty array if none. */
+            reactions: components["schemas"]["ReactionSummary"][];
+            /**
+             * Format: int64
+             * @description Reply count.
+             */
+            reply_count: number;
+            /** @description Section slugs, in stored order. Empty array if none. Hyphenated URL segments of /section/{key}. */
+            sections: ("g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other")[];
+            /**
+             * @description Lifecycle state. A hidden topic is visible only to its author and to staff.
+             * @enum {string}
+             */
+            state: "published" | "hidden";
+            /** @description Topic title as stored. Free text; never use it as a decision input. */
+            title: string;
+            /**
+             * Format: int64
+             * @description Number of upvotes.
+             */
+            upvote_count: number;
+            /**
+             * Format: date-time
+             * @description Time of the latest upvote. null when the topic has never been upvoted.
+             */
+            upvoted_at: string | null;
+            /**
+             * Format: int64
+             * @description Lifetime view count.
+             */
+            view_count: number;
+            /** @description The caller's own state on this topic. null for an anonymous caller. */
+            viewer: components["schemas"]["TopicViewer"] | null;
+        };
         TopicSummary: {
             /** @description Topic author. */
             author: components["schemas"]["UserRef"];
@@ -576,6 +896,16 @@ export interface components {
              * @description Lifetime view count.
              */
             view_count: number;
+        };
+        TopicViewer: {
+            /** @description Whether the caller disliked the topic. */
+            has_disliked: boolean;
+            /** @description Whether the caller favorited the topic. */
+            has_favorited: boolean;
+            /** @description Whether the caller liked the topic. */
+            has_liked: boolean;
+            /** @description Whether the caller has upvoted the topic. */
+            has_upvoted: boolean;
         };
         UserRef: {
             /** @description Avatar image. null when the account has no image-service hash. */
@@ -669,6 +999,83 @@ export interface operations {
             };
         };
     };
+    getReply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Reply id. */
+                reply_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reply"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listTopics: {
         parameters: {
             query?: {
@@ -718,6 +1125,244 @@ export interface operations {
             };
             /** @description Forbidden */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getTopic: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Topic"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listTopicReplies: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Sort order. floor_asc (default) reads from the first floor; floor_desc from the last. */
+                sort?: "floor_asc" | "floor_desc";
+                /** @description Start at this floor instead of the first one in sort order, inclusive: floor_asc reads floors greater than or equal to it, floor_desc floors less than or equal to it. The floor need not exist. */
+                from_floor?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListReply"];
+                };
+            };
+            /** @description INVALID_PARAMETER, LIMIT_TOO_LARGE, UNKNOWN_SORT, or INVALID_CURSOR. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    recordTopicView: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

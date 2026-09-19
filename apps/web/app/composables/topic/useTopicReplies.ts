@@ -1,125 +1,305 @@
-import type { Ref } from 'vue'
+import type { ApiClient } from '#shared/utils/api/client'
+import { settle, type ClientProblem } from '#shared/utils/api/problem'
+import type { Reply } from '#shared/utils/api/schemas'
+import { useApiClient } from '~/composables/useApi'
 
-export const useTopicReplies = (topicId: number | Ref<number>) => {
-  const _topicId = toValue(topicId)
+const PAGE_SIZE = 30
 
-  const replies = useState<TopicReply[]>(
-    `kun-topic-replies-${_topicId}`,
-    () => []
-  )
-  const isComplete = useState<boolean>(
-    `kun-topic-replies-complete-${_topicId}`,
+type SortOrder = 'asc' | 'desc'
+
+type FailedLoad =
+  | { type: 'initial'; fromFloor?: number }
+  | { type: 'more' }
+  | { type: 'earlier' }
+  | { type: 'sort'; order: SortOrder }
+  | { type: 'refresh'; id: string }
+
+const sortParam = (order: SortOrder) =>
+  order === 'desc' ? ('floor_desc' as const) : ('floor_asc' as const)
+
+const dedupe = (items: Reply[]) => {
+  const seen = new Set<string>()
+  return items.filter((item) => {
+    if (seen.has(item.id)) {
+      return false
+    }
+    seen.add(item.id)
+    return true
+  })
+}
+
+export const useTopicReplies = (
+  topicId: string,
+  api?: Pick<ApiClient, 'GET'>
+) => {
+  const client = api ?? useApiClient()
+
+  const replies = useState<Reply[]>(`kun-topic-replies-${topicId}`, () => [])
+  const isComplete = useState(
+    `kun-topic-replies-complete-${topicId}`,
     () => false
   )
-
+  const hasEarlier = useState(
+    `kun-topic-replies-earlier-${topicId}`,
+    () => false
+  )
   const status = useState<'idle' | 'pending' | 'success' | 'error'>(
-    `kun-topic-replies-status-${_topicId}`,
+    `kun-topic-replies-status-${topicId}`,
     () => 'idle'
   )
-
-  const minPage = useState<number>(`kun-topic-replies-min-${_topicId}`, () => 1)
-  const maxPage = useState<number>(`kun-topic-replies-max-${_topicId}`, () => 1)
-  const sortOrder = useState<'asc' | 'desc'>(
-    `kun-topic-replies-sort-${_topicId}`,
+  const sortOrder = useState<SortOrder>(
+    `kun-topic-replies-sort-${topicId}`,
     () => 'asc'
   )
+  const problem = useState<ClientProblem | null>(
+    `kun-topic-replies-problem-${topicId}`,
+    () => null
+  )
+  const forwardCursor = useState<string | undefined>(
+    `kun-topic-replies-fwd-${topicId}`,
+    () => undefined
+  )
+  const backwardCursor = useState<string | undefined>(
+    `kun-topic-replies-bwd-${topicId}`,
+    () => undefined
+  )
+  const backwardStarted = useState(
+    `kun-topic-replies-bwd-started-${topicId}`,
+    () => false
+  )
+  const failedLoad = useState<FailedLoad | null>(
+    `kun-topic-replies-failed-${topicId}`,
+    () => null
+  )
 
-  const hasEarlier = computed(() => minPage.value > 1)
+  const loadedIds = () => new Set(replies.value.map((reply) => reply.id))
 
-  const _fetchReplies = async (
-    fetchPage: number,
-    fetchSortOrder: 'asc' | 'desc'
-  ) => {
-    status.value = 'pending'
-
-    const newReplies = await kunFetch<TopicReply[]>(
-      `/topic/${_topicId}/reply`,
-      {
-        query: {
-          topic_id: _topicId,
-          page: fetchPage,
-          limit: 30,
-          sort_order: fetchSortOrder
-        }
+  const notLoaded = (items: Reply[]) => {
+    const seen = loadedIds()
+    return items.filter((item) => {
+      if (seen.has(item.id)) {
+        return false
       }
-    )
-    status.value = 'success'
-    return newReplies ?? []
+      seen.add(item.id)
+      return true
+    })
   }
 
-  const loadInitialReplies = async (startPage = 1) => {
-    if (replies.value.length > 0) {
+  const lowestFloor = () => {
+    if (!replies.value.length) {
+      return 1
+    }
+    return Math.min(...replies.value.map((reply) => reply.floor))
+  }
+
+  const fetchPage = async (query: {
+    cursor?: string
+    sort: 'floor_asc' | 'floor_desc'
+    from_floor?: number
+  }) =>
+    settle(
+      client.GET('/topics/{topic_id}/replies', {
+        params: {
+          path: { topic_id: topicId },
+          query: {
+            limit: PAGE_SIZE,
+            sort: query.sort,
+            ...(query.cursor ? { cursor: query.cursor } : {}),
+            ...(query.from_floor !== undefined
+              ? { from_floor: query.from_floor }
+              : {})
+          }
+        }
+      })
+    )
+
+  const fail = (load: FailedLoad, next: ClientProblem) => {
+    status.value = 'error'
+    problem.value = next
+    failedLoad.value = load
+  }
+
+  const succeed = () => {
+    status.value = 'success'
+    problem.value = null
+    failedLoad.value = null
+  }
+
+  const loadInitialReplies = async (opts: { fromFloor?: number } = {}) => {
+    if (status.value === 'pending' || replies.value.length > 0) {
       return
     }
-
-    const page = Math.max(1, startPage)
+    status.value = 'pending'
     sortOrder.value = 'asc'
-    minPage.value = page
-    maxPage.value = page
-
-    const data = await _fetchReplies(page, sortOrder.value)
-    isComplete.value = data.length < 30
-    replies.value = data
+    backwardStarted.value = false
+    backwardCursor.value = undefined
+    const fromFloor = opts.fromFloor
+    const result = await fetchPage({
+      sort: 'floor_asc',
+      ...(fromFloor !== undefined ? { from_floor: fromFloor } : {})
+    })
+    if (!result.ok) {
+      fail({ type: 'initial', fromFloor }, result.problem)
+      return
+    }
+    replies.value = dedupe(result.data.items)
+    forwardCursor.value = result.data.next_cursor
+    isComplete.value = !result.data.next_cursor
+    hasEarlier.value = fromFloor !== undefined && fromFloor > 1
+    succeed()
   }
 
   const loadMore = async () => {
-    if (status.value === 'pending' || isComplete.value) return
-
-    const next = maxPage.value + 1
-    const newReplies = await _fetchReplies(next, sortOrder.value)
-    maxPage.value = next
-    if (newReplies.length < 30) {
-      isComplete.value = true
+    if (status.value === 'pending' || isComplete.value) {
+      return
     }
-    replies.value.push(...newReplies)
+    const cursor = forwardCursor.value
+    if (!cursor) {
+      isComplete.value = true
+      return
+    }
+    status.value = 'pending'
+    const result = await fetchPage({
+      sort: sortParam(sortOrder.value),
+      cursor
+    })
+    if (!result.ok) {
+      fail({ type: 'more' }, result.problem)
+      return
+    }
+    replies.value.push(...notLoaded(result.data.items))
+    forwardCursor.value = result.data.next_cursor
+    isComplete.value = !result.data.next_cursor
+    succeed()
   }
 
   const loadEarlier = async () => {
-    if (status.value === 'pending' || minPage.value <= 1) return
-
-    const prev = minPage.value - 1
-    const newReplies = await _fetchReplies(prev, sortOrder.value)
-    minPage.value = prev
-    replies.value.unshift(...newReplies)
-  }
-
-  const setSort = async (order: 'asc' | 'desc') => {
-    if (status.value === 'pending' || sortOrder.value === order) return
-
-    sortOrder.value = order
-    minPage.value = 1
-    maxPage.value = 1
-    isComplete.value = false
-
-    const sortedReplies = await _fetchReplies(1, sortOrder.value)
-    if (sortedReplies.length < 30) {
-      isComplete.value = true
+    if (status.value === 'pending' || !hasEarlier.value) {
+      return
     }
-    replies.value = sortedReplies
+    status.value = 'pending'
+    const result = await fetchPage(
+      backwardStarted.value
+        ? {
+            sort: 'floor_desc',
+            ...(backwardCursor.value ? { cursor: backwardCursor.value } : {})
+          }
+        : { sort: 'floor_desc', from_floor: lowestFloor() - 1 }
+    )
+    if (!result.ok) {
+      fail({ type: 'earlier' }, result.problem)
+      return
+    }
+    backwardStarted.value = true
+    backwardCursor.value = result.data.next_cursor
+    hasEarlier.value = Boolean(result.data.next_cursor)
+    const incoming = notLoaded(result.data.items).sort(
+      (left, right) => left.floor - right.floor
+    )
+    replies.value.unshift(...incoming)
+    succeed()
   }
 
-  const addNewReply = (newReply: TopicReply) => {
-    if (replies.value.some((r) => r.id === newReply.id)) return
+  const setSort = async (order: SortOrder) => {
+    if (status.value === 'pending' || sortOrder.value === order) {
+      return
+    }
+    status.value = 'pending'
+    const result = await fetchPage({ sort: sortParam(order) })
+    if (!result.ok) {
+      fail({ type: 'sort', order }, result.problem)
+      return
+    }
+    sortOrder.value = order
+    backwardStarted.value = false
+    backwardCursor.value = undefined
+    hasEarlier.value = false
+    replies.value = dedupe(result.data.items)
+    forwardCursor.value = result.data.next_cursor
+    isComplete.value = !result.data.next_cursor
+    succeed()
+  }
 
-    if (sortOrder.value === 'desc' && minPage.value === 1) {
+  const addNewReply = (newReply: Reply) => {
+    if (replies.value.some((reply) => reply.id === newReply.id)) {
+      return
+    }
+    if (sortOrder.value === 'desc' && !hasEarlier.value) {
       replies.value.unshift(newReply)
     } else {
       replies.value.push(newReply)
     }
   }
 
-  const updateReply = (updatedReply: TopicReply) => {
-    const index = replies.value.findIndex((r) => r.id === updatedReply.id)
+  const updateReply = (updated: Reply) => {
+    const index = replies.value.findIndex((reply) => reply.id === updated.id)
     if (index !== -1) {
-      replies.value[index] = updatedReply
+      replies.value[index] = updated
     }
   }
 
-  const removeReply = (replyId: number) => {
-    const index = replies.value.findIndex((r) => r.id === replyId)
+  const removeReply = (id: string) => {
+    const index = replies.value.findIndex((reply) => reply.id === id)
     if (index !== -1) {
       replies.value.splice(index, 1)
     }
+  }
+
+  const refreshReply = async (id: string) => {
+    const result = await settle(
+      client.GET('/replies/{reply_id}', {
+        params: { path: { reply_id: id } }
+      })
+    )
+    if (!result.ok) {
+      if (result.problem.status === 404) {
+        removeReply(id)
+        return
+      }
+      fail({ type: 'refresh', id }, result.problem)
+      return
+    }
+    const index = replies.value.findIndex(
+      (reply) => reply.id === result.data.id
+    )
+    if (index !== -1) {
+      replies.value[index] = result.data
+    } else {
+      addNewReply(result.data)
+    }
+    if (problem.value) {
+      problem.value = null
+      failedLoad.value = null
+      if (status.value === 'error') {
+        status.value = 'success'
+      }
+    }
+  }
+
+  const retry = async () => {
+    const failed = failedLoad.value
+    if (!failed || status.value === 'pending') {
+      return
+    }
+    problem.value = null
+    failedLoad.value = null
+    if (failed.type === 'initial') {
+      await loadInitialReplies({ fromFloor: failed.fromFloor })
+      return
+    }
+    if (failed.type === 'more') {
+      await loadMore()
+      return
+    }
+    if (failed.type === 'earlier') {
+      await loadEarlier()
+      return
+    }
+    if (failed.type === 'sort') {
+      await setSort(failed.order)
+      return
+    }
+    await refreshReply(failed.id)
   }
 
   return {
@@ -128,12 +308,15 @@ export const useTopicReplies = (topicId: number | Ref<number>) => {
     isComplete,
     hasEarlier,
     sortOrder,
+    problem,
     loadInitialReplies,
     loadMore,
     loadEarlier,
     setSort,
     addNewReply,
     updateReply,
-    removeReply
+    removeReply,
+    refreshReply,
+    retry
   }
 }

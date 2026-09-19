@@ -16,6 +16,7 @@ var g8Allow = map[string]bool{
 	"items":    true,
 	"object":   true,
 	"state":    true,
+	"viewer":   true,
 }
 
 var g8Forbidden = []string{

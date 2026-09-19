@@ -1,0 +1,67 @@
+package apiv1
+
+import (
+	"context"
+	"errors"
+
+	v1 "kun-galgame-api/internal/apiv1"
+	"kun-galgame-api/internal/apiv1/repr"
+	"kun-galgame-api/internal/middleware"
+	"kun-galgame-api/internal/topic/access"
+	"kun-galgame-api/internal/topic/model"
+	"kun-galgame-api/pkg/problem"
+	"kun-galgame-api/pkg/userclient"
+
+	"gorm.io/gorm"
+)
+
+func notFound() *problem.Problem {
+	return problem.New(problem.CodeNotFound, "Nothing visible exists at this URL.")
+}
+
+func parsePositiveID(s string) (int, bool) {
+	return repr.ParseID(repr.DecimalID(s))
+}
+
+func (s *Service) visibleTopic(ctx context.Context, idStr string) (*model.Topic, *middleware.UserInfo, *problem.Problem) {
+	if s == nil {
+		return nil, nil, problem.Internal(errUnconfigured)
+	}
+	id, ok := parsePositiveID(idStr)
+	if !ok {
+		return nil, nil, notFound()
+	}
+	topic, err := s.topics.FindByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil, notFound()
+		}
+		return nil, nil, problem.Internal(err)
+	}
+	user := v1.User(ctx)
+	var grants []model.TopicAccessGrant
+	if access.NeedsGrants(topic) {
+		grants, err = s.topics.FindAccessGrants(topic.ID)
+		if err != nil {
+			return nil, nil, problem.Internal(err)
+		}
+	}
+	if !access.CanRead(topic, user, grants) {
+		return nil, nil, notFound()
+	}
+	if p := s.rejectUnrenderableAuthor(ctx, topic.UserID); p != nil {
+		return nil, nil, p
+	}
+	return topic, user, nil
+}
+
+func (s *Service) rejectUnrenderableAuthor(ctx context.Context, userID int) *problem.Problem {
+	users, p := s.lookupUsers(ctx, []int{userID})
+	if p != nil {
+		return p
+	}
+	if u, ok := users[userID]; ok && !userclient.IsRenderable(u) {
+		return notFound()
+	}
+	return nil
+}

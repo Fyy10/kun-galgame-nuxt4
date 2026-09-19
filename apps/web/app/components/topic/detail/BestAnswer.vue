@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { scrollPage } from '../_helper'
+import type { Reply } from '#shared/utils/api/schemas'
+import { toKunUser } from '~/utils/userRef'
 
 defineProps<{
-  bestAnswer: TopicBestAnswerSummary
+  bestAnswer: Reply
 }>()
 </script>
 
@@ -16,7 +18,10 @@ defineProps<{
     "
     @click="scrollPage(bestAnswer.floor)"
   >
-    <KunUserChip :disable-floating="true" :user="bestAnswer.user" />
+    <KunUserChip
+      :disable-floating="true"
+      :user="toKunUser(bestAnswer.author)"
+    />
     {{ `在 #${bestAnswer.floor} 发布了最佳答案` }}
   </div>
 </template>
