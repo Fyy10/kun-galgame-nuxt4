@@ -216,7 +216,7 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 
-	nextMoeBase := envOrDefault("KUN_NEXTMOE_API_BASE", "http://127.0.0.1:19281")
+	nextMoeBase := envOrDefault("KUN_NEXTMOE_API_BASE", "http://127.0.0.1:9281")
 	nextMoeKey := envOrDefault("KUN_NEXTMOE_API_KEY", "")
 	if nextMoeBase != "" && nextMoeKey == "" {
 		return nil, fmt.Errorf(
@@ -306,7 +306,7 @@ func Load() (*Config, error) {
 			ScanEnabled:    envOrDefaultBool("KUN_TRUST_SCAN_ENABLED", false),
 		},
 		Catalog: CatalogClientConfig{
-			BaseURL: envOrDefault("KUN_CATALOG_API_BASE", "http://127.0.0.1:19281"),
+			BaseURL: envOrDefault("KUN_CATALOG_API_BASE", "http://127.0.0.1:9281"),
 		},
 		Lottery: LotteryConfig{
 			CodeKey: envOrDefault("KUN_LOTTERY_CODE_KEY", ""),
