@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 // Mirrors catalog's model.FoldersPerUserMax / FolderItemsMax. Both are refused
@@ -21,13 +22,14 @@ const (
 	FolderVisibilityPublic  = "public"
 )
 
-// A whole folder list and a whole item list are read in one go rather than
-// paged through to the caller: the forum's collection API is page-numbered and
-// orders by "newest added" while catalog's keyset walks updated_at ascending,
-// so the two cannot be zipped. Reading everything and sorting locally is
-// affordable because the shapes are small — p50 is 2 items and 5 folders per
-// user, p99 is 370 items, and the ceiling is the cap below.
+// Folder lists stay small (cap 200) and are still walked. Item lists are not:
+// user 90769's default folder held 3,560 works on 2026-09-20, and walking it
+// on every collection page with their own token spent the 10k/day user-plane
+// quota. MyFolderItems is for the rare callers that need every membership
+// (delete-diff, a cache fill). The detail page does not call it per view.
 const folderWalkPages = FolderItemsMax/v2PageMax + 1
+
+const FolderHoldingsMax = 100
 
 type Folder struct {
 	ID          int64  `json:"-"`
@@ -46,6 +48,11 @@ type FolderItem struct {
 	WorkID    int64
 	CreatedAt string
 	UpdatedAt string
+}
+
+type FolderHolding struct {
+	WorkID    int64
+	FolderIDs []int64
 }
 
 type v2Folder struct {
@@ -67,6 +74,11 @@ type v2FolderItem struct {
 	UpdatedAt string          `json:"updated_at"`
 }
 
+type v2FolderHolding struct {
+	WorkID    json.RawMessage   `json:"work_id"`
+	FolderIDs []json.RawMessage `json:"folder_ids"`
+}
+
 func (f v2Folder) view() Folder {
 	return Folder{
 		ID: parseFlexID(f.ID), OwnerUID: parseFlexID(f.OwnerUID), Name: f.Name,
@@ -80,6 +92,16 @@ func (i v2FolderItem) view() FolderItem {
 		FolderID: parseFlexID(i.FolderID), WorkID: parseFlexID(i.WorkID),
 		CreatedAt: i.CreatedAt, UpdatedAt: i.UpdatedAt,
 	}
+}
+
+func (h v2FolderHolding) view() FolderHolding {
+	ids := make([]int64, 0, len(h.FolderIDs))
+	for _, raw := range h.FolderIDs {
+		if id := parseFlexID(raw); id > 0 {
+			ids = append(ids, id)
+		}
+	}
+	return FolderHolding{WorkID: parseFlexID(h.WorkID), FolderIDs: ids}
 }
 
 // walkUserV2 pages a user-token collection to the end. collectV2List is the
@@ -145,6 +167,28 @@ func (c *Client) MyFoldersContaining(ctx context.Context, token string, workID i
 	q.Set("contains_work_id", strconv.FormatInt(workID, 10))
 	rows, err := walkUserV2[v2Folder](ctx, c, token, "/v2/me/folders", q)
 	return foldersView(rows), err
+}
+
+// MyFolderHoldings is the same question for a page of works. A work the
+// bearer holds nowhere is left out rather than returned with an empty list.
+// Catalog refuses more than FolderHoldingsMax ids in one call; this chunks.
+func (c *Client) MyFolderHoldings(ctx context.Context, token string, workIDs []int64) ([]FolderHolding, error) {
+	out := make([]FolderHolding, 0, len(workIDs))
+	for _, chunk := range chunkInt64s(workIDs, FolderHoldingsMax) {
+		if len(chunk) == 0 {
+			continue
+		}
+		q := url.Values{}
+		q.Set("work_ids", joinInt64s(chunk))
+		var got v2List[v2FolderHolding]
+		if err := c.userV2JSON(ctx, http.MethodGet, token, "/v2/me/folders/holdings?"+q.Encode(), nil, &got, nil); err != nil {
+			return nil, err
+		}
+		for _, row := range got.rows() {
+			out = append(out, row.view())
+		}
+	}
+	return out, nil
 }
 
 func (c *Client) MyFolder(ctx context.Context, token string, folderID int64) (*Folder, error) {
@@ -299,6 +343,31 @@ func itemsView(rows []v2FolderItem) []FolderItem {
 	out := make([]FolderItem, 0, len(rows))
 	for _, r := range rows {
 		out = append(out, r.view())
+	}
+	return out
+}
+
+func joinInt64s(ids []int64) string {
+	parts := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if id > 0 {
+			parts = append(parts, strconv.FormatInt(id, 10))
+		}
+	}
+	return strings.Join(parts, ",")
+}
+
+func chunkInt64s(ids []int64, size int) [][]int64 {
+	if size < 1 {
+		size = FolderHoldingsMax
+	}
+	out := make([][]int64, 0, (len(ids)+size-1)/size)
+	for start := 0; start < len(ids); start += size {
+		end := start + size
+		if end > len(ids) {
+			end = len(ids)
+		}
+		out = append(out, ids[start:end])
 	}
 	return out
 }

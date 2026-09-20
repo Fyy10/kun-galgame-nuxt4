@@ -474,7 +474,7 @@ func New(cfg *config.Config) *App {
 		galgameMergeRepo, userStateRepo, gc, uc, catalogCli, storeLinks,
 	)
 	galgameCollectionRepo := galgameRepo.NewGalgameCollectionRepository(db)
-	galgameCollectionSvc := galgameService.NewCollectionService(galgameCollectionRepo, galgameCoreSvc, gc, uc, catalogCli, trustCheck, trustScan)
+	galgameCollectionSvc := galgameService.NewCollectionService(galgameCollectionRepo, galgameCoreSvc, gc, uc, catalogCli, trustCheck, trustScan, rdb)
 	galgameOfficialSvc := galgameService.NewOfficialService(gc, galgameCoreSvc)
 	galgameEngineSvc := galgameService.NewEngineService(gc, galgameCoreSvc)
 	galgameSeriesSvc := galgameService.NewSeriesService(gc, galgameEnricher, galgameCoreSvc)
