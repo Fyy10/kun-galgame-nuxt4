@@ -11,6 +11,7 @@ import (
 	"kun-galgame-api/internal/constants"
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/dto"
+	"kun-galgame-api/internal/galgame/filesize"
 	"kun-galgame-api/internal/galgame/model"
 	"kun-galgame-api/internal/galgame/repository"
 	"kun-galgame-api/internal/infrastructure/markdown"
@@ -286,6 +287,11 @@ func (s *ResourceService) CreateResource(
 	accessToken string,
 	req *dto.CreateGalgameResourceRequest,
 ) *errors.AppError {
+	size, ok := filesize.Parse(req.Size)
+	if !ok {
+		return errors.ErrBadRequest("资源体积只能填写数字和 MB / GB")
+	}
+	req.Size = size
 	req.Note = markdown.NormalizeStoredContent(req.Note)
 	if s.resourceRepo.IsResourcePublishBanned(req.GalgameID) {
 		return errors.ErrForbidden("该游戏已被禁止发布下载资源")
@@ -390,6 +396,11 @@ func (s *ResourceService) UpdateResource(
 	userID int, canModerate bool,
 	req *dto.UpdateGalgameResourceRequest,
 ) *errors.AppError {
+	size, ok := filesize.Parse(req.Size)
+	if !ok {
+		return errors.ErrBadRequest("资源体积只能填写数字和 MB / GB")
+	}
+	req.Size = size
 	req.Note = markdown.NormalizeStoredContent(req.Note)
 	row, ok := s.resourceRepo.FindByID(req.GalgameResourceID)
 	if !ok {

@@ -13,6 +13,13 @@ import type {
   KunGalgameResourceLanguageOptions,
   KunGalgameResourcePlatformOptions
 } from '~/constants/galgame'
+import {
+  FILE_SIZE_UNITS,
+  clampResourceSizeAmount,
+  joinResourceSize,
+  splitResourceSize,
+  type FileSizeUnit
+} from '~~/shared/utils/resourceSize'
 
 const props = defineProps<{
   galgameId: number
@@ -74,15 +81,26 @@ const snapshotFromResource = (): FormShape => {
 }
 
 const form = ref<FormShape>(snapshotFromResource())
+const size = reactive(splitResourceSize(form.value.size))
 
 watch(open, (isOpen) => {
-  if (isOpen) form.value = snapshotFromResource()
+  if (!isOpen) return
+  form.value = snapshotFromResource()
+  Object.assign(size, splitResourceSize(form.value.size))
 })
+watch(size, () => {
+  form.value.size = joinResourceSize(size)
+})
+
+const onSizeAmount = (raw: string | number) => {
+  size.amount = clampResourceSizeAmount(String(raw))
+}
 
 const isSubmitting = ref(false)
 
 const handleSubmit = async () => {
   if (isSubmitting.value) return
+  form.value.size = joinResourceSize(size)
   if (!checkGalgameResourcePublish(form.value)) return
 
   const method = isEditing.value ? 'PUT' : 'POST'
@@ -112,6 +130,8 @@ const handleSubmit = async () => {
 const handleCancel = () => {
   open.value = false
 }
+
+const sizeUnitOptions = [...FILE_SIZE_UNITS]
 
 const typeOptions = computed(() =>
   kunGalgameResourceTypeOptions.filter((o) => o.value !== 'all')
@@ -151,7 +171,26 @@ const platformOptions = computed(() =>
       />
 
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <KunInput v-model="form.size" placeholder="资源体积 (MB 或 GB)" />
+        <div class="flex items-end gap-2">
+          <div class="flex-1">
+            <KunInput
+              :model-value="size.amount"
+              placeholder="资源体积"
+              inputmode="decimal"
+              @update:model-value="onSizeAmount"
+            />
+          </div>
+          <div class="w-24 shrink-0">
+            <KunSelect
+              :model-value="size.unit"
+              :options="sizeUnitOptions"
+              aria-label="资源体积单位"
+              @set="(v) => (size.unit = v as FileSizeUnit)"
+            >
+              <span>{{ size.unit }}</span>
+            </KunSelect>
+          </div>
+        </div>
         <KunInput v-model="form.code" placeholder="提取码 (可选)" />
         <KunInput v-model="form.password" placeholder="解压码 (可选)" />
       </div>

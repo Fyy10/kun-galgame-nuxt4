@@ -4,6 +4,7 @@ import {
   kunGalgameResourcePlatformOptions
 } from '~/constants/galgame'
 import type { GalgameResourceStoreTemp } from '~/store/types/galgame/resource'
+import { parseResourceSize } from '~~/shared/utils/resourceSize'
 
 export const checkGalgameResourcePublish = (link: GalgameResourceStoreTemp) => {
   if (
@@ -53,7 +54,7 @@ export const checkGalgameResourcePublish = (link: GalgameResourceStoreTemp) => {
     return false
   }
 
-  if (!ResourceSizePattern.test(link.size)) {
+  if (!parseResourceSize(link.size)) {
     useMessage(10562, 'warn')
     return false
   }
