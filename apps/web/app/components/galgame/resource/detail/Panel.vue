@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { KUN_USER_TEXT_CHIP_CLASS } from '~/constants/galgame'
 import {
-  KUN_GALGAME_RESOURCE_LANGUAGE_MAP,
-  KUN_GALGAME_RESOURCE_PLATFORM_MAP,
-  KUN_GALGAME_RESOURCE_TYPE_MAP,
-  KUN_USER_TEXT_CHIP_CLASS
-} from '~/constants/galgame'
+  resourceLanguageLabel as langLabel,
+  resourcePlatformLabel as platLabel,
+  resourceTypeLabel as typeLabel
+} from '~~/shared/utils/galgameResourceVocab'
 import {
   GALGAME_RESOURCE_TYPE_ICON_MAP,
   GALGAME_RESOURCE_PLATFORM_ICON_MAP
@@ -16,19 +16,12 @@ const props = defineProps<{
   refresh: () => Promise<void>
 }>()
 
-const resourceTypeLabel = computed(
-  () =>
-    KUN_GALGAME_RESOURCE_TYPE_MAP[props.resource.type] || props.resource.type
+const resourceTypeLabel = computed(() => typeLabel(props.resource.type))
+const resourceLanguageLabel = computed(() =>
+  langLabel(props.resource.language)
 )
-const resourceLanguageLabel = computed(
-  () =>
-    KUN_GALGAME_RESOURCE_LANGUAGE_MAP[props.resource.language] ||
-    props.resource.language
-)
-const resourcePlatformLabel = computed(
-  () =>
-    KUN_GALGAME_RESOURCE_PLATFORM_MAP[props.resource.platform] ||
-    props.resource.platform
+const resourcePlatformLabel = computed(() =>
+  platLabel(props.resource.platform)
 )
 const galgameTitle = props.galgame.name
 </script>

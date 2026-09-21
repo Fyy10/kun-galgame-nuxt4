@@ -11,23 +11,33 @@ type GalgameResourcesRequest struct {
 }
 
 type CreateGalgameResourceRequest struct {
-	GalgameID int      `json:"galgame_id" validate:"required,min=1"`
-	Type      string   `json:"type" validate:"required"`
-	Language  string   `json:"language" validate:"required"`
-	Platform  string   `json:"platform" validate:"required"`
-	Size      string   `json:"size" validate:"required,max=107"`
-	Code      string   `json:"code" validate:"max=1007"`
-	Password  string   `json:"password" validate:"max=1007"`
-	Note      string   `json:"note" validate:"max=10000"`
-	Link      []string `json:"link" validate:"required,min=1,max=20,dive,downloadlink"`
+	GalgameID    int      `json:"galgame_id" validate:"required,min=1"`
+	Type         string   `json:"type" validate:"required"`
+	Title        string   `json:"title" validate:"max=200"`
+	VersionLabel string   `json:"version_label" validate:"max=64"`
+	Language     string   `json:"language"`
+	Platform     string   `json:"platform"`
+	Languages    []string `json:"languages"`
+	Platforms    []string `json:"platforms"`
+	Runtimes     []string `json:"runtimes"`
+	Size         string   `json:"size" validate:"required,max=107"`
+	Code         string   `json:"code" validate:"max=1007"`
+	Password     string   `json:"password" validate:"max=1007"`
+	Note         string   `json:"note" validate:"max=10000"`
+	Link         []string `json:"link" validate:"required,min=1,max=20,dive,downloadlink"`
 }
 
 type UpdateGalgameResourceRequest struct {
 	GalgameResourceID int      `json:"galgame_resource_id" validate:"required,min=1"`
 	GalgameID         int      `json:"galgame_id"`
 	Type              string   `json:"type" validate:"required"`
-	Language          string   `json:"language" validate:"required"`
-	Platform          string   `json:"platform" validate:"required"`
+	Title             string   `json:"title" validate:"max=200"`
+	VersionLabel      string   `json:"version_label" validate:"max=64"`
+	Language          string   `json:"language"`
+	Platform          string   `json:"platform"`
+	Languages         []string `json:"languages"`
+	Platforms         []string `json:"platforms"`
+	Runtimes          []string `json:"runtimes"`
 	Size              string   `json:"size" validate:"required,max=107"`
 	Code              string   `json:"code" validate:"max=1007"`
 	Password          string   `json:"password" validate:"max=1007"`
@@ -64,8 +74,13 @@ type ResourceCard struct {
 	GalgameID          int       `json:"galgame_id"`
 	User               UserBrief `json:"user"`
 	Type               string    `json:"type"`
+	Title              string    `json:"title"`
+	VersionLabel       string    `json:"version_label"`
 	Language           string    `json:"language"`
 	Platform           string    `json:"platform"`
+	Languages          []string  `json:"languages"`
+	Platforms          []string  `json:"platforms"`
+	Runtimes           []string  `json:"runtimes"`
 	Size               string    `json:"size"`
 	Status             int       `json:"status"`
 	Download           int       `json:"download"`
@@ -90,8 +105,13 @@ type ResourceMeta struct {
 	GalgameID          int       `json:"galgame_id"`
 	User               UserBrief `json:"user"`
 	Type               string    `json:"type"`
+	Title              string    `json:"title"`
+	VersionLabel       string    `json:"version_label"`
 	Language           string    `json:"language"`
 	Platform           string    `json:"platform"`
+	Languages          []string  `json:"languages"`
+	Platforms          []string  `json:"platforms"`
+	Runtimes           []string  `json:"runtimes"`
 	Size               string    `json:"size"`
 	Status             int       `json:"status"`
 	Download           int       `json:"download"`

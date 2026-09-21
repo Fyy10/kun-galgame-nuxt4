@@ -1,18 +1,15 @@
-import {
-  kunGalgameResourceTypeOptions,
-  kunGalgameResourceLanguageOptions,
-  kunGalgameResourcePlatformOptions
-} from '~/constants/galgame'
 import type { GalgameResourceStoreTemp } from '~/store/types/galgame/resource'
 import { parseResourceSize } from '~~/shared/utils/resourceSize'
+import {
+  RESOURCE_TYPE_LABELS,
+  LANGUAGE_LABELS,
+  PLATFORM_LABELS,
+  RUNTIME_LABELS,
+  hasRuntimeAxis
+} from '~~/shared/utils/galgameResourceVocab'
 
 export const checkGalgameResourcePublish = (link: GalgameResourceStoreTemp) => {
-  if (
-    !kunGalgameResourceTypeOptions
-      .map((type) => type.value as string)
-      .filter((item) => item !== 'all')
-      .includes(link.type)
-  ) {
+  if (!RESOURCE_TYPE_LABELS[link.type]) {
     useMessage(10556, 'warn')
     return false
   }
@@ -35,23 +32,29 @@ export const checkGalgameResourcePublish = (link: GalgameResourceStoreTemp) => {
   }
 
   if (
-    !kunGalgameResourceLanguageOptions
-      .map((lang) => lang.value as string)
-      .filter((item) => item !== 'all')
-      .includes(link.language)
+    !link.languages.length ||
+    link.languages.some((k) => !LANGUAGE_LABELS[k])
   ) {
     useMessage(10560, 'warn')
     return false
   }
 
   if (
-    !kunGalgameResourcePlatformOptions
-      .map((platform) => platform.value as string)
-      .filter((item) => item !== 'all')
-      .includes(link.platform)
+    !link.platforms.length ||
+    link.platforms.some((k) => !PLATFORM_LABELS[k])
   ) {
     useMessage(10561, 'warn')
     return false
+  }
+
+  if (hasRuntimeAxis(link.type)) {
+    if (
+      !link.runtimes.length ||
+      link.runtimes.some((k) => !RUNTIME_LABELS[k])
+    ) {
+      useMessage(10570, 'warn')
+      return false
+    }
   }
 
   if (!parseResourceSize(link.size)) {

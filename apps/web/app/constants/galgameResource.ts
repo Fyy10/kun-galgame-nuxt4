@@ -1,21 +1,35 @@
 export const GALGAME_RESOURCE_TYPE_ICON_MAP: Record<string, string> = {
   game: 'lucide:box',
-  patch: 'lucide:puzzle',
   collection: 'lucide:boxes',
+  patch: 'lucide:puzzle',
+  crack_fix: 'lucide:wrench',
+  mod: 'lucide:blocks',
+  tool: 'lucide:wrench',
+  walkthrough: 'lucide:book-open',
+  ost: 'lucide:music-4',
   voice: 'lucide:music-4',
+  cg: 'lucide:images',
+  wallpaper: 'lucide:image',
+  artbook: 'lucide:book-open',
+  video: 'lucide:video',
+  other: 'lucide:ellipsis',
   image: 'lucide:image',
   ai: 'simple-icons:openai',
-  video: 'lucide:video',
   others: 'lucide:ellipsis'
 }
 
 export const GALGAME_RESOURCE_PLATFORM_ICON_MAP: Record<string, string> = {
   windows: 'ant-design:windows-outlined',
+  win: 'ant-design:windows-outlined',
   mac: 'iconoir:apple-mac',
   linux: 'ant-design:linux-outlined',
+  lin: 'ant-design:linux-outlined',
   emulator: 'lucide:terminal',
   app: 'lucide:smartphone',
-  others: 'lucide:ellipsis'
+  and: 'lucide:smartphone',
+  ios: 'lucide:smartphone',
+  others: 'lucide:ellipsis',
+  oth: 'lucide:ellipsis'
 }
 
 export type ProviderKey =

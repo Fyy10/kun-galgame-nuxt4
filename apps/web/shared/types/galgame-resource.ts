@@ -4,8 +4,13 @@ export interface GalgameResource {
   galgame_id: number
   user: KunUser
   type: string
+  title?: string
+  version_label?: string
   language: string
   platform: string
+  languages?: string[]
+  platforms?: string[]
+  runtimes?: string[]
   size: string
   status: number
   download: number

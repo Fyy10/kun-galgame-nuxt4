@@ -3,12 +3,12 @@ import {
   GALGAME_RESOURCE_TYPE_ICON_MAP,
   GALGAME_RESOURCE_PLATFORM_ICON_MAP
 } from '~/constants/galgameResource'
+import { KUN_USER_TEXT_CHIP_CLASS } from '~/constants/galgame'
 import {
-  KUN_GALGAME_RESOURCE_TYPE_MAP,
-  KUN_GALGAME_RESOURCE_LANGUAGE_MAP,
-  KUN_GALGAME_RESOURCE_PLATFORM_MAP,
-  KUN_USER_TEXT_CHIP_CLASS
-} from '~/constants/galgame'
+  resourceLanguageLabel,
+  resourcePlatformLabel,
+  resourceTypeLabel
+} from '~~/shared/utils/galgameResourceVocab'
 
 defineProps<{
   resource: GalgameResourceCard
@@ -28,7 +28,7 @@ defineProps<{
           :name="GALGAME_RESOURCE_PLATFORM_ICON_MAP[resource.platform]"
           class="text-primary h-4 w-4"
         />
-        {{ KUN_GALGAME_RESOURCE_PLATFORM_MAP[resource.platform] }}
+        {{ resourcePlatformLabel(resource.platform) }}
       </KunChip>
 
       <KunChip color="warning" :class-name="KUN_USER_TEXT_CHIP_CLASS">
@@ -53,10 +53,10 @@ defineProps<{
               class="icon"
               :name="GALGAME_RESOURCE_TYPE_ICON_MAP[resource.type]"
             />
-            {{ KUN_GALGAME_RESOURCE_TYPE_MAP[resource.type] }}
+            {{ resourceTypeLabel(resource.type) }}
           </span>
 
-          {{ KUN_GALGAME_RESOURCE_LANGUAGE_MAP[resource.language] }}
+          {{ resourceLanguageLabel(resource.language) }}
         </div>
 
         <div class="flex gap-2">

@@ -292,6 +292,14 @@ func (s *ResourceService) CreateResource(
 		return errors.ErrBadRequest("资源体积只能填写数字和 MB / GB")
 	}
 	req.Size = size
+	axes, axesErr := parseResourceAxes(
+		req.Type, req.Title, req.VersionLabel,
+		req.Languages, req.Platforms, req.Runtimes,
+		req.Language, req.Platform,
+	)
+	if axesErr != nil {
+		return axesErr
+	}
 	req.Note = markdown.NormalizeStoredContent(req.Note)
 	if s.resourceRepo.IsResourcePublishBanned(req.GalgameID) {
 		return errors.ErrForbidden("该游戏已被禁止发布下载资源")
@@ -306,15 +314,20 @@ func (s *ResourceService) CreateResource(
 	providers := utils.DetectProvidersFromURLs(req.Link)
 	providerNames := utils.DetectProviderNamesFromURLs(req.Link)
 	res := &model.GalgameResource{
-		Type:      req.Type,
-		Language:  req.Language,
-		Platform:  req.Platform,
-		Size:      req.Size,
-		Code:      req.Code,
-		Password:  req.Password,
-		Note:      req.Note,
-		GalgameID: req.GalgameID,
-		UserID:    userID,
+		Type:         axes.Type,
+		Title:        axes.Title,
+		VersionLabel: axes.VersionLabel,
+		Language:     axes.Language,
+		Platform:     axes.Platform,
+		Languages:    axes.Languages,
+		Platforms:    axes.Platforms,
+		Runtimes:     axes.Runtimes,
+		Size:         req.Size,
+		Code:         req.Code,
+		Password:     req.Password,
+		Note:         req.Note,
+		GalgameID:    req.GalgameID,
+		UserID:       userID,
 	}
 
 	txErr := s.resourceRepo.DB().Transaction(func(tx *gorm.DB) error {
@@ -401,6 +414,14 @@ func (s *ResourceService) UpdateResource(
 		return errors.ErrBadRequest("资源体积只能填写数字和 MB / GB")
 	}
 	req.Size = size
+	axes, axesErr := parseResourceAxes(
+		req.Type, req.Title, req.VersionLabel,
+		req.Languages, req.Platforms, req.Runtimes,
+		req.Language, req.Platform,
+	)
+	if axesErr != nil {
+		return axesErr
+	}
 	req.Note = markdown.NormalizeStoredContent(req.Note)
 	row, ok := s.resourceRepo.FindByID(req.GalgameResourceID)
 	if !ok {
@@ -423,13 +444,18 @@ func (s *ResourceService) UpdateResource(
 	providers := utils.DetectProvidersFromURLs(req.Link)
 	providerNames := utils.DetectProviderNamesFromURLs(req.Link)
 	fields := map[string]any{
-		"type":     req.Type,
-		"language": req.Language,
-		"platform": req.Platform,
-		"size":     req.Size,
-		"code":     req.Code,
-		"password": req.Password,
-		"note":     req.Note,
+		"type":          axes.Type,
+		"title":         axes.Title,
+		"version_label": axes.VersionLabel,
+		"language":      axes.Language,
+		"platform":      axes.Platform,
+		"languages":     axes.Languages,
+		"platforms":     axes.Platforms,
+		"runtimes":      axes.Runtimes,
+		"size":          req.Size,
+		"code":          req.Code,
+		"password":      req.Password,
+		"note":          req.Note,
 	}
 
 	txErr := s.resourceRepo.DB().Transaction(func(tx *gorm.DB) error {
