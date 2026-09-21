@@ -2,10 +2,9 @@
 import { checkGalgameResourcePublish } from '../utils/checkGalgameResourcePublish'
 import {
   FILE_SIZE_UNITS,
-  clampResourceSizeAmount,
+  applyResourceSizeInput,
   joinResourceSize,
-  splitResourceSize,
-  type FileSizeUnit
+  splitResourceSize
 } from '~~/shared/utils/resourceSize'
 import {
   LANGUAGE_OPTIONS,
@@ -74,8 +73,11 @@ const defaultForm = (): FormShape => ({
 const snapshotFromResource = (): FormShape => {
   const r = props.resource
   if (!r) return defaultForm()
-  const languages =
-    r.languages?.length ? r.languages : r.language === 'others' ? ['other'] : [r.language]
+  const languages = r.languages?.length
+    ? r.languages
+    : r.language === 'others'
+      ? ['other']
+      : [r.language]
   const platforms = r.platforms?.length
     ? r.platforms
     : r.platform === 'windows'
@@ -115,6 +117,12 @@ const snapshotFromResource = (): FormShape => {
 
 const form = ref<FormShape>(snapshotFromResource())
 const size = reactive(splitResourceSize(form.value.size))
+const sizeInput = ref<{ inputRef?: HTMLInputElement | null } | null>(null)
+
+const paintSizeAmount = () => {
+  const el = sizeInput.value?.inputRef
+  if (el && el.value !== size.amount) el.value = size.amount
+}
 
 watch(open, (isOpen) => {
   if (!isOpen) return
@@ -124,9 +132,16 @@ watch(open, (isOpen) => {
 watch(size, () => {
   form.value.size = joinResourceSize(size)
 })
+watch(
+  () => size.unit,
+  () => {
+    nextTick(paintSizeAmount)
+  }
+)
 
 const onSizeAmount = (raw: string | number) => {
-  size.amount = clampResourceSizeAmount(String(raw))
+  Object.assign(size, applyResourceSizeInput(String(raw), size.unit))
+  nextTick(paintSizeAmount)
 }
 
 const isSubmitting = ref(false)
@@ -164,7 +179,6 @@ const handleCancel = () => {
   open.value = false
 }
 
-const sizeUnitOptions = [...FILE_SIZE_UNITS]
 const showRuntime = computed(() => hasRuntimeAxis(form.value.type))
 watch(
   () => form.value.type,
@@ -198,6 +212,10 @@ const typeOptions = computed(() => {
 
       <KunTextarea
         :model-value="form.link.join(',')"
+        label="资源链接"
+        required
+        description="网盘 / 磁链 / 网址，同一资源多链接用英文逗号分隔"
+        placeholder="https://..."
         @update:model-value="
           (v) =>
             (form.link = String(v)
@@ -205,43 +223,53 @@ const typeOptions = computed(() => {
               .map((s) => s.trim())
               .filter(Boolean))
         "
-        placeholder="资源链接 (网盘 | 磁链 | 网址); 同一资源多链接用英文逗号分隔"
+      />
+
+      <KunInput
+        v-model="form.title"
+        label="资源标题（可选）"
+        description="显示在资源卡片上，用来区分同一类型的多份资源"
+        placeholder="例如 全年龄补丁 / PC+安卓直装"
       />
 
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div class="flex items-end gap-2">
-          <div class="flex-1">
-            <KunInput
-              :model-value="size.amount"
-              placeholder="资源体积"
-              inputmode="decimal"
-              @update:model-value="onSizeAmount"
+        <div class="space-y-1 sm:col-span-2">
+          <div class="flex items-end gap-2">
+            <div class="min-w-0 flex-1">
+              <KunInput
+                ref="sizeInput"
+                :model-value="size.amount"
+                label="资源体积"
+                required
+                placeholder="3.8 或 500MB"
+                inputmode="decimal"
+                @update:model-value="onSizeAmount"
+                @blur="paintSizeAmount"
+              />
+            </div>
+            <KunRadioGroup
+              v-model="size.unit"
+              :options="FILE_SIZE_UNITS"
+              variant="pill"
+              orientation="horizontal"
+              color="primary"
+              size="md"
+              aria-label="资源体积单位"
+              class-name="mb-px w-auto shrink-0"
             />
           </div>
-          <div class="w-24 shrink-0">
-            <KunSelect
-              :model-value="size.unit"
-              :options="sizeUnitOptions"
-              aria-label="资源体积单位"
-              @set="(v) => (size.unit = v as FileSizeUnit)"
-            >
-              <span>{{ size.unit }}</span>
-            </KunSelect>
-          </div>
+          <p class="text-default-500 text-xs">
+            可直接输入 500MB / 3.8GB，单位会跟着变
+          </p>
         </div>
-        <KunInput v-model="form.code" placeholder="提取码 (可选)" />
-        <KunInput v-model="form.password" placeholder="解压码 (可选)" />
+        <KunInput v-model="form.code" label="提取码（可选）" />
+        <KunInput v-model="form.password" label="解压码（可选）" />
       </div>
 
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <KunSelect
-          v-model="form.type"
-          label="资源类型"
-          :options="typeOptions"
-        >
+        <KunSelect v-model="form.type" label="资源类型" :options="typeOptions">
           <span>{{ resourceTypeLabel(form.type) }}</span>
         </KunSelect>
-        <KunInput v-model="form.title" placeholder="资源标题（可选）" />
         <KunSelect
           v-model="form.version_label"
           label="适配版本（可选）"
@@ -262,18 +290,20 @@ const typeOptions = computed(() => {
           searchable
           search-placeholder="搜索平台"
         />
-        <KunSelect
-          v-if="showRuntime"
-          v-model="form.runtimes"
-          label="运行环境（可多选）"
-          :options="RUNTIME_OPTIONS"
-          multiple
-        />
+        <div v-if="showRuntime" class="sm:col-span-2">
+          <KunSelect
+            v-model="form.runtimes"
+            label="运行环境（可多选）"
+            :options="RUNTIME_OPTIONS"
+            multiple
+          />
+        </div>
       </div>
 
       <div class="space-y-1">
-        <p class="text-default-600 text-sm font-medium">
-          资源备注 (可选) — 注意事项 / 介绍 / 作者信息, 支持 Markdown 与图片
+        <p class="text-default-700 text-sm font-medium">资源备注（可选）</p>
+        <p class="text-default-500 text-xs">
+          注意事项 / 介绍 / 作者信息，支持 Markdown 与图片
         </p>
         <KunMilkdownDualEditorProvider
           :value-markdown="form.note"

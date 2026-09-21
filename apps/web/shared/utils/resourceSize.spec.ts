@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  applyResourceSizeInput,
   clampResourceSizeAmount,
+  detectResourceSizeUnit,
   joinResourceSize,
   parseResourceSize,
   splitResourceSize
@@ -48,5 +50,51 @@ describe('joinResourceSize and clampResourceSizeAmount', () => {
   it('keeps only digits and two decimals', () => {
     expect(clampResourceSizeAmount('12a.3b45')).toBe('12.34')
     expect(clampResourceSizeAmount('2GB')).toBe('2')
+    expect(clampResourceSizeAmount('3,8')).toBe('3.8')
+  })
+})
+
+describe('detectResourceSizeUnit', () => {
+  it('reads a unit typed after the number', () => {
+    expect(detectResourceSizeUnit('500MB')).toBe('MB')
+    expect(detectResourceSizeUnit('500mb')).toBe('MB')
+    expect(detectResourceSizeUnit('500 m')).toBe('MB')
+    expect(detectResourceSizeUnit('3.8GB')).toBe('GB')
+    expect(detectResourceSizeUnit('2G')).toBe('GB')
+    expect(detectResourceSizeUnit('15M')).toBe('MB')
+  })
+
+  it('ignores a bare number', () => {
+    expect(detectResourceSizeUnit('500')).toBeNull()
+    expect(detectResourceSizeUnit('3.8')).toBeNull()
+    expect(detectResourceSizeUnit('')).toBeNull()
+  })
+})
+
+describe('applyResourceSizeInput', () => {
+  it('lets a typed unit override the selected unit', () => {
+    expect(applyResourceSizeInput('500MB', 'GB')).toEqual({
+      amount: '500',
+      unit: 'MB'
+    })
+    expect(applyResourceSizeInput('3.8gb', 'MB')).toEqual({
+      amount: '3.8',
+      unit: 'GB'
+    })
+    expect(applyResourceSizeInput('15m', 'GB')).toEqual({
+      amount: '15',
+      unit: 'MB'
+    })
+  })
+
+  it('keeps the selected unit when the amount has no unit', () => {
+    expect(applyResourceSizeInput('500', 'GB')).toEqual({
+      amount: '500',
+      unit: 'GB'
+    })
+    expect(applyResourceSizeInput('3.8', 'MB')).toEqual({
+      amount: '3.8',
+      unit: 'MB'
+    })
   })
 })

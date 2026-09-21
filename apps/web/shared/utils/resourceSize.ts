@@ -11,8 +11,7 @@ export interface FileSizeParts {
 }
 
 const strictRe = /^([0-9]{1,6})(?:\.([0-9]{1,2}))?\s*(MB|GB)$/i
-const tokenRe =
-  /(\d{1,6}(?:[.,]\d{1,4})?)\s*\+?\s*[.·]?\s*(MMB|GGB|MB|GB|KB)/gi
+const tokenRe = /(\d{1,6}(?:[.,]\d{1,4})?)\s*\+?\s*[.·]?\s*(MMB|GGB|MB|GB|KB)/gi
 
 export const parseResourceSize = (text: string): string | null => {
   const m = strictRe.exec(text.trim().toUpperCase())
@@ -43,11 +42,32 @@ export const joinResourceSize = (parts: FileSizeParts): string =>
   parts.amount ? `${parts.amount} ${parts.unit}` : ''
 
 export const clampResourceSizeAmount = (raw: string): string => {
-  const digits = raw.replace(/[^0-9.]/g, '')
+  const digits = raw.replace(/,/g, '.').replace(/[^0-9.]/g, '')
   const [whole = '', ...rest] = digits.split('.')
   const head = whole.slice(0, 6)
   return rest.length ? `${head}.${rest.join('').slice(0, 2)}` : head
 }
+
+const typedUnitRe = /(?:^|[^A-Z])(MMB|GGB|MB|GB|M|G)(?![A-Z])/g
+
+export const detectResourceSizeUnit = (raw: string): FileSizeUnit | null => {
+  const s = raw.toUpperCase()
+  let last: FileSizeUnit | null = null
+  typedUnitRe.lastIndex = 0
+  for (let m = typedUnitRe.exec(s); m; m = typedUnitRe.exec(s)) {
+    const token = m[1]!
+    last = token === 'GB' || token === 'GGB' || token === 'G' ? 'GB' : 'MB'
+  }
+  return last
+}
+
+export const applyResourceSizeInput = (
+  raw: string,
+  currentUnit: FileSizeUnit
+): FileSizeParts => ({
+  amount: clampResourceSizeAmount(raw),
+  unit: detectResourceSizeUnit(raw) ?? currentUnit
+})
 
 const extractResourceSize = (raw: string): string | null => {
   const folded = raw
