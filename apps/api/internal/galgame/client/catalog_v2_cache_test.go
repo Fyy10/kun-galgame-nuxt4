@@ -230,6 +230,17 @@ func TestV2CacheTTLClasses(t *testing.T) {
 	}
 }
 
+func TestV2CacheCalendarTTL(t *testing.T) {
+	c, mr, _ := newV2CacheFixture(t, true)
+	if _, _, appErr := c.doV2(context.Background(), http.MethodGet, "/catalog/calendar", nil, nil); appErr != nil {
+		t.Fatalf("calendar: %v", appErr)
+	}
+	key := doV2CacheKey("/catalog/calendar", nil)
+	if got := mr.TTL(key); got != v2CacheCalendarTTL {
+		t.Fatalf("calendar TTL = %v, want %v", got, v2CacheCalendarTTL)
+	}
+}
+
 func TestV2CacheNilRedisDisabled(t *testing.T) {
 	c, _, o := newV2CacheFixture(t, false)
 	ctx := context.Background()
@@ -267,7 +278,7 @@ func TestV2CacheTTL(t *testing.T) {
 		{"/v2/catalog/works", v2CacheListTTL},
 		{"/v2/catalog/works/123", v2CacheDetailTTL},
 		{"/v2/catalog/works/123/covers", v2CacheDetailTTL},
-		{"/v2/catalog/calendar", v2CacheListTTL},
+		{"/v2/catalog/calendar", v2CacheCalendarTTL},
 		{"/v2/catalog/search", v2CacheListTTL},
 		{"/v2/catalog/companies", v2CacheListTTL},
 		{"/v2/catalog/companies/5/graph", v2CacheDetailTTL},
