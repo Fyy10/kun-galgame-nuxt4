@@ -17,7 +17,6 @@ func main() {
 	_ = godotenv.Load()
 
 	dryRun := flag.Bool("dry-run", false, "Report planned changes but do not write")
-	onlyEmpty := flag.Bool("only-empty", true, "Skip rows that already have platforms or runtimes")
 	batchSize := flag.Int("batch", 500, "Rows per batch")
 	flag.Parse()
 
@@ -31,6 +30,7 @@ func main() {
 
 	type row struct {
 		ID        int
+		Type      string
 		Platform  string
 		Note      string
 		Size      string
@@ -41,13 +41,14 @@ func main() {
 	processed, updated, skipped := 0, 0, 0
 	lastID := 0
 	for {
-		q := db.Table("galgame_resource").
-			Select("id, platform, note, size, platforms, runtimes").
+		var rows []row
+		err := db.Table("galgame_resource").
+			Select("id, type, platform, note, size, platforms, runtimes").
 			Where("id > ?", lastID).
 			Order("id ASC").
-			Limit(*batchSize)
-		var rows []row
-		if err := q.Scan(&rows).Error; err != nil {
+			Limit(*batchSize).
+			Scan(&rows).Error
+		if err != nil {
 			slog.Error("拉取失败", "error", err)
 			os.Exit(1)
 		}
@@ -57,35 +58,27 @@ func main() {
 		for _, r := range rows {
 			processed++
 			lastID = r.ID
-			if *onlyEmpty {
-				hasP := len(r.Platforms) > 0 && string(r.Platforms) != "[]"
-				hasR := len(r.Runtimes) > 0 && string(r.Runtimes) != "[]"
-				if hasP || hasR {
-					skipped++
-					continue
-				}
-			}
-			g := resourcevocab.GuessFromText(r.Note, r.Size, r.Platform)
-			if len(g.Platforms) == 0 && len(g.Runtimes) == 0 {
+			patch, ok := planAxes(axesRow{
+				Type: r.Type, Legacy: r.Platform, Note: r.Note, Size: r.Size,
+				Platforms: scanKeys(r.Platforms), Runtimes: scanKeys(r.Runtimes),
+			})
+			if !ok {
 				skipped++
 				continue
 			}
-			compat := resourcevocab.CompatPlatform(g.Platforms, g.Runtimes)
 			if *dryRun {
 				slog.Info("将更新",
 					"id", r.ID,
-					"legacy", r.Platform,
-					"platforms", []string(g.Platforms),
-					"runtimes", []string(g.Runtimes),
-					"compat", compat,
+					"set_platforms", patch.SetP, "platforms", []string(patch.Platforms),
+					"set_runtimes", patch.SetR, "runtimes", []string(patch.Runtimes),
 				)
 			} else {
-				fields := map[string]any{
-					"platforms": g.Platforms,
-					"runtimes":  g.Runtimes,
+				fields := map[string]any{}
+				if patch.SetP {
+					fields["platforms"] = patch.Platforms
 				}
-				if compat != "" {
-					fields["platform"] = compat
+				if patch.SetR {
+					fields["runtimes"] = patch.Runtimes
 				}
 				if err := db.Table("galgame_resource").Where("id = ?", r.ID).
 					Updates(fields).Error; err != nil {
@@ -97,4 +90,10 @@ func main() {
 		}
 	}
 	slog.Info("完成", "processed", processed, "updated", updated, "skipped", skipped, "dry_run", *dryRun)
+}
+
+func scanKeys(raw []byte) resourcevocab.Keys {
+	var k resourcevocab.Keys
+	_ = k.Scan(raw)
+	return k
 }

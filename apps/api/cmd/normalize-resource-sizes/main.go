@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"os"
 
-	"kun-galgame-api/internal/galgame/filesize"
 	"kun-galgame-api/internal/infrastructure/database"
 	"kun-galgame-api/pkg/config"
 	"kun-galgame-api/pkg/logger"
@@ -65,7 +64,7 @@ func main() {
 		for _, r := range rows {
 			processed++
 			lastID = r.ID
-			next, ok := filesize.Extract(r.Size)
+			next, ok := extract(r.Size)
 			if !ok {
 				skipped++
 				slog.Warn("无法解析体积", "id", r.ID, "size", r.Size)

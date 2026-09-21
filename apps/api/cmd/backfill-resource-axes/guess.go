@@ -1,13 +1,17 @@
-package resourcevocab
+package main
 
-import "strings"
+import (
+	"strings"
 
-type Guess struct {
-	Platforms Keys
-	Runtimes  Keys
+	"kun-galgame-api/internal/galgame/resourcevocab"
+)
+
+type guess struct {
+	Platforms resourcevocab.Keys
+	Runtimes  resourcevocab.Keys
 }
 
-func GuessFromText(note, size, legacyPlatform string) Guess {
+func guessFromText(note, size, legacyPlatform string) guess {
 	blob := strings.ToLower(note + "\n" + size)
 	plats := map[string]bool{}
 	runs := map[string]bool{}
@@ -25,24 +29,35 @@ func GuessFromText(note, size, legacyPlatform string) Guess {
 	}
 	if strings.Contains(blob, "tyranor next") || strings.Contains(blob, "tyranor-next") {
 		addRun("tyranor-next")
+		addPlat("and")
 	} else if strings.Contains(blob, "tyrano") || containsTok(blob, "ty") {
 		addRun("tyranor")
+		addPlat("and")
 	}
 	if strings.Contains(blob, "kirikiroid") || strings.Contains(blob, "xp3") ||
 		containsTok(blob, "kr") {
 		addRun("kirikiroid2")
+		addPlat("and")
 	}
 	if strings.Contains(blob, "onscripter") || containsTok(blob, "ons") {
 		addRun("onscripter")
+		addPlat("and")
 	}
 	if strings.Contains(blob, "joiplay") {
 		addRun("joiplay")
+		addPlat("and")
 	}
 	if strings.Contains(blob, "easyrpg") {
 		addRun("easyrpg")
+		addPlat("and")
 	}
 	if strings.Contains(blob, "ren'py") || strings.Contains(blob, "renpy") {
 		addRun("renpy-android")
+		addPlat("and")
+	}
+	if strings.Contains(blob, "krkrsdl2") {
+		addRun("krkrsdl2")
+		addPlat("and")
 	}
 	if strings.Contains(blob, "直装") || strings.Contains(blob, "apk") {
 		addRun("native-and")
@@ -59,7 +74,7 @@ func GuessFromText(note, size, legacyPlatform string) Guess {
 		}
 	}
 
-	p, _ := LegacyPlatform(legacyPlatform)
+	p, _ := resourcevocab.LegacyPlatform(legacyPlatform)
 	for _, k := range p {
 		addPlat(k)
 	}
@@ -71,9 +86,9 @@ func GuessFromText(note, size, legacyPlatform string) Guess {
 		addPlat("and")
 	}
 
-	outP, _ := Platforms(setKeys(plats))
-	outR, _ := Runtimes(setKeys(runs))
-	return Guess{Platforms: outP, Runtimes: outR}
+	outP, _ := resourcevocab.Platforms(setKeys(plats))
+	outR, _ := resourcevocab.Runtimes(setKeys(runs))
+	return guess{Platforms: outP, Runtimes: outR}
 }
 
 func containsTok(blob, tok string) bool {
