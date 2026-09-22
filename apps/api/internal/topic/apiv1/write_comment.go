@@ -127,13 +127,10 @@ func (w *Writes) createComment(ctx context.Context, in *createCommentInput) (*cr
 		if inReplyTo == user.ID {
 			return nil
 		}
+		awards = append(awards, commentedAward(inReplyTo, id))
 		var h service.InteractionHelpers
 		preview := truncatePreview(strings.TrimSpace(body), constants.TextPreviewLength)
-		if err := h.CreateReplyMessage(tx, user.ID, inReplyTo, "commented", preview, topic.ID, 0, id); err != nil {
-			return err
-		}
-		awards = append(awards, commentedAward(inReplyTo, id))
-		return nil
+		return h.CreateReplyMessage(tx, user.ID, inReplyTo, "commented", preview, topic.ID, 0, id)
 	})
 	if p := txProblem(err); p != nil {
 		return nil, p
