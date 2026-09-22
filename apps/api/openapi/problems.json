@@ -182,6 +182,15 @@
     },
     {
       "object": "problem_type",
+      "code": "POLL_CLOSED",
+      "domain": "kungal",
+      "status": 409,
+      "type": "https://developer.nextmoe.dev/problems/kungal/poll-closed",
+      "title": "Poll closed",
+      "description": "The poll no longer accepts votes: it is past closes_at. Nothing about the request is wrong."
+    },
+    {
+      "object": "problem_type",
       "code": "SELF_LIKE_FORBIDDEN",
       "domain": "kungal",
       "status": 403,
@@ -206,6 +215,15 @@
       "type": "https://developer.nextmoe.dev/problems/kungal/topic-daily-limit-reached",
       "title": "Topic daily limit reached",
       "description": "The caller has created as many topics in the last 24 hours as their moemoepoint balance allows. limit is that number."
+    },
+    {
+      "object": "problem_type",
+      "code": "VOTE_ALREADY_CAST",
+      "domain": "kungal",
+      "status": 409,
+      "type": "https://developer.nextmoe.dev/problems/kungal/vote-already-cast",
+      "title": "Vote already cast",
+      "description": "The caller has already voted and this poll does not allow changing a vote."
     },
     {
       "object": "problem_type",

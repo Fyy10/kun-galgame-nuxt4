@@ -34,6 +34,8 @@ var requiredCodes = []struct {
 	{CodeMoemoepointInsufficient, DomainKungal, 403},
 	{CodeSelfLikeForbidden, DomainKungal, 403},
 	{CodeSelfUpvoteForbidden, DomainKungal, 403},
+	{CodePollClosed, DomainKungal, 409},
+	{CodeVoteAlreadyCast, DomainKungal, 409},
 }
 
 func TestRegistryClosedAndExact(t *testing.T) {

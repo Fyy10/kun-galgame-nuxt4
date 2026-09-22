@@ -63,6 +63,8 @@ const (
 	CodeTopicDailyLimitReached       = "TOPIC_DAILY_LIMIT_REACHED"
 	CodeMoemoepointInsufficient      = "MOEMOEPOINT_INSUFFICIENT"
 	CodeSelfLikeForbidden            = "SELF_LIKE_FORBIDDEN"
+	CodePollClosed                   = "POLL_CLOSED"
+	CodeVoteAlreadyCast              = "VOTE_ALREADY_CAST"
 	CodeSelfUpvoteForbidden          = "SELF_UPVOTE_FORBIDDEN"
 )
 
@@ -117,6 +119,8 @@ var Codes = []Def{
 	{CodeTopicDailyLimitReached, DomainKungal, http.StatusTooManyRequests, "Topic daily limit reached", "The caller has created as many topics in the last 24 hours as their moemoepoint balance allows. limit is that number.", []ExtDef{{Name: "limit", Type: "integer"}}},
 	{CodeMoemoepointInsufficient, DomainKungal, http.StatusForbidden, "Moemoepoint insufficient", "The caller's moemoepoint balance, as this forum last cached it, is below what the operation costs. required is that cost.", []ExtDef{{Name: "required", Type: "integer"}}},
 	{CodeSelfLikeForbidden, DomainKungal, http.StatusForbidden, "Self like forbidden", "Users cannot like their own topics, replies or comments.", nil},
+	{CodePollClosed, DomainKungal, http.StatusConflict, "Poll closed", "The poll no longer accepts votes: it is past closes_at. Nothing about the request is wrong.", nil},
+	{CodeVoteAlreadyCast, DomainKungal, http.StatusConflict, "Vote already cast", "The caller has already voted and this poll does not allow changing a vote.", nil},
 	{CodeSelfUpvoteForbidden, DomainKungal, http.StatusForbidden, "Self upvote forbidden", "Users cannot upvote their own topics.", nil},
 }
 
