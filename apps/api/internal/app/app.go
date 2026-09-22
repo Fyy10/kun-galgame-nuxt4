@@ -60,6 +60,7 @@ import (
 	toolsetHandler "kun-galgame-api/internal/toolset/handler"
 	toolsetRepo "kun-galgame-api/internal/toolset/repository"
 	toolsetService "kun-galgame-api/internal/toolset/service"
+	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
 	topicHandler "kun-galgame-api/internal/topic/handler"
 	topicRepo "kun-galgame-api/internal/topic/repository"
 	topicService "kun-galgame-api/internal/topic/service"
@@ -106,6 +107,7 @@ type App struct {
 	Config      *config.Config
 	OAuthClient *oauth.Client
 	UserState   *repository.StateRepository
+	TopicAward  topicapiv1.AwardFunc
 	TrustCheck  *gate.CheckService
 	TrustScan   *gate.ScanService
 	Notifier    msgService.Notifier

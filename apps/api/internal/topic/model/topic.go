@@ -23,12 +23,13 @@ type Topic struct {
 	BestAnswerID  *int `gorm:"column:best_answer_id;uniqueIndex;constraint:OnDelete:SET NULL" json:"best_answer_id"`
 	PinnedReplyID *int `gorm:"column:pinned_reply_id;uniqueIndex;constraint:OnDelete:SET NULL" json:"pinned_reply_id"`
 
-	LikeCount     int `gorm:"column:like_count;default:0" json:"like_count"`
-	DislikeCount  int `gorm:"column:dislike_count;default:0" json:"dislike_count"`
-	ReplyCount    int `gorm:"column:reply_count;default:0" json:"reply_count"`
-	CommentCount  int `gorm:"column:comment_count;default:0" json:"comment_count"`
-	FavoriteCount int `gorm:"column:favorite_count;default:0" json:"favorite_count"`
-	UpvoteCount   int `gorm:"column:upvote_count;default:0" json:"upvote_count"`
+	LikeCount      int `gorm:"column:like_count;default:0" json:"like_count"`
+	DislikeCount   int `gorm:"column:dislike_count;default:0" json:"dislike_count"`
+	ReplyCount     int `gorm:"column:reply_count;default:0" json:"reply_count"`
+	LastReplyFloor int `gorm:"column:last_reply_floor;not null;default:0" json:"-"`
+	CommentCount   int `gorm:"column:comment_count;default:0" json:"comment_count"`
+	FavoriteCount  int `gorm:"column:favorite_count;default:0" json:"favorite_count"`
+	UpvoteCount    int `gorm:"column:upvote_count;default:0" json:"upvote_count"`
 
 	CreatedAt time.Time `gorm:"column:created" json:"created"`
 	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`
@@ -55,6 +56,7 @@ func (TopicSection) TableName() string { return "topic_section" }
 type TopicSectionRelation struct {
 	TopicID        int `gorm:"column:topic_id;primaryKey" json:"topic_id"`
 	TopicSectionID int `gorm:"column:topic_section_id;primaryKey" json:"topic_section_id"`
+	Position       int `gorm:"column:position;not null;default:0" json:"position"`
 
 	CreatedAt time.Time `gorm:"column:created" json:"created"`
 	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`

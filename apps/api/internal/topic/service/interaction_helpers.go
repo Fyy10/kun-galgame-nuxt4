@@ -89,6 +89,24 @@ func recomputeTopicCounts(tx *gorm.DB, topicID int) error {
 		WHERE id = ?`, topicID, topicID, topicID).Error
 }
 
+func RecomputeTopicCounts(tx *gorm.DB, topicID int) error {
+	return recomputeTopicCounts(tx, topicID)
+}
+
+func (h InteractionHelpers) NotifyMentionsLimited(tx *gorm.DB, senderID, topicID, replyFloor, commentID int, content string, limit int) error {
+	preview := truncate(markdown.StripReferenceTokens(content), constants.TextPreviewLength)
+	ids := markdown.ExtractMentionIDs(content)
+	if limit > 0 && len(ids) > limit {
+		ids = ids[:limit]
+	}
+	for _, uid := range ids {
+		if err := h.CreateTopicMessageWithContent(tx, senderID, uid, "mentioned", preview, topicID, replyFloor, commentID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func truncate(s string, maxLen int) string {
 	runes := []rune(s)
 	if len(runes) <= maxLen {
