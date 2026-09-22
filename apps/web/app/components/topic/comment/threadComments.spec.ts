@@ -20,7 +20,12 @@ const comment = (
   parent_comment_id: parent,
   author: user(id),
   in_reply_to_user: user('1'),
-  text: id,
+  content: {
+    object: 'document',
+    children: [
+      { object: 'paragraph', children: [{ object: 'text', value: id }] }
+    ]
+  },
   like_count: 0,
   created_at: created,
   edited_at: null,

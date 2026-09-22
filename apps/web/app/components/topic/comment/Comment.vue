@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { useMediaQuery } from '@vueuse/core'
+import ContentDocument from '~/components/content/Document.vue'
 import type { Comment } from '#shared/utils/api/schemas'
+import { settle } from '#shared/utils/api/problem'
 import { useTopicReplies } from '~/composables/topic/useTopicReplies'
+import { contentPlainText } from '~/utils/contentPlainText'
 import { toKunUser } from '~/utils/userRef'
+import { updateCommentSchema } from '~/validations/topic'
 import { threadComments } from './threadComments'
 
 const props = defineProps<{
@@ -12,14 +16,12 @@ const props = defineProps<{
 
 const currentUserId = usePersistUserStore().id
 const topicId = inject<number>('topicId', 0)
+const api = useApiClient()
 const { refreshReply } = useTopicReplies(String(topicId))
-const canEditTopicComment = useCan('comment.topic.edit')
-const canEdit = (comment: Comment) =>
-  Number(comment.author.id) === currentUserId || canEditTopicComment.value
 const comments = computed(() => props.commentsData)
 const activeCommentId = ref<string | null>(null)
 const targetUserForPanel = ref<KunUser | null>(null)
-const parentCommentIdForPanel = ref<number | null>(null)
+const parentCommentIdForPanel = ref<string | null>(null)
 
 const threadedComments = computed(() => threadComments(comments.value))
 
@@ -55,7 +57,7 @@ const handleClickComment = (comment: Comment) => {
   } else {
     activeCommentId.value = comment.id
     targetUserForPanel.value = toKunUser(comment.author)
-    parentCommentIdForPanel.value = Number(comment.id)
+    parentCommentIdForPanel.value = comment.id
   }
 }
 
@@ -70,9 +72,21 @@ const handleRemoveComment = () => {
   void refreshReply(props.replyId)
 }
 
-const handleStartEdit = (comment: Comment) => {
+// The editor writes the stored plain text, not the rendered document: an
+// /image/<hash> token resolves to an image node on read, so editing what the
+// document renders would drop the token.
+const handleStartEdit = async (comment: Comment) => {
+  const result = await settle(
+    api.GET('/comments/{comment_id}/source', {
+      params: { path: { comment_id: comment.id } }
+    })
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
+  }
+  editValue.value = result.data.text
   editingId.value = comment.id
-  editValue.value = comment.text
 }
 
 const handleCancelEdit = () => {
@@ -81,28 +95,30 @@ const handleCancelEdit = () => {
 }
 
 const handleSaveEdit = async (comment: Comment) => {
-  const content = editValue.value.trim()
-  if (!content) {
-    useMessage(10221, 'warn')
-    return
-  }
-  if (content.length > 1007) {
-    useMessage(10222, 'warn')
+  const body = { text: editValue.value }
+  const parsed = updateCommentSchema.safeParse(body)
+  if (!parsed.success) {
+    const message = JSON.parse(parsed.error.message)[0]
+    useMessage(formatKunZodIssue(message), 'warn')
     return
   }
 
   isSaving.value = true
-  const updated = await kunFetch<TopicComment>(`/topic/${topicId}/comment`, {
-    method: 'PUT',
-    body: { comment_id: Number(comment.id), content }
-  })
+  const result = await settle(
+    api.PATCH('/comments/{comment_id}', {
+      params: { path: { comment_id: comment.id } },
+      body
+    })
+  )
   isSaving.value = false
 
-  if (updated) {
-    await refreshReply(props.replyId)
-    editingId.value = null
-    useMessage('编辑评论成功', 'success')
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  await refreshReply(props.replyId)
+  editingId.value = null
+  useMessage('编辑评论成功', 'success')
 }
 </script>
 
@@ -138,7 +154,7 @@ const handleSaveEdit = async (comment: Comment) => {
             <div v-if="editingId === comment.id" class="space-y-2">
               <KunTextarea
                 name="edit-comment"
-                placeholder="请输入您的评论, 最大字数为 1007"
+                placeholder="请输入您的评论, 最大字数为 1000"
                 :rows="4"
                 v-model="editValue"
               />
@@ -160,13 +176,12 @@ const handleSaveEdit = async (comment: Comment) => {
               </div>
             </div>
 
-            <p
+            <ContentDocument
               v-else
-              style="overflow-wrap: break-word"
-              class="text-default-700 text-sm whitespace-pre-wrap"
-            >
-              {{ comment.text }}
-            </p>
+              compact
+              class-name="text-default-700 text-sm"
+              :document="comment.content"
+            />
 
             <div class="flex items-center justify-between">
               <span class="text-default-500 text-xs">
@@ -204,7 +219,9 @@ const handleSaveEdit = async (comment: Comment) => {
 
                   <div class="flex w-44 flex-col gap-2 p-2">
                     <KunButton
-                      v-if="canEdit(comment) && editingId !== comment.id"
+                      v-if="
+                        comment.viewer?.can_edit && editingId !== comment.id
+                      "
                       variant="light"
                       color="default"
                       size="sm"
@@ -216,7 +233,6 @@ const handleSaveEdit = async (comment: Comment) => {
                     </KunButton>
                     <TopicCommentDelete
                       :comment="comment"
-                      :topic-id="topicId"
                       @remove-comment="handleRemoveComment"
                     />
                     <ReportButton
@@ -224,7 +240,7 @@ const handleSaveEdit = async (comment: Comment) => {
                       menu
                       subject-kind="forum_comment"
                       :subject-id="Number(comment.id)"
-                      :snapshot="comment.text"
+                      :snapshot="contentPlainText(comment.content)"
                       :subject-url="`${kungal.domain.main}/topic/${topicId}?comment=${comment.id}`"
                     />
                   </div>
@@ -237,7 +253,7 @@ const handleSaveEdit = async (comment: Comment) => {
         <KunFadeCard v-if="!isMobile">
           <LazyTopicCommentPanel
             v-if="activeCommentId === comment.id && targetUserForPanel"
-            :reply-id="Number(replyId)"
+            :reply-id="replyId"
             :target-user="targetUserForPanel"
             :parent-comment-id="parentCommentIdForPanel ?? undefined"
             @get-comment="handleNewComment"
@@ -256,7 +272,7 @@ const handleSaveEdit = async (comment: Comment) => {
     >
       <LazyTopicCommentPanel
         v-if="targetUserForPanel"
-        :reply-id="Number(replyId)"
+        :reply-id="replyId"
         :target-user="targetUserForPanel"
         :parent-comment-id="parentCommentIdForPanel ?? undefined"
         @get-comment="handleNewComment"
