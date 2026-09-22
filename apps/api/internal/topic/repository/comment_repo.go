@@ -33,31 +33,6 @@ type CommentRow struct {
 	Edited          *time.Time
 }
 
-func (r *CommentRepository) FindCommentsByReplyIDs(replyIDs []int) (map[int][]CommentRow, error) {
-	if len(replyIDs) == 0 {
-		return make(map[int][]CommentRow), nil
-	}
-	var rows []CommentRow
-	err := r.db.Table("topic_comment tc").
-		Select(`tc.id, tc.topic_reply_id, tc.topic_id, tc.content,
-			tc.user_id, tc.target_user_id, tc.parent_comment_id,
-			(SELECT COUNT(*) FROM topic_comment_like WHERE topic_comment_id = tc.id) AS like_count,
-			tc.created AS created_at, tc.edited`).
-		Where("tc.topic_reply_id IN ?", replyIDs).
-		Where("tc.status = ?", 0).
-		Order("tc.created ASC").
-		Find(&rows).Error
-	if err != nil {
-		return nil, err
-	}
-
-	result := make(map[int][]CommentRow)
-	for _, row := range rows {
-		result[row.TopicReplyID] = append(result[row.TopicReplyID], row)
-	}
-	return result, nil
-}
-
 func (r *CommentRepository) FindCommentLikeStatus(userID int, commentIDs []int) (map[int]bool, error) {
 	return findInteractionStatus(r.db, "topic_comment_like", "topic_comment_id", userID, commentIDs)
 }

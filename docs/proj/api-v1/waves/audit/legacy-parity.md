@@ -476,6 +476,10 @@ W4：「未知 → `400 INVALID_PARAMETER` + `UNKNOWN_VALUE`」。
 
 ### 5.1 零调用者，可以删（21 条）
 
+> **2026-09-22 已执行，实际删了 22 条。** 本节漏了 `GET /api/topic/:tid/reply/reaction/history`（v1 替代是 `GET /api/v1/replies/{reply_id}/reactions`）；重新从 `router.go` 全量枚举 49 条 `/topic/**` 再逐条查调用者，才对上 22。基线 `legacy_route_baseline` 从 319 降到 297，差值正好 22。清单与替代关系见 `../../CHANGELOG.md` 的 2026-09-22 条目。
+>
+> 本节的口径还有一处不足：只 grep 了 `apps/web/**`，看不见 Flutter App。删之前另查了 `../../../../../kungal-apps`（App 仓库里一个 API 调用都还没写）、`assetlinks.json` 的指纹仍是全 0 占位、`/api/app/version` 是 0.1.0，且 `docs/proj/app-direct-api.md` 顶部横幅已写明 App 只绑 `/api/v1`。
+
 ```
 POST   /api/topic
 PUT    /api/topic/:tid
@@ -502,7 +506,7 @@ PUT    /api/topic/:tid/reply/pin
 
 这正好覆盖 W3 §2「旧路由的删除」列出的六条（`POST /api/topic`、`PUT /api/topic/:tid`、`POST|PUT|DELETE /api/topic/:tid/reply`、`GET /api/topic/:tid`、`GET /api/topic/:tid/reply/detail`），外加 W4 移走的全部互动路由。
 
-**两条删除前要处理的牵连**：
+**两条删除前要处理的牵连**（均已处理）：
 
 1. `apps/web/app/components/favorite/Toggle.vue:57` 这个通用收藏组件仍保留一条 `kunFetch(endpoint)` 的旧分支；话题侧传的是 `action`（v1 函数）而不是 `endpoint`（`apps/web/app/components/topic/footer/Favorite.vue:29,32`），所以话题不会走到它，其它域（website / galgame-quiz）还在用。删 `PUT /api/topic/:tid/favorite` 不影响它，但 `apps/web/app/components/favorite/Toggle.spec.ts:25,31` 里拿 `'/topic/9/favorite'` 当样例字符串，删路由后这个测试仍会通过（它 mock 了 `kunFetch`），只是字符串变成了指向不存在路由的化石。
 2. 旧 `CreateReply` 已经改用 `repository.NextReplyFloor`（`reply_service.go:193`），删掉 `POST /api/topic/:tid/reply` 之后这条路径只剩 `ModerationRemove` 等内部调用者，`ReplyService.CreateReply` 会变成死代码——可以一并清掉。

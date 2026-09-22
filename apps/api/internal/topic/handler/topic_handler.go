@@ -1,13 +1,9 @@
 package handler
 
 import (
-	"strconv"
-
 	"kun-galgame-api/internal/middleware"
 	"kun-galgame-api/internal/topic/dto"
 	"kun-galgame-api/internal/topic/service"
-	"kun-galgame-api/pkg/errors"
-	"kun-galgame-api/pkg/perm"
 	"kun-galgame-api/pkg/response"
 	"kun-galgame-api/pkg/utils"
 
@@ -15,18 +11,11 @@ import (
 )
 
 type TopicHandler struct {
-	topicService      *service.TopicService
-	topicWriteService *service.TopicWriteService
+	topicService *service.TopicService
 }
 
-func NewTopicHandler(
-	topicService *service.TopicService,
-	topicWriteService *service.TopicWriteService,
-) *TopicHandler {
-	return &TopicHandler{
-		topicService:      topicService,
-		topicWriteService: topicWriteService,
-	}
+func NewTopicHandler(topicService *service.TopicService) *TopicHandler {
+	return &TopicHandler{topicService: topicService}
 }
 
 func (h *TopicHandler) MyInteractions(c fiber.Ctx) error {
@@ -57,231 +46,4 @@ func (h *TopicHandler) GetResourceList(c fiber.Ctx) error {
 	}
 
 	return response.OK(c, items)
-}
-
-func (h *TopicHandler) GetDetail(c fiber.Ctx) error {
-	tid, err := strconv.Atoi(c.Params("tid"))
-	if err != nil {
-		return response.Error(c, errors.ErrBadRequest("无效的话题 ID"))
-	}
-
-	userInfo := middleware.GetUser(c)
-
-	detail, appErr := h.topicService.GetDetail(c.Context(), tid, userInfo)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	return response.OK(c, detail)
-}
-
-func (h *TopicHandler) GetTopicReactionHistory(c fiber.Ctx) error {
-	tid, err := strconv.Atoi(c.Params("tid"))
-	if err != nil {
-		return response.Error(c, errors.ErrBadRequest("无效的话题 ID"))
-	}
-
-	records, appErr := h.topicService.GetTopicReactionHistory(c.Context(), tid)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	return response.OK(c, records)
-}
-
-func (h *TopicHandler) Create(c fiber.Ctx) error {
-	user, appErr := middleware.MustGetUser(c)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	var req dto.CreateTopicRequest
-	if appErr := utils.ParseAndValidate(c, &req); appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	topicID, appErr := h.topicWriteService.Create(c.Context(), user.ID, &req)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	return response.OK(c, topicID)
-}
-
-func (h *TopicHandler) Update(c fiber.Ctx) error {
-	user, appErr := middleware.MustGetUser(c)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	tid, err := strconv.Atoi(c.Params("tid"))
-	if err != nil {
-		return response.Error(c, errors.ErrBadRequest("无��的话题 ID"))
-	}
-
-	var req dto.UpdateTopicRequest
-	if appErr := utils.ParseAndValidate(c, &req); appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	if appErr := h.topicWriteService.Update(c.Context(), user.ID, user.Can(perm.TopicEditAny), tid, &req); appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	return response.OKMessage(c, "话题更新成功")
-}
-
-func (h *TopicHandler) ToggleLike(c fiber.Ctx) error {
-	user, appErr := middleware.MustGetUser(c)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	tid, err := strconv.Atoi(c.Params("tid"))
-	if err != nil {
-		return response.Error(c, errors.ErrBadRequest("无效的话题 ID"))
-	}
-
-	if appErr := h.topicWriteService.ToggleLike(c.Context(), user.ID, tid); appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	return response.OKMessage(c, "操作成功")
-}
-
-func (h *TopicHandler) ToggleReaction(c fiber.Ctx) error {
-	user, appErr := middleware.MustGetUser(c)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	tid, err := strconv.Atoi(c.Params("tid"))
-	if err != nil {
-		return response.Error(c, errors.ErrBadRequest("无效的话题 ID"))
-	}
-
-	var req dto.ReactionRequest
-	if appErr := utils.ParseAndValidate(c, &req); appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	if appErr := h.topicWriteService.ToggleReaction(c.Context(), user.ID, tid, req.Reaction); appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	return response.OKMessage(c, "操作成功")
-}
-
-func (h *TopicHandler) ToggleDislike(c fiber.Ctx) error {
-	user, appErr := middleware.MustGetUser(c)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	tid, err := strconv.Atoi(c.Params("tid"))
-	if err != nil {
-		return response.Error(c, errors.ErrBadRequest("无��的话题 ID"))
-	}
-
-	if appErr := h.topicWriteService.ToggleDislike(c.Context(), user.ID, tid); appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	return response.OKMessage(c, "��作成功")
-}
-
-func (h *TopicHandler) Upvote(c fiber.Ctx) error {
-	user, appErr := middleware.MustGetUser(c)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	tid, err := strconv.Atoi(c.Params("tid"))
-	if err != nil {
-		return response.Error(c, errors.ErrBadRequest("无效��话�� ID"))
-	}
-
-	var body struct {
-		Description string `json:"description"`
-	}
-	_ = c.Bind().Body(&body)
-
-	if appErr := h.topicWriteService.Upvote(c.Context(), user.ID, tid, body.Description); appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	return response.OKMessage(c, "推话题成功")
-}
-
-func (h *TopicHandler) GetUpvotes(c fiber.Ctx) error {
-	tid, err := strconv.Atoi(c.Params("tid"))
-	if err != nil {
-		return response.Error(c, errors.ErrBadRequest("无效的话题 ID"))
-	}
-
-	records, appErr := h.topicService.GetTopicUpvotes(c.Context(), tid)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	return response.OK(c, records)
-}
-
-func (h *TopicHandler) ToggleFavorite(c fiber.Ctx) error {
-	user, appErr := middleware.MustGetUser(c)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	tid, err := strconv.Atoi(c.Params("tid"))
-	if err != nil {
-		return response.Error(c, errors.ErrBadRequest("无效的话题 ID"))
-	}
-
-	if appErr := h.topicWriteService.ToggleFavorite(c.Context(), user.ID, tid); appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	return response.OKMessage(c, "操作成功")
-}
-
-func (h *TopicHandler) ToggleHide(c fiber.Ctx) error {
-	user, appErr := middleware.MustGetUser(c)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	tid, err := strconv.Atoi(c.Params("tid"))
-	if err != nil {
-		return response.Error(c, errors.ErrBadRequest("���效的话题 ID"))
-	}
-
-	if appErr := h.topicWriteService.ToggleHide(c.Context(), user.ID, user.Can(perm.TopicHide), tid); appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	return response.OKMessage(c, "操作成功")
-}
-
-func (h *TopicHandler) SetBestAnswer(c fiber.Ctx) error {
-	user, appErr := middleware.MustGetUser(c)
-	if appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	tid, err := strconv.Atoi(c.Params("tid"))
-	if err != nil {
-		return response.Error(c, errors.ErrBadRequest("无效的话�� ID"))
-	}
-
-	var req dto.BestAnswerRequest
-	if appErr := utils.ParseAndValidate(c, &req); appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	if appErr := h.topicWriteService.SetBestAnswer(c.Context(), user.ID, user.Can(perm.TopicSetBestAnswer), tid, req.ReplyID); appErr != nil {
-		return response.Error(c, appErr)
-	}
-
-	return response.OKMessage(c, "已设置最佳回答")
 }

@@ -144,6 +144,8 @@ W4 另加 `SELF_LIKE_FORBIDDEN`、`SELF_UPVOTE_FORBIDDEN`（见 W4 记录）。
 
 `/reply/locate` 等 W5。
 
+**已于 2026-09-22 上线验证后执行**，连同 W4 的互动旧路由共 22 条，见 `../CHANGELOG.md`。随之而去的还有：旧 `TopicWriteService` 整个文件、`ReplyService` 的写面与表情方法、`TopicService.GetDetail`、`reaction_repo.go` 的 11 个方法、`internal/middleware/idempotency.go` 与 19 个 DTO 类型。
+
 ## 3. 验收（2026-09-22）
 
 派发 `w3-go` 在会话中断时被杀，只留下了工作树里的代码：报告与任务书随 `/tmp` 一起没了，`check.sh` 的沙箱证明也没了，所以这一波的验收是逐文件读代码 + 自己补测试，而不是核对报告。

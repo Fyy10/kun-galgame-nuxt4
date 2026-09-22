@@ -435,7 +435,6 @@ func New(cfg *config.Config) *App {
 	lotteryRepository := topicRepo.NewLotteryRepository(db)
 	draftRepository := topicRepo.NewTopicDraftRepository(db)
 	topicSvc := topicService.NewTopicService(topicRepository, topicListRepo, topicTaxonomyRepo, rdb, uc, userStateRepo)
-	topicWriteSvc := topicService.NewTopicWriteService(topicRepository, topicTaxonomyRepo, replyRepository, userStateRepo, rdb, notifier, trustCheck, trustScan)
 	replySvc := topicService.NewReplyService(replyRepository, topicCommentRepo, topicRepository, userStateRepo, uc, rdb, trustCheck, trustScan)
 	commentSvc := topicService.NewCommentService(replyRepository, topicCommentRepo, userStateRepo, uc, rdb, trustCheck, trustScan)
 	pollSvc := topicService.NewPollService(pollRepository, topicRepository, userStateRepo, uc, rdb, trustCheck, trustScan)
@@ -600,7 +599,7 @@ func New(cfg *config.Config) *App {
 		UserHandler:                    handler.NewUserHandler(userService, userContentService),
 		UserProfileHandler:             handler.NewProfileHandler(oauthClient, uc),
 		HomeHandler:                    homeHandler.NewHomeHandler(homeService.NewHomeService(homeRepo.NewHomeRepository(db), gc, uc, rdb)),
-		TopicHandler:                   topicHandler.NewTopicHandler(topicSvc, topicWriteSvc),
+		TopicHandler:                   topicHandler.NewTopicHandler(topicSvc),
 		TopicDraftHandler:              topicHandler.NewTopicDraftHandler(draftSvc),
 		ReplyHandler:                   topicHandler.NewReplyHandler(replySvc),
 		TopicCommentHandler:            topicHandler.NewCommentHandler(commentSvc),

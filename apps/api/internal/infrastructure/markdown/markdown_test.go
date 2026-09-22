@@ -130,43 +130,15 @@ func TestExtractMentionIDs(t *testing.T) {
 	}
 }
 
-func TestResolveMentionNames(t *testing.T) {
-	html := Render("[@旧名](kungal-user:5) and [@x](kungal-user:9)")
-
-	out := ResolveMentionNames(html, map[int]string{5: "新名"})
-	if !strings.Contains(out, "@新名") {
-		t.Errorf("expected resolved @新名\n got: %s", out)
-	}
-	if strings.Contains(out, "@旧名") {
-		t.Errorf("snapshot name should be replaced\n got: %s", out)
-	}
-	if !strings.Contains(out, "@x") {
-		t.Errorf("unresolved id 9 should keep its snapshot @x\n got: %s", out)
-	}
-	if !strings.Contains(out, `data-uid="5"`) || !strings.Contains(out, `data-uid="9"`) {
-		t.Errorf("data-uid (link target) must be preserved\n got: %s", out)
-	}
-
-	esc := ResolveMentionNames(Render("[@x](kungal-user:5)"), map[int]string{5: "<b>x"})
-	if strings.Contains(esc, "<b>x") || !strings.Contains(esc, "&lt;b&gt;x") {
-		t.Errorf("resolved name must be HTML-escaped\n got: %s", esc)
-	}
-
-	if ResolveMentionNames(html, nil) != html {
-		t.Errorf("nil names should be a no-op")
-	}
-
-	mig := Render("[@](kungal-user:30) [#1](kungal-reply:14)")
+func TestRenderMentionAndQuoteTokens(t *testing.T) {
+	out := Render("[@](kungal-user:30) [#1](kungal-reply:14)")
 	for _, w := range []string{
 		`class="kun-mention"`, `data-uid="30"`,
 		`class="kun-quote"`, `data-reply-id="14"`, `data-floor="1"`,
 	} {
-		if !strings.Contains(mig, w) {
-			t.Errorf("empty-name migration token missing %q\n got: %s", w, mig)
+		if !strings.Contains(out, w) {
+			t.Errorf("token missing %q\n got: %s", w, out)
 		}
-	}
-	if r := ResolveMentionNames(mig, map[int]string{30: "鲲"}); !strings.Contains(r, "@鲲") {
-		t.Errorf("empty-name mention should resolve to current name\n got: %s", r)
 	}
 }
 

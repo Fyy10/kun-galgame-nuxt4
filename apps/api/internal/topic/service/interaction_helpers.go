@@ -49,16 +49,6 @@ func (InteractionHelpers) CreateReplyMessage(
 	}).Error
 }
 
-func (h InteractionHelpers) NotifyMentions(tx *gorm.DB, senderID, topicID, replyFloor, commentID int, content string) error {
-	preview := truncate(markdown.StripReferenceTokens(content), constants.TextPreviewLength)
-	for _, uid := range markdown.ExtractMentionIDs(content) {
-		if err := h.CreateTopicMessageWithContent(tx, senderID, uid, "mentioned", preview, topicID, replyFloor, commentID); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func createDedupMessage(tx *gorm.DB, senderID, receiverID int, msgType, content, link string) error {
 	if senderID == receiverID || receiverID <= 0 {
 		return nil

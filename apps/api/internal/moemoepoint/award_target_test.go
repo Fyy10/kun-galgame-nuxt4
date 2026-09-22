@@ -37,6 +37,13 @@ var awardShapes = map[string]struct{ target, reason int }{
 	"AwardSync":         {0, 2},
 }
 
+// v1 collects its awards as struct literals and flushes them after the commit,
+// so the target is a field and not an argument. Deleting the legacy routes on
+// 2026-09-22 took every call-shaped liked award on the topic side with them:
+// the walk below still passed while covering none of the paths that now serve
+// the site.
+const awardLiteral = "pendingAward"
+
 func TestLikeAwardsCreditTheAuthorNotTheActor(t *testing.T) {
 	found := 0
 	err := filepath.WalkDir("..", func(path string, d fs.DirEntry, err error) error {
@@ -52,6 +59,29 @@ func TestLikeAwardsCreditTheAuthorNotTheActor(t *testing.T) {
 			return err
 		}
 		ast.Inspect(file, func(n ast.Node) bool {
+			if lit, ok := n.(*ast.CompositeLit); ok {
+				if id, ok := lit.Type.(*ast.Ident); ok && id.Name == awardLiteral {
+					fields := map[string]ast.Expr{}
+					for _, el := range lit.Elts {
+						kv, ok := el.(*ast.KeyValueExpr)
+						if !ok {
+							continue
+						}
+						if key, ok := kv.Key.(*ast.Ident); ok {
+							fields[key.Name] = kv.Value
+						}
+					}
+					if reason, ok := fields["reason"]; ok && mentions(reason, "ReasonLiked") {
+						found++
+						if id, ok := fields["userID"].(*ast.Ident); ok && actorParams[id.Name] {
+							t.Errorf("%s: a liked award credits %q — that is whoever pressed the "+
+								"button, not the author of what they liked",
+								fset.Position(lit.Pos()), id.Name)
+						}
+					}
+				}
+				return true
+			}
 			call, ok := n.(*ast.CallExpr)
 			if !ok {
 				return true
@@ -79,8 +109,8 @@ func TestLikeAwardsCreditTheAuthorNotTheActor(t *testing.T) {
 
 	// Without this the check passes an empty room: rename the helper, move the
 	// reason behind a variable, and every assertion above simply stops running.
-	if found < 12 {
-		t.Fatalf("only %d liked-award sites seen, expected at least 12 — this check "+
+	if found < 15 {
+		t.Fatalf("only %d liked-award sites seen, expected at least 15 — this check "+
 			"has gone blind rather than the awards having gone away", found)
 	}
 }

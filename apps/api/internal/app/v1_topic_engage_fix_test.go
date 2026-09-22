@@ -349,12 +349,6 @@ func (f *engageFix) asDave(t *testing.T) string {
 	return "sess-dave"
 }
 
-func (f *engageFix) asCarol(t *testing.T) string {
-	t.Helper()
-	f.putSession(t, "sess-carol", e1UserCarol)
-	return "sess-carol"
-}
-
 func (f *engageFix) count(t *testing.T, q string, args ...any) int {
 	t.Helper()
 	var n int

@@ -85,6 +85,8 @@ dev 上通过完整中间件链实测：传 `target_user_id: 1`（陌生人）�
 
 审计还给出：**21 条 `/api/topic/**` 旧路由现在零调用方**，可以删；30 条仍有调用方（评论、投票、抽奖、草稿、定位、admin），都对得上「不在本波」的说明。
 
+**2026-09-22 部署验证通过后已执行删除，实际 22 条**——审计漏了 `GET /api/topic/:tid/reply/reaction/history`。详见 `audit/legacy-parity.md` §5.1 的追记与 `../CHANGELOG.md`。
+
 ## 11. 顺带记下的、留给 W5 的小事
 
 - `DELETE /api/topic/:tid/comment` 从 query string 读 **`commentId`（驼峰）**，与全站 snake_case 不一致。

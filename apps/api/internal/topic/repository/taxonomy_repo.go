@@ -62,11 +62,6 @@ func (r *TopicTaxonomyRepository) FindSectionNamesByTopicID(topicID int) ([]stri
 	return names, err
 }
 
-func (r *TopicTaxonomyRepository) CreateSectionRelation(tx *gorm.DB, topicID, sectionID int) error {
-	rel := model.TopicSectionRelation{TopicID: topicID, TopicSectionID: sectionID}
-	return tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&rel).Error
-}
-
 func (r *TopicTaxonomyRepository) FindSectionsByNamesTx(tx *gorm.DB, names []string) ([]model.TopicSection, error) {
 	var sections []model.TopicSection
 	err := tx.Where("name IN ?", names).Find(&sections).Error

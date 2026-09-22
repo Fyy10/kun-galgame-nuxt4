@@ -4,8 +4,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/yuin/goldmark/util"
 )
 
 var mentionIDRe = regexp.MustCompile(`kungal-user:(\d+)`)
@@ -41,19 +39,4 @@ func StripReferenceTokens(content string) string {
 	s = quoteTokenRe.ReplaceAllString(s, "")
 	s = replyHeaderRe.ReplaceAllString(s, "")
 	return strings.Join(strings.Fields(s), " ")
-}
-
-func ResolveMentionNames(html string, names map[int]string) string {
-	if len(names) == 0 {
-		return html
-	}
-	return mentionLinkRe.ReplaceAllStringFunc(html, func(m string) string {
-		sub := mentionLinkRe.FindStringSubmatch(m)
-		id, _ := strconv.Atoi(sub[2])
-		name, ok := names[id]
-		if !ok || name == "" {
-			return m
-		}
-		return sub[1] + sub[2] + sub[3] + "@" + string(util.EscapeHTML([]byte(name))) + sub[4]
-	})
 }

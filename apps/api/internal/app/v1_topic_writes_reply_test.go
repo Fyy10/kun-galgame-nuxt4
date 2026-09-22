@@ -232,35 +232,6 @@ func TestV1ReplyFloorsSurviveConcurrentCreates(t *testing.T) {
 	}
 }
 
-func TestV1LegacyReplyCreateUsesTheSameCounter(t *testing.T) {
-	f := newWriteFix(t, nil)
-	f.alice(t)
-	_, out := f.createReply(t, w3TopicFloors, "sess-bob", "11111111-1111-4111-8111-111111111117", "v1 four")
-	id := asInt(out["id"])
-	resp, raw := f.doJSON(t, http.MethodDelete, fmt.Sprintf("/api/v1/replies/%d", id), "sess-bob",
-		"/replies/{reply_id}", "", nil, nil)
-	if resp.StatusCode != http.StatusNoContent {
-		t.Fatalf("delete %d %s", resp.StatusCode, raw)
-	}
-	resp, raw = f.doLegacy(t, http.MethodPost, fmt.Sprintf("/api/topic/%d/reply", w3TopicFloors), "sess-bob",
-		map[string]any{"topic_id": w3TopicFloors, "content": "legacy five"})
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("legacy create %d %s", resp.StatusCode, raw)
-	}
-	var env struct {
-		Data struct {
-			ID    int `json:"id"`
-			Floor int `json:"floor"`
-		} `json:"data"`
-	}
-	if err := json.Unmarshal(raw, &env); err != nil {
-		t.Fatal(err)
-	}
-	if env.Data.Floor != 5 {
-		t.Fatalf("legacy floor %d, want 5: the legacy path must take its floor from the counter", env.Data.Floor)
-	}
-}
-
 func TestV1UpdateReplyPermissionsAndEdits(t *testing.T) {
 	f := newWriteFix(t, nil)
 	f.alice(t)

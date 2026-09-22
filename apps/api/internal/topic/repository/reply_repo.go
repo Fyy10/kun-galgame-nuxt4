@@ -31,30 +31,6 @@ type ReplyRow struct {
 	UserMoemoepoint int
 }
 
-func (r *ReplyRepository) FindRepliesPaginated(
-	topicID int,
-	excludeIDs []int,
-	page, limit int,
-	sortOrder string,
-) ([]ReplyRow, error) {
-	var rows []ReplyRow
-	query := r.db.Table("topic_reply").
-		Select(`topic_reply.*`).
-		Where("topic_reply.topic_id = ?", topicID).
-		Where("topic_reply.status = ?", 0)
-
-	if len(excludeIDs) > 0 {
-		query = query.Where("topic_reply.id NOT IN ?", excludeIDs)
-	}
-
-	err := query.
-		Order("topic_reply.floor " + sortOrder).
-		Offset((page - 1) * limit).
-		Limit(limit).
-		Find(&rows).Error
-	return rows, err
-}
-
 func (r *ReplyRepository) LocateReplyPageByFloor(topicID, floor, limit int) (int, error) {
 	if limit <= 0 {
 		limit = 30
@@ -104,14 +80,6 @@ func (r *ReplyRepository) FindRepliesByIDs(ids []int) ([]ReplyRow, error) {
 	return rows, err
 }
 
-func (r *ReplyRepository) FindReplyLikeStatus(userID int, replyIDs []int) (map[int]bool, error) {
-	return findReactionStatus(r.db, "topic_reply_reaction", "topic_reply_id", "like", userID, replyIDs)
-}
-
-func (r *ReplyRepository) FindReplyDislikeStatus(userID int, replyIDs []int) (map[int]bool, error) {
-	return findReactionStatus(r.db, "topic_reply_reaction", "topic_reply_id", "dislike", userID, replyIDs)
-}
-
 func findInteractionStatus(db *gorm.DB, table, fkCol string, userID int, ids []int) (map[int]bool, error) {
 	if len(ids) == 0 || userID == 0 {
 		return make(map[int]bool), nil
@@ -153,28 +121,6 @@ func (r *ReplyRepository) DeleteRepliesByIDs(tx *gorm.DB, ids []int) error {
 
 func (r *ReplyRepository) SetStatus(id, status int) error {
 	return r.db.Model(&model.TopicReply{}).Where("id = ?", id).Update("status", status).Error
-}
-
-func (r *ReplyRepository) CountReplyRelated(replyID int) (commentCount, likeCount int64, err error) {
-	r.db.Model(&model.TopicComment{}).Where("topic_reply_id = ?", replyID).Count(&commentCount)
-	r.db.Model(&model.TopicReplyLike{}).Where("topic_reply_id = ?", replyID).Count(&likeCount)
-	return
-}
-
-func (r *ReplyRepository) FindByIDTx(tx *gorm.DB, replyID int) (*model.TopicReply, error) {
-	var reply model.TopicReply
-	err := tx.First(&reply, replyID).Error
-	return &reply, err
-}
-
-func (r *ReplyRepository) AdjustReplyLikeCount(tx *gorm.DB, replyID, delta int) error {
-	return tx.Model(&model.TopicReply{}).Where("id = ?", replyID).
-		Update("like_count", gorm.Expr("like_count + ?", delta)).Error
-}
-
-func (r *ReplyRepository) AdjustReplyDislikeCount(tx *gorm.DB, replyID, delta int) error {
-	return tx.Model(&model.TopicReply{}).Where("id = ?", replyID).
-		Update("dislike_count", gorm.Expr("dislike_count + ?", delta)).Error
 }
 
 func (r *ReplyRepository) CreateReply(tx *gorm.DB, reply *model.TopicReply) error {

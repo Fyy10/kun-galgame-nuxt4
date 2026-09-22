@@ -199,21 +199,13 @@ func (a *App) setupRoutes() {
 	optAuth.Get("/galgame-quiz/all", a.GalgameQuizHandler.GetAllQuizzes)
 	optAuth.Get("/galgame-quiz/:id", a.GalgameQuizHandler.GetQuizPlay)
 
-	// On `api` with an explicit middleware, and BEFORE /topic/:tid: a later
-	// static /topic/draft is captured by the earlier param route (tid="draft").
 	topicDraftAuth := a.Authn.Auth()
 	api.Get("/topic/draft", topicDraftAuth, a.TopicDraftHandler.List)
 	api.Post("/topic/draft", topicDraftAuth, a.TopicDraftHandler.Save)
 	api.Get("/topic/draft/:id", topicDraftAuth, a.TopicDraftHandler.Get)
 	api.Delete("/topic/draft/:id", topicDraftAuth, a.TopicDraftHandler.Delete)
 
-	optAuth.Get("/topic/:tid", a.TopicHandler.GetDetail)
-	optAuth.Get("/topic/:tid/upvotes", a.TopicHandler.GetUpvotes)
-	optAuth.Get("/topic/:tid/reaction/history", a.TopicHandler.GetTopicReactionHistory)
-	optAuth.Get("/topic/:tid/reply", a.ReplyHandler.GetReplies)
-	optAuth.Get("/topic/:tid/reply/detail", a.ReplyHandler.GetReplyDetail)
 	optAuth.Get("/topic/:tid/reply/locate", a.ReplyHandler.GetReplyLocate)
-	optAuth.Get("/topic/:tid/reply/reaction/history", a.ReplyHandler.GetReplyReactionHistory)
 	optAuth.Get("/topic/:tid/poll/topic", a.PollHandler.GetPollsByTopic)
 	optAuth.Get("/topic/:tid/poll/log", a.PollHandler.GetVoteLog)
 	optAuth.Get("/topic/:tid/lottery/topic", a.LotteryHandler.GetLotteriesByTopic)
@@ -247,23 +239,6 @@ func (a *App) setupRoutes() {
 	authed.Get("/perm/mine", a.AdminUserPermissionHandler.GetMine)
 
 	authed.Get("/topic/interactions/mine", a.TopicHandler.MyInteractions)
-	authed.Post("/topic", middleware.Idempotent(a.Redis, "topic.create"), a.TopicHandler.Create)
-	authed.Put("/topic/:tid", a.TopicHandler.Update)
-	authed.Put("/topic/:tid/like", a.TopicHandler.ToggleLike)
-	authed.Put("/topic/:tid/dislike", a.TopicHandler.ToggleDislike)
-	authed.Put("/topic/:tid/upvote", a.TopicHandler.Upvote)
-	authed.Put("/topic/:tid/favorite", a.TopicHandler.ToggleFavorite)
-	authed.Put("/topic/:tid/reaction", a.TopicHandler.ToggleReaction)
-	authed.Put("/topic/:tid/hide", a.TopicHandler.ToggleHide)
-	authed.Put("/topic/:tid/best-answer", a.TopicHandler.SetBestAnswer)
-
-	authed.Post("/topic/:tid/reply", middleware.Idempotent(a.Redis, "topic.reply.create"), a.ReplyHandler.CreateReply)
-	authed.Put("/topic/:tid/reply", a.ReplyHandler.UpdateReply)
-	authed.Delete("/topic/:tid/reply", a.ReplyHandler.DeleteReply)
-	authed.Put("/topic/:tid/reply/like", a.ReplyHandler.ToggleReplyLike)
-	authed.Put("/topic/:tid/reply/dislike", a.ReplyHandler.ToggleReplyDislike)
-	authed.Put("/topic/:tid/reply/reaction", a.ReplyHandler.ToggleReplyReaction)
-	authed.Put("/topic/:tid/reply/pin", a.ReplyHandler.PinReply)
 
 	authed.Post("/topic/:tid/comment", a.TopicCommentHandler.CreateComment)
 	authed.Put("/topic/:tid/comment", a.TopicCommentHandler.UpdateComment)

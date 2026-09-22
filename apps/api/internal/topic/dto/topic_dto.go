@@ -12,26 +12,6 @@ type KunUser struct {
 	Avatar string `json:"avatar"`
 }
 
-type KunUserWithMoemoepoint struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Avatar      string `json:"avatar"`
-	Moemoepoint int    `json:"moemoepoint"`
-}
-
-type TopicUpvoteRecord struct {
-	ID          int       `json:"id"`
-	User        KunUser   `json:"user"`
-	Description string    `json:"description"`
-	Created     time.Time `json:"created"`
-}
-
-type ReactionHistoryItem struct {
-	User     KunUser   `json:"user"`
-	Reaction string    `json:"reaction"`
-	Created  time.Time `json:"created"`
-}
-
 type ListTopicsRequest struct {
 	Page      int    `query:"page" validate:"min=1"`
 	Limit     int    `query:"limit" validate:"min=1,max=50"`
@@ -60,90 +40,7 @@ type TopicCard struct {
 	UpvoteTime       *time.Time                       `json:"upvote_time"`
 }
 
-type ReactionSummary struct {
-	Reaction string    `json:"reaction"`
-	Count    int       `json:"count"`
-	Mine     bool      `json:"mine"`
-	Reactors []KunUser `json:"reactors,omitempty"`
-}
-
 type MyTopicInteractions struct {
 	Favorited []int            `json:"favorited"`
 	Reactions map[int][]string `json:"reactions"`
-}
-
-type TopicDetail struct {
-	AccessScope      string                           `json:"access_scope"`
-	AccessGrants     *TopicAccessGrants               `json:"access_grants,omitempty"`
-	ID               int                              `json:"id"`
-	Title            string                           `json:"title"`
-	Content          string                           `json:"content_markdown"`
-	ContentHtml      string                           `json:"content_html"`
-	View             int                              `json:"view"`
-	Status           int                              `json:"status"`
-	HiddenBy         string                           `json:"hidden_by"`
-	IsNSFW           bool                             `json:"is_nsfw"`
-	Category         string                           `json:"category"`
-	Sections         []string                         `json:"section"`
-	CoverImages      []string                         `json:"cover_images"`
-	CoverImageMeta   map[string]imageclient.ImageMeta `json:"cover_image_meta,omitempty"`
-	User             KunUserWithMoemoepoint           `json:"user"`
-	LikeCount        int                              `json:"like_count"`
-	IsLiked          bool                             `json:"is_liked"`
-	DislikeCount     int                              `json:"dislike_count"`
-	IsDisliked       bool                             `json:"is_disliked"`
-	FavoriteCount    int                              `json:"favorite_count"`
-	IsFavorited      bool                             `json:"is_favorited"`
-	UpvoteCount      int                              `json:"upvote_count"`
-	IsUpvoted        bool                             `json:"is_upvoted"`
-	Reactions        []ReactionSummary                `json:"reactions"`
-	ReplyCount       int                              `json:"reply_count"`
-	MiniApps         []string                         `json:"mini_apps"`
-	StatusUpdateTime time.Time                        `json:"status_update_time"`
-	UpvoteTime       *time.Time                       `json:"upvote_time"`
-	Edited           *time.Time                       `json:"edited"`
-	Created          time.Time                        `json:"created"`
-	BestAnswer       *TopicBestAnswer                 `json:"best_answer,omitempty"`
-}
-
-type TopicBestAnswer struct {
-	ID              int       `json:"id"`
-	Floor           int       `json:"floor"`
-	User            KunUser   `json:"user"`
-	ContentMarkdown string    `json:"content_markdown"`
-	ContentHtml     string    `json:"content_html"`
-	Created         time.Time `json:"created"`
-}
-
-type CreateTopicRequest struct {
-	AccessScope   string   `json:"access_scope"`
-	AccessRoles   []string `json:"access_roles"`
-	AccessUserIDs []int    `json:"access_user_ids"`
-	Title         string   `json:"title" validate:"required,min=1,max=233"`
-	Content       string   `json:"content" validate:"required,min=1,max=100007"`
-	Category      string   `json:"category" validate:"required,oneof=galgame technique others"`
-	Sections      []string `json:"section" validate:"required,min=1,max=3"`
-	IsNSFW        bool     `json:"is_nsfw"`
-	CoverImages   []string `json:"cover_images" validate:"omitempty,max=9"`
-}
-
-type UpdateTopicRequest struct {
-	AccessScope   string   `json:"access_scope"`
-	AccessRoles   []string `json:"access_roles"`
-	AccessUserIDs []int    `json:"access_user_ids"`
-	Title         string   `json:"title" validate:"required,min=1,max=233"`
-	Content       string   `json:"content" validate:"required,min=1,max=100007"`
-	Category      string   `json:"category" validate:"required,oneof=galgame technique others"`
-	Sections      []string `json:"section" validate:"required,min=1,max=3"`
-	IsNSFW        bool     `json:"is_nsfw"`
-	CoverImages   []string `json:"cover_images" validate:"omitempty,max=9"`
-}
-
-type TopicInteractionRequest struct {
-	TopicID int `json:"topic_id" validate:"required,min=1"`
-}
-
-type TopicAccessGrants struct {
-	Roles   []string `json:"roles"`
-	UserIDs []int    `json:"user_ids"`
 }

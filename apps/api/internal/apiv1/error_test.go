@@ -201,7 +201,7 @@ func TestIsV1Path(t *testing.T) {
 		"/api/v1/problems": true,
 		"/api/v10/topics":  false,
 		"/api/v1topics":    false,
-		"/api/topic":       false,
+		"/api/topic/draft": false,
 	} {
 		if got := IsV1Path(path); got != want {
 			t.Errorf("IsV1Path(%q) = %v, want %v", path, got, want)

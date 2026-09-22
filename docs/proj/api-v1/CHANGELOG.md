@@ -63,3 +63,36 @@ Additive.
 - `TopicViewer` gains `can_edit`, `can_hide`, `can_unhide`, `can_like`, `can_upvote`, `can_set_best_answer`, `can_pin_reply`; `ReplyViewer` gains `can_edit`, `can_delete`, `can_like`.
 - New codes: `PERMISSION_REQUIRED` (moderation domain, as infra), `CONTENT_REJECTED`, `TOPIC_DAILY_LIMIT_REACHED` (with `limit`), `MOEMOEPOINT_INSUFFICIENT` (with `required`), `SELF_LIKE_FORBIDDEN`, `SELF_UPVOTE_FORBIDDEN`.
 - `bumped_at` now also names upvotes, a new best answer, and edits of the title or body, which bump under the same 3-month rule.
+
+## 2026-09-22 (legacy topic routes removed)
+
+Breaking for anything still on `/api/topic/**`. Nothing was: the web moved with W1–W4 and the App binds `/api/v1` only (`docs/proj/app-direct-api.md`).
+
+22 legacy routes are gone. Their v1 replacements, in the same order:
+
+| removed | use instead |
+|---|---|
+| `POST /api/topic` | `POST /api/v1/topics` |
+| `PUT /api/topic/:tid` | `PATCH /api/v1/topics/{topic_id}` |
+| `GET /api/topic/:tid` | `GET /api/v1/topics/{topic_id}` |
+| `PUT /api/topic/:tid/hide` | `PATCH /api/v1/topics/{topic_id}` with `state` |
+| `PUT /api/topic/:tid/like`、`/dislike`、`/reaction` | `PUT` / `DELETE /api/v1/topics/{topic_id}/reactions/{reaction}` |
+| `PUT /api/topic/:tid/favorite` | `PUT` / `DELETE /api/v1/topics/{topic_id}/favorite` |
+| `PUT /api/topic/:tid/upvote` | `POST /api/v1/topics/{topic_id}/upvotes` |
+| `GET /api/topic/:tid/upvotes` | `GET /api/v1/topics/{topic_id}/upvotes` |
+| `GET /api/topic/:tid/reaction/history` | `GET /api/v1/topics/{topic_id}/reactions` |
+| `PUT /api/topic/:tid/best-answer` | `PUT` / `DELETE /api/v1/topics/{topic_id}/best-answer` |
+| `POST /api/topic/:tid/reply` | `POST /api/v1/topics/{topic_id}/replies` |
+| `PUT /api/topic/:tid/reply` | `PATCH /api/v1/replies/{reply_id}` |
+| `DELETE /api/topic/:tid/reply` | `DELETE /api/v1/replies/{reply_id}` |
+| `GET /api/topic/:tid/reply` | `GET /api/v1/topics/{topic_id}/replies` |
+| `GET /api/topic/:tid/reply/detail` | `GET /api/v1/replies/{reply_id}` |
+| `PUT /api/topic/:tid/reply/like`、`/dislike`、`/reaction` | `PUT` / `DELETE /api/v1/replies/{reply_id}/reactions/{reaction}` |
+| `PUT /api/topic/:tid/reply/pin` | `PUT` / `DELETE /api/v1/topics/{topic_id}/pinned-reply` |
+| `GET /api/topic/:tid/reply/reaction/history` | `GET /api/v1/replies/{reply_id}/reactions` |
+
+`internal/middleware/idempotency.go` went with them, and with it the envelope codes `237` / `238`. v1 idempotency is `internal/apiv1/idempotency.go`: `409 IDEMPOTENCY_REQUEST_IN_PROGRESS` and `409 IDEMPOTENCY_KEY_REUSED`.
+
+A caller left on one of these now gets `401`, not `404`: the auth boundary in `router.go` is a `Use()` on `/api`, so every unmatched legacy path answers 401 to an anonymous request. That is how `/api/**` has always answered an unknown path — only `/api/v1/**` answers the proper `404` problem+json.
+
+Still legacy, still mounted, each waiting on its own wave: `/topic/:tid/reply/locate`, `/topic/interactions/mine`, the four `/topic/draft*`, the four `/topic/:tid/comment*`, the six `/topic/:tid/poll*` and the eleven `/topic/:tid/lottery*`.

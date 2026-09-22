@@ -162,16 +162,6 @@ type TopicReaction struct {
 
 func (TopicReaction) TableName() string { return "topic_reaction" }
 
-type TopicReplyReaction struct {
-	ID           int       `gorm:"primaryKey;autoIncrement" json:"id"`
-	TopicReplyID int       `gorm:"column:topic_reply_id;not null" json:"topic_reply_id"`
-	UserID       int       `gorm:"column:user_id;not null" json:"user_id"`
-	Reaction     string    `gorm:"column:reaction;not null" json:"reaction"`
-	CreatedAt    time.Time `gorm:"column:created" json:"created"`
-}
-
-func (TopicReplyReaction) TableName() string { return "topic_reply_reaction" }
-
 type TopicComment struct {
 	ID           int    `gorm:"primaryKey;autoIncrement" json:"id"`
 	Content      string `gorm:"type:varchar(1007);default:''" json:"content"`

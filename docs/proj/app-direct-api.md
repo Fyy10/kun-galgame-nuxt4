@@ -80,11 +80,11 @@ App 用 AppAuth + PKCE 直接从 OP 换出 access token，然后 `Authorization:
 | 端点 | 方式 | 说明 |
 |---|---|---|
 | `GET /api/v1/topics` | 匿名+ | 话题列表。旧 `GET /api/topic` 已于 2026-09-19 删除。参数与响应以 `apps/api/openapi/kungal-v1.json` 为准（`listTopics`）：`cursor` + `limit`（1–100），`sort` 取声明的 token（如 `bumped_desc`），`include_nsfw=true` 才含 NSFW；错误是 problem+json，见 `docs/proj/api-v1/` |
-| `GET /api/topic/:tid`、`GET /api/topic/:tid/reply` | 匿名+ | |
+| `GET /api/v1/topics/{topic_id}`、`GET /api/v1/topics/{topic_id}/replies` | 匿名+ | 话题详情与楼层。旧 `GET /api/topic/:tid`、`GET /api/topic/:tid/reply` 已于 2026-09-22 删除。响应以 `apps/api/openapi/kungal-v1.json` 为准；回复走游标分页（`cursor` + `limit`），不是页码 |
 | `GET /api/galgame` | 公开 | 列表 |
 | `GET /api/galgame/:gid` | 匿名+ | 详情 |
 | `GET /api/user/:id` | 公开 | 公开资料 |
-| `POST /api/topic`、`POST /api/topic/:tid/reply` | Bearer | 支持幂等键（§2）；回复体里也要带 `topic_id` |
+| `POST /api/v1/topics`、`POST /api/v1/topics/{topic_id}/replies` | Bearer | **必须**带幂等键（§2）。旧 `POST /api/topic`、`POST /api/topic/:tid/reply` 已于 2026-09-22 删除；话题 id 在路径上，不再放进请求体 |
 | `GET /api/auth/me` | Bearer | 当前用户；Bearer 下 `roles` 已剥掉 staff 角色 |
 
 #### 通知与未读
@@ -127,12 +127,12 @@ App 用 AppAuth + PKCE 直接从 OP 换出 access token，然后 `Authorization:
 curl -s 'https://www.kungal.com/api/v1/topics?limit=10&sort=bumped_desc'
 # Bearer：未读红点
 curl -s 'https://www.kungal.com/api/user/status' -H "Authorization: Bearer $AT"
-# Bearer：发回复（带幂等键）
-curl -s -X POST 'https://www.kungal.com/api/topic/4230/reply' \
+# Bearer：发回复（幂等键必填）
+curl -s -X POST 'https://www.kungal.com/api/v1/topics/4230/replies' \
   -H "Authorization: Bearer $AT" \
   -H "Idempotency-Key: $(uuidgen)" \
   -H 'Content-Type: application/json' \
-  -d '{"topic_id":4230,"content":"…"}'
+  -d '{"content_markdown":"…"}'
 ```
 
 ### galgame 供数
@@ -141,20 +141,23 @@ Go api 自己就能供数，**不依赖 Nitro**。`/api/galgame` 和 `/api/galga
 
 ## 2. 幂等键：`Idempotency-Key`
 
-挂在 `POST /api/topic`、`POST /api/topic/:tid/reply`（`internal/middleware/idempotency.go`）。
+挂在三个 v1 写端点上，且**必填**（`internal/apiv1/idempotency.go`）：`POST /api/v1/topics`、`POST /api/v1/topics/{topic_id}/replies`、`POST /api/v1/topics/{topic_id}/upvotes`。旧的 `internal/middleware/idempotency.go` 随 2026-09-22 的旧路由清理一并删除，它那套 `code: 237/238` 的信封错误码不再存在。
 
-- 头可选，不带就照旧处理（网页不带）。值必须是 UUID，否则 `400`。
-- Redis 键为 `kungal:idem:{uid}:{scope}:{uuid}`：按用户和端点隔离，别人用同一个键不会拿到你的结果。请求指纹 = sha256(方法 + 路径 + 请求体)。
-- 第一次请求：先写一个 2 分钟 TTL 的「处理中」标记（进程中途挂掉也不会锁死键 24 小时）。
-  - 返回 2xx：把状态码和响应体保存 **24 小时**。
-  - 返回非 2xx：删除键，因为什么都没创建，可以用同一个键重试。
-- 重复请求：
+- 值必须是标准 UUID（8-4-4-4-12，版本不限）或 26 位 Crockford ULID，否则 `422 INVALID_FORMAT`（`errors[]` 指向这个头）；不带则 `422`，理由 `required`。
+- Redis 键为 `kungal:idem:v1:{uid}:{operationId}:{key}`，按用户和操作隔离，保存 **24 小时**。
+- 请求指纹 = `sha256(方法 + " " + 路径 + "\n" + 请求体)`。**路径在指纹里**，所以客户端生成键时必须把目标算进去：同一个键换个话题再发，拿到的是 `409 IDEMPOTENCY_KEY_REUSED`（见 `docs/proj/api-v1/01-standard.md` K12）。
+- 第一次请求：先写一个 2 分钟 TTL 的「处理中」标记，进程中途挂掉也不会锁死键 24 小时。
 
 | 情况 | 响应 |
 |---|---|
-| 同键、同指纹、已完成 | 原样返回首次的状态码和响应体，加 `Idempotent-Replayed: true` |
-| 同键、首次请求仍在处理 | `409 {"code":237}`，App 稍等后用同一个键重试 |
-| 同键、不同指纹（换了内容或路径） | `422 {"code":238}`，属于客户端 bug |
+| 同键、同指纹、已完成 | 原样返回首次的状态码和响应体，加 `Idempotency-Replayed: true` |
+| 同键、首次请求仍在处理 | `409 IDEMPOTENCY_REQUEST_IN_PROGRESS`，App 稍等后用同一个键重试 |
+| 同键、不同指纹（换了内容或目标） | `409 IDEMPOTENCY_KEY_REUSED`，属于客户端 bug |
+
+结果保存的范围是 **200–499，但不含 409 和 429**：
+
+- 落进这个范围（含 4xx）的结果会被记下并在 24 小时内原样重放，所以**一次 `422` 会把这个键堵死一整天**，重试必须换新键；
+- 5xx、409、429 不保存，键当场释放，可以用同一个键安全重试。
 
 ## 3. NSFW 偏好：`X-Kungal-Nsfw`
 

@@ -78,14 +78,6 @@ func ErrForbidden(msg string) *AppError {
 	return New(CodeBiz, msg, 403)
 }
 
-func ErrIdempotencyInFlight() *AppError {
-	return New(CodeIdempotencyInFlight, "相同的请求正在处理中, 请稍后重试", 409)
-}
-
-func ErrIdempotencyMismatch() *AppError {
-	return New(CodeIdempotencyMismatch, "Idempotency-Key 已用于另一份请求内容", 422)
-}
-
 func ErrBadRequest(msg string) *AppError {
 	return New(CodeBiz, msg, 400)
 }
