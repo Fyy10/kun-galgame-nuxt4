@@ -50,3 +50,16 @@ Additive.
 - `note_markdown` is moyu's Markdown source, not a content document. No download link, share code or password is carried; send a reader to `web_url`.
 - `publisher` is a `UserRef` resolved from this forum's account service; the account is the same one on the forum.
 - `SERVICE_UNAVAILABLE` when moyu, the catalog or the account service cannot be reached.
+
+## 2026-09-19 (W3 / W4: topic writes and interactions)
+
+Additive.
+
+- Writes: `createTopic` (`POST /topics`), `updateTopic` (`PATCH /topics/{topic_id}`, including `state` for hiding and showing), `createReply` (`POST /topics/{topic_id}/replies`), `updateReply` (`PATCH /replies/{reply_id}`), `deleteReply` (`DELETE /replies/{reply_id}`). Both creates require `Idempotency-Key` and answer 201 with `Location` and the full resource.
+- Edit context: `getTopicSource` and `getReplySource` return `content_markdown` and the editable fields to callers with `can_edit`. `content_markdown` is sent nowhere else.
+- Interactions: `PUT` / `DELETE` on `/topics/{topic_id}/reactions/{reaction}`, `/topics/{topic_id}/favorite` and `/replies/{reply_id}/reactions/{reaction}` set and unset the caller's own state, answer 200 with an engagement snapshot, and are idempotent. like and dislike are the reaction tokens `like` and `dislike`.
+- `upvoteTopic` (`POST /topics/{topic_id}/upvotes`) records a repeatable, charged upvote and requires `Idempotency-Key`; `listTopicUpvotes`, `listTopicReactions` and `listReplyReactions` are cursor lists, newest first.
+- `setBestAnswer` / `clearBestAnswer` and `pinReply` / `unpinReply` on `/topics/{topic_id}/best-answer` and `/topics/{topic_id}/pinned-reply` answer 200 with the topic.
+- `TopicViewer` gains `can_edit`, `can_hide`, `can_unhide`, `can_like`, `can_upvote`, `can_set_best_answer`, `can_pin_reply`; `ReplyViewer` gains `can_edit`, `can_delete`, `can_like`.
+- New codes: `PERMISSION_REQUIRED` (moderation domain, as infra), `CONTENT_REJECTED`, `TOPIC_DAILY_LIMIT_REACHED` (with `limit`), `MOEMOEPOINT_INSUFFICIENT` (with `required`), `SELF_LIKE_FORBIDDEN`, `SELF_UPVOTE_FORBIDDEN`.
+- `bumped_at` now also names upvotes, a new best answer, and edits of the title or body, which bump under the same 3-month rule.

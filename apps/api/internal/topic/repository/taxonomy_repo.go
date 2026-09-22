@@ -19,8 +19,8 @@ func (r *TopicTaxonomyRepository) ReplaceSectionRelations(tx *gorm.DB, topicID i
 	if err := tx.Where("topic_id = ?", topicID).Delete(&model.TopicSectionRelation{}).Error; err != nil {
 		return err
 	}
-	for _, sID := range sectionIDs {
-		rel := model.TopicSectionRelation{TopicID: topicID, TopicSectionID: sID}
+	for i, sID := range sectionIDs {
+		rel := model.TopicSectionRelation{TopicID: topicID, TopicSectionID: sID, Position: i}
 		if err := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&rel).Error; err != nil {
 			return err
 		}
@@ -38,6 +38,7 @@ func (r *TopicTaxonomyRepository) FindSectionNamesByTopicIDs(topicIDs []int) (ma
 		Select("topic_section_relation.topic_id, topic_section.name").
 		Joins("JOIN topic_section ON topic_section.id = topic_section_relation.topic_section_id").
 		Where("topic_section_relation.topic_id IN ?", topicIDs).
+		Order("topic_section_relation.topic_id, topic_section_relation.position, topic_section_relation.topic_section_id").
 		Find(&rows).Error
 	if err != nil {
 		return nil, err
@@ -56,6 +57,7 @@ func (r *TopicTaxonomyRepository) FindSectionNamesByTopicID(topicID int) ([]stri
 		Select("topic_section.name").
 		Joins("JOIN topic_section ON topic_section.id = topic_section_relation.topic_section_id").
 		Where("topic_section_relation.topic_id = ?", topicID).
+		Order("topic_section_relation.position, topic_section_relation.topic_section_id").
 		Pluck("topic_section.name", &names).Error
 	return names, err
 }

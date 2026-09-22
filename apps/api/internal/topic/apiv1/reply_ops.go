@@ -2,7 +2,6 @@ package apiv1
 
 import (
 	"context"
-	"errors"
 	"strconv"
 
 	"kun-galgame-api/internal/apiv1/collect"
@@ -12,8 +11,6 @@ import (
 	"kun-galgame-api/internal/topic/repository"
 	"kun-galgame-api/pkg/problem"
 	"kun-galgame-api/pkg/userclient"
-
-	"gorm.io/gorm"
 )
 
 func (s *Service) listTopicReplies(ctx context.Context, in *listTopicRepliesInput) (*listTopicRepliesOutput, error) {
@@ -138,29 +135,9 @@ func replyAuthorIDs(rows []model.TopicReply) []int {
 }
 
 func (s *Service) getReply(ctx context.Context, in *getReplyInput) (*getReplyOutput, error) {
-	if s == nil {
-		return nil, problem.Internal(errUnconfigured)
-	}
-	id, ok := parsePositiveID(in.ReplyID)
-	if !ok {
-		return nil, notFound()
-	}
-	row, err := s.replies.FindByID(id)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, notFound()
-		}
-		return nil, problem.Internal(err)
-	}
-	if row.Status != 0 {
-		return nil, notFound()
-	}
-	topic, user, p := s.visibleTopic(ctx, strconv.Itoa(row.TopicID))
+	topic, row, user, p := s.visibleReply(ctx, in.ReplyID)
 	if p != nil {
 		return nil, p
-	}
-	if row.TopicID != topic.ID {
-		return nil, notFound()
 	}
 	mapped, p := s.buildOneReply(ctx, topic, *row, user)
 	if p != nil {

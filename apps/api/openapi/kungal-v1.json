@@ -1,6 +1,40 @@
 {
   "components": {
     "schemas": {
+      "AccessGrants": {
+        "properties": {
+          "roles": {
+            "description": "Granted roles when access_scope is role. Empty array otherwise.",
+            "items": {
+              "description": "Role that may read a topic whose access_scope is role.",
+              "enum": [
+                "creator",
+                "moderator",
+                "admin",
+                "ren"
+              ],
+              "maxLength": 9,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "maxItems": 4,
+            "type": "array"
+          },
+          "users": {
+            "description": "Granted users when access_scope is users, in grant order. The author is never listed. Banned and deleted users keep their entry with name null. Empty array otherwise.",
+            "items": {
+              "$ref": "#/components/schemas/UserRef"
+            },
+            "maxItems": 50,
+            "type": "array"
+          }
+        },
+        "required": [
+          "roles",
+          "users"
+        ],
+        "type": "object"
+      },
       "BlockNode": {
         "description": "A block node. Switch on object; render an unknown type's children, or its value as text.",
         "discriminator": {
@@ -870,6 +904,37 @@
         ],
         "type": "object"
       },
+      "ListReaction": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/Reaction"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "ListReply": {
         "properties": {
           "items": {
@@ -907,6 +972,37 @@
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/TopicSummary"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "ListTopicUpvote": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/TopicUpvote"
             },
             "type": "array"
           },
@@ -1310,7 +1406,8 @@
             "description": "Type URI domain segment.",
             "enum": [
               "platform",
-              "kungal"
+              "kungal",
+              "moderation"
             ],
             "maxLength": 16,
             "type": "string",
@@ -1353,6 +1450,54 @@
           "type",
           "title",
           "description"
+        ],
+        "type": "object"
+      },
+      "Reaction": {
+        "properties": {
+          "created_at": {
+            "description": "Time of the reaction.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "id": {
+            "description": "Reaction id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always reaction.",
+            "enum": [
+              "reaction"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "reaction": {
+            "description": "Reaction token, such as like, dislike, heart or clap. The vocabulary grows; show an unknown token with a neutral fallback.",
+            "maxLength": 16,
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "type": "string",
+            "x-vocabulary": "reaction",
+            "x-vocabulary-closed": false
+          },
+          "reactor": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "The user who reacted."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "reaction",
+          "reactor",
+          "created_at"
         ],
         "type": "object"
       },
@@ -1544,6 +1689,99 @@
         ],
         "type": "object"
       },
+      "ReplyChoice": {
+        "properties": {
+          "reply_id": {
+            "description": "Id of a visible reply of this topic.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reply_id"
+        ],
+        "type": "object"
+      },
+      "ReplyCreate": {
+        "properties": {
+          "content_markdown": {
+            "description": "Reply body as Markdown source, stored as sent. A body of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input.",
+            "maxLength": 10007,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "content_markdown"
+        ],
+        "type": "object"
+      },
+      "ReplyEngagement": {
+        "properties": {
+          "dislike_count": {
+            "description": "Dislike count. Equals the count of the dislike entry in reactions.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "like_count": {
+            "description": "Like count. Equals the count of the like entry in reactions.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always reply_engagement.",
+            "enum": [
+              "reply_engagement"
+            ],
+            "maxLength": 16,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "reactions": {
+            "description": "One entry per reaction token that has at least one reaction, likes and dislikes included, in first-used order. Empty array if none.",
+            "items": {
+              "$ref": "#/components/schemas/ReactionSummary"
+            },
+            "maxItems": 64,
+            "type": "array"
+          },
+          "reply_id": {
+            "description": "Id of the reply.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "viewer": {
+            "$ref": "#/components/schemas/ReplyViewer",
+            "description": "The caller's own state on the reply after the write."
+          }
+        },
+        "required": [
+          "object",
+          "reply_id",
+          "like_count",
+          "dislike_count",
+          "reactions",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "ReplyPatch": {
+        "properties": {
+          "content_markdown": {
+            "description": "New body as Markdown source. Checked as in createReply. Free text; never use it as a decision input.",
+            "maxLength": 10007,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "ReplyReferenceNode": {
         "properties": {
           "floor": {
@@ -1576,8 +1814,59 @@
         ],
         "type": "object"
       },
+      "ReplySource": {
+        "properties": {
+          "content_markdown": {
+            "description": "Reply body as the stored Markdown source. Free text; never use it as a decision input.",
+            "maxLength": 10007,
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always reply_source.",
+            "enum": [
+              "reply_source"
+            ],
+            "maxLength": 12,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "reply_id": {
+            "description": "Id of the reply.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "topic_id": {
+            "description": "Id of the topic the reply belongs to.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "reply_id",
+          "topic_id",
+          "content_markdown"
+        ],
+        "type": "object"
+      },
       "ReplyViewer": {
         "properties": {
+          "can_delete": {
+            "description": "Whether the caller may delete the reply: its author, or staff holding the delete permission.",
+            "type": "boolean"
+          },
+          "can_edit": {
+            "description": "Whether the caller may edit the reply: its author, or staff holding the edit permission. Requests authenticated with a Bearer token never carry staff powers.",
+            "type": "boolean"
+          },
+          "can_like": {
+            "description": "Whether the caller may like the reply: anyone but its author, while the topic is published.",
+            "type": "boolean"
+          },
           "has_disliked": {
             "description": "Whether the caller disliked the reply.",
             "type": "boolean"
@@ -1589,7 +1878,10 @@
         },
         "required": [
           "has_liked",
-          "has_disliked"
+          "has_disliked",
+          "can_edit",
+          "can_delete",
+          "can_like"
         ],
         "type": "object"
       },
@@ -1835,7 +2127,7 @@
             "description": "The reply marked as the best answer. null when none is marked or it is not visible. It also appears in the replies collection at its floor."
           },
           "bumped_at": {
-            "description": "Bump time. Replies, comments, poll votes and lottery events set it to now, but only for topics created within the last 3 months. It is not a last-activity time.",
+            "description": "Bump time. Replies, comments, upvotes, a new best answer, edits of the title or body, poll votes and lottery events set it to now, but only for topics created within the last 3 months. It is not a last-activity time.",
             "format": "date-time",
             "maxLength": 20,
             "minLength": 20,
@@ -2106,6 +2398,487 @@
         ],
         "type": "object"
       },
+      "TopicCreate": {
+        "properties": {
+          "access_roles": {
+            "description": "Roles granted to read the topic. Required when access_scope is role; must be absent otherwise.",
+            "items": {
+              "description": "Role that may read a topic whose access_scope is role.",
+              "enum": [
+                "creator",
+                "moderator",
+                "admin",
+                "ren"
+              ],
+              "maxLength": 9,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "maxItems": 4,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "access_scope": {
+            "description": "Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may.",
+            "enum": [
+              "public",
+              "login",
+              "role",
+              "users"
+            ],
+            "maxLength": 6,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "access_user_ids": {
+            "description": "Users granted to read the topic. Required when access_scope is users; must be absent otherwise. The author always reads their own topic and is dropped from the list, so a list of only the author leaves the topic readable by its author and staff alone.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "category": {
+            "description": "Topic category.",
+            "enum": [
+              "galgame",
+              "technique",
+              "others"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "content_markdown": {
+            "description": "Topic body as Markdown source, stored as sent. A body of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input.",
+            "maxLength": 100007,
+            "minLength": 1,
+            "type": "string"
+          },
+          "cover_image_hashes": {
+            "description": "Cover images by image-service hash, in display order. When absent, the covers are the first nine distinct /image/{hash} tokens of the body in body order; an empty array means no covers.",
+            "items": {
+              "description": "Image-service content hash of an uploaded image.",
+              "maxLength": 64,
+              "minLength": 64,
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "maxItems": 9,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "is_nsfw": {
+            "description": "Whether the topic is NSFW.",
+            "type": "boolean"
+          },
+          "sections": {
+            "description": "Section slugs. Each must belong to category: g- slugs to galgame, t- slugs to technique, o- slugs to others.",
+            "items": {
+              "description": "Section slug. Hyphenated URL segment of /section/{key}.",
+              "enum": [
+                "g-walkthrough",
+                "g-chatting",
+                "g-article",
+                "g-seeking",
+                "g-news",
+                "g-releases",
+                "g-other",
+                "t-crack",
+                "t-web",
+                "t-languages",
+                "t-help",
+                "t-linux",
+                "t-practical",
+                "t-ai",
+                "t-android",
+                "t-adobe",
+                "t-algorithm",
+                "t-other",
+                "o-anime",
+                "o-comics",
+                "o-music",
+                "o-novel",
+                "o-daily",
+                "o-essay",
+                "o-forum",
+                "o-patch",
+                "o-other"
+              ],
+              "maxLength": 13,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "maxItems": 3,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "title": {
+            "description": "Topic title. Leading and trailing whitespace is removed before it is stored, and a title of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "content_markdown",
+          "category",
+          "sections",
+          "is_nsfw",
+          "access_scope"
+        ],
+        "type": "object"
+      },
+      "TopicEngagement": {
+        "properties": {
+          "dislike_count": {
+            "description": "Dislike count. Equals the count of the dislike entry in reactions.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "favorite_count": {
+            "description": "Number of users who favorited the topic.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "like_count": {
+            "description": "Like count. Equals the count of the like entry in reactions.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always topic_engagement.",
+            "enum": [
+              "topic_engagement"
+            ],
+            "maxLength": 16,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "reactions": {
+            "description": "One entry per reaction token that has at least one reaction, likes and dislikes included, in first-used order. Empty array if none.",
+            "items": {
+              "$ref": "#/components/schemas/ReactionSummary"
+            },
+            "maxItems": 64,
+            "type": "array"
+          },
+          "topic_id": {
+            "description": "Id of the topic.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "upvote_count": {
+            "description": "Number of upvotes.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "upvoted_at": {
+            "description": "Time of the latest upvote. null when the topic has never been upvoted.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "viewer": {
+            "$ref": "#/components/schemas/TopicViewer",
+            "description": "The caller's own state on the topic after the write."
+          }
+        },
+        "required": [
+          "object",
+          "topic_id",
+          "like_count",
+          "dislike_count",
+          "favorite_count",
+          "upvote_count",
+          "upvoted_at",
+          "reactions",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "TopicPatch": {
+        "properties": {
+          "access_roles": {
+            "description": "New granted roles, replacing the stored ones. Only with a resulting access_scope of role.",
+            "items": {
+              "description": "Role that may read a topic whose access_scope is role.",
+              "enum": [
+                "creator",
+                "moderator",
+                "admin",
+                "ren"
+              ],
+              "maxLength": 9,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "maxItems": 4,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "access_scope": {
+            "description": "New access scope. The resulting scope and grants are checked together as in createTopic. When the scope changes, the stored grants are dropped and access_roles or access_user_ids supplies the new ones.",
+            "enum": [
+              "public",
+              "login",
+              "role",
+              "users"
+            ],
+            "maxLength": 6,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "access_user_ids": {
+            "description": "New granted users, replacing the stored ones. Only with a resulting access_scope of users. The author is dropped as in createTopic.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "category": {
+            "description": "New category. The resulting sections must belong to the resulting category.",
+            "enum": [
+              "galgame",
+              "technique",
+              "others"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "content_markdown": {
+            "description": "New body as Markdown source. Checked as in createTopic. Free text; never use it as a decision input.",
+            "maxLength": 100007,
+            "minLength": 1,
+            "type": "string"
+          },
+          "cover_image_hashes": {
+            "description": "New cover images, replacing the stored ones. An empty array removes every cover. Unlike createTopic, nothing is derived from the body.",
+            "items": {
+              "description": "Image-service content hash of an uploaded image.",
+              "maxLength": 64,
+              "minLength": 64,
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "maxItems": 9,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "is_nsfw": {
+            "description": "New NSFW flag.",
+            "type": "boolean"
+          },
+          "sections": {
+            "description": "New section slugs, replacing the stored ones.",
+            "items": {
+              "description": "Section slug. Hyphenated URL segment of /section/{key}.",
+              "enum": [
+                "g-walkthrough",
+                "g-chatting",
+                "g-article",
+                "g-seeking",
+                "g-news",
+                "g-releases",
+                "g-other",
+                "t-crack",
+                "t-web",
+                "t-languages",
+                "t-help",
+                "t-linux",
+                "t-practical",
+                "t-ai",
+                "t-android",
+                "t-adobe",
+                "t-algorithm",
+                "t-other",
+                "o-anime",
+                "o-comics",
+                "o-music",
+                "o-novel",
+                "o-daily",
+                "o-essay",
+                "o-forum",
+                "o-patch",
+                "o-other"
+              ],
+              "maxLength": 13,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "maxItems": 3,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "state": {
+            "description": "hidden hides the topic; published shows it again. Hiding needs can_hide and showing needs can_unhide. Sending the current state changes nothing.",
+            "enum": [
+              "published",
+              "hidden"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "title": {
+            "description": "New title. Trimmed and checked as in createTopic. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "TopicSource": {
+        "properties": {
+          "access_grants": {
+            "$ref": "#/components/schemas/AccessGrants",
+            "description": "The stored grants."
+          },
+          "access_scope": {
+            "description": "Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may.",
+            "enum": [
+              "public",
+              "login",
+              "role",
+              "users"
+            ],
+            "maxLength": 6,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "category": {
+            "description": "Topic category.",
+            "enum": [
+              "galgame",
+              "technique",
+              "others"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "content_markdown": {
+            "description": "Topic body as the stored Markdown source. Free text; never use it as a decision input.",
+            "maxLength": 100007,
+            "type": "string"
+          },
+          "cover_images": {
+            "description": "Cover images in stored token order. Tokens that do not parse are skipped. Empty array if none.",
+            "items": {
+              "$ref": "#/components/schemas/Image"
+            },
+            "maxItems": 9,
+            "type": "array"
+          },
+          "is_nsfw": {
+            "description": "Whether the topic is NSFW.",
+            "type": "boolean"
+          },
+          "object": {
+            "description": "Type discriminant. Always topic_source.",
+            "enum": [
+              "topic_source"
+            ],
+            "maxLength": 12,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "sections": {
+            "description": "Section slugs, in stored order. Empty array if none. Hyphenated URL segments of /section/{key}.",
+            "items": {
+              "description": "Section slug. Hyphenated URL segment of /section/{key}.",
+              "enum": [
+                "g-walkthrough",
+                "g-chatting",
+                "g-article",
+                "g-seeking",
+                "g-news",
+                "g-releases",
+                "g-other",
+                "t-crack",
+                "t-web",
+                "t-languages",
+                "t-help",
+                "t-linux",
+                "t-practical",
+                "t-ai",
+                "t-android",
+                "t-adobe",
+                "t-algorithm",
+                "t-other",
+                "o-anime",
+                "o-comics",
+                "o-music",
+                "o-novel",
+                "o-daily",
+                "o-essay",
+                "o-forum",
+                "o-patch",
+                "o-other"
+              ],
+              "maxLength": 13,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "maxItems": 3,
+            "type": "array"
+          },
+          "title": {
+            "description": "Topic title as stored. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "type": "string"
+          },
+          "topic_id": {
+            "description": "Id of the topic.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "topic_id",
+          "title",
+          "content_markdown",
+          "category",
+          "sections",
+          "is_nsfw",
+          "cover_images",
+          "access_scope",
+          "access_grants"
+        ],
+        "type": "object"
+      },
       "TopicSummary": {
         "properties": {
           "author": {
@@ -2113,7 +2886,7 @@
             "description": "Topic author."
           },
           "bumped_at": {
-            "description": "Bump time. Replies, comments, poll votes and lottery events set it to now, but only for topics created within the last 3 months. It is not a last-activity time.",
+            "description": "Bump time. Replies, comments, upvotes, a new best answer, edits of the title or body, poll votes and lottery events set it to now, but only for topics created within the last 3 months. It is not a last-activity time.",
             "format": "date-time",
             "maxLength": 20,
             "minLength": 20,
@@ -2299,8 +3072,92 @@
         ],
         "type": "object"
       },
+      "TopicUpvote": {
+        "properties": {
+          "created_at": {
+            "description": "Time of the upvote.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "id": {
+            "description": "Upvote id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "note": {
+            "description": "What the upvoter wrote with the upvote. null when they wrote nothing. Free text; never use it as a decision input.",
+            "maxLength": 30,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "description": "Type discriminant. Always topic_upvote.",
+            "enum": [
+              "topic_upvote"
+            ],
+            "maxLength": 12,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "topic_id": {
+            "description": "Id of the upvoted topic.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "upvoter": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "The user who upvoted."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "topic_id",
+          "upvoter",
+          "note",
+          "created_at"
+        ],
+        "type": "object"
+      },
       "TopicViewer": {
         "properties": {
+          "can_edit": {
+            "description": "Whether the caller may edit the topic: its author, or staff holding the edit permission. Requests authenticated with a Bearer token never carry staff powers.",
+            "type": "boolean"
+          },
+          "can_hide": {
+            "description": "Whether the caller may hide the topic now: its author or staff holding the hide permission, while it is published.",
+            "type": "boolean"
+          },
+          "can_like": {
+            "description": "Whether the caller may like the topic: anyone but its author, while it is published. Other reactions and favorites are open to every signed-in reader of a published topic and have no flag.",
+            "type": "boolean"
+          },
+          "can_pin_reply": {
+            "description": "Whether the caller may pin or unpin a reply: its author or staff holding that permission, while the topic is published.",
+            "type": "boolean"
+          },
+          "can_set_best_answer": {
+            "description": "Whether the caller may set or clear the best answer: its author or staff holding that permission, while the topic is published.",
+            "type": "boolean"
+          },
+          "can_unhide": {
+            "description": "Whether the caller may publish the hidden topic again. Its author may undo only a hide of their own; staff holding the hide permission may undo any.",
+            "type": "boolean"
+          },
+          "can_upvote": {
+            "description": "Whether the caller may upvote the topic: anyone but its author, while it is published. An upvote can still fail on the caller's moemoepoint balance.",
+            "type": "boolean"
+          },
           "has_disliked": {
             "description": "Whether the caller disliked the topic.",
             "type": "boolean"
@@ -2322,8 +3179,28 @@
           "has_liked",
           "has_disliked",
           "has_favorited",
-          "has_upvoted"
+          "has_upvoted",
+          "can_edit",
+          "can_hide",
+          "can_unhide",
+          "can_like",
+          "can_upvote",
+          "can_set_best_answer",
+          "can_pin_reply"
         ],
+        "type": "object"
+      },
+      "UpvoteCreate": {
+        "properties": {
+          "note": {
+            "description": "A note shown with the upvote. Absent or null for none. Leading and trailing whitespace is removed, and a note of only whitespace counts as none. Free text; never use it as a decision input.",
+            "maxLength": 30,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
         "type": "object"
       },
       "UserRef": {
@@ -2561,6 +3438,101 @@
       }
     },
     "/replies/{reply_id}": {
+      "delete": {
+        "description": "Deletes the reply with its comments and reactions. It needs can_delete. Its floor is not reused. An author deleting their own reply pays 3 moemoepoint times one plus its likes plus its comments, and needs that balance; staff deleting it charges the reply's author 3. NOT_FOUND under the same conditions as getReply.",
+        "operationId": "deleteReply",
+        "parameters": [
+          {
+            "description": "Reply id.",
+            "in": "path",
+            "name": "reply_id",
+            "required": true,
+            "schema": {
+              "description": "Reply id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED, or MOEMOEPOINT_INSUFFICIENT when an author cannot pay for deleting their own reply; SCOPE_REQUIRED or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a reply",
+        "tags": [
+          "topics"
+        ]
+      },
       "get": {
         "description": "Returns one reply with its comments. NOT_FOUND when the reply does not exist, is hidden, was written by a banned user, or belongs to a topic getTopic would not return to the caller.",
         "operationId": "getReply",
@@ -2660,6 +3632,673 @@
           {}
         ],
         "summary": "Get a reply",
+        "tags": [
+          "topics"
+        ]
+      },
+      "patch": {
+        "description": "Changes the reply body and returns the reply as getReply would. It needs can_edit. A changed body sets edited_at; the topic is not bumped. NOT_FOUND under the same conditions as getReply.",
+        "operationId": "updateReply",
+        "parameters": [
+          {
+            "description": "Reply id.",
+            "in": "path",
+            "name": "reply_id",
+            "required": true,
+            "schema": {
+              "description": "Reply id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplyPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reply"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller may read but not edit the reply; SCOPE_REQUIRED or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED, or CONTENT_REJECTED when the trust-and-safety check refuses the body."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a reply",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
+    "/replies/{reply_id}/reactions": {
+      "get": {
+        "description": "Lists who reacted with what, newest first, as a cursor page. Reactions by banned users are left out; the server reads on to fill the page, so continue while next_cursor is present, whatever the page size. NOT_FOUND under the same conditions as getReply.",
+        "operationId": "listReplyReactions",
+        "parameters": [
+          {
+            "description": "Reply id.",
+            "in": "path",
+            "name": "reply_id",
+            "required": true,
+            "schema": {
+              "description": "Reply id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListReaction"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER, LIMIT_TOO_LARGE, or INVALID_CURSOR."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List a reply's reactions",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
+    "/replies/{reply_id}/reactions/{reaction}": {
+      "delete": {
+        "description": "Removes the caller's reaction with this token and returns the reply's engagement. Removing one not set changes nothing. Removing a like takes back the moemoepoint it earned. NOT_FOUND when getReply would not return the reply to the caller or its topic is hidden.",
+        "operationId": "removeReplyReaction",
+        "parameters": [
+          {
+            "description": "Reply id.",
+            "in": "path",
+            "name": "reply_id",
+            "required": true,
+            "schema": {
+              "description": "Reply id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Reaction token the server currently accepts. like and dislike exclude each other: setting one removes the other.",
+            "in": "path",
+            "name": "reaction",
+            "required": true,
+            "schema": {
+              "description": "Reaction token the server currently accepts. like and dislike exclude each other: setting one removes the other.",
+              "enum": [
+                "like",
+                "dislike",
+                "heart",
+                "fire",
+                "party",
+                "love",
+                "clap",
+                "thinking",
+                "mindblown",
+                "scream",
+                "cry",
+                "pray",
+                "eyes",
+                "hundred",
+                "partyface",
+                "starstruck",
+                "angry",
+                "anxious",
+                "banana",
+                "eyebrow",
+                "voltage",
+                "hotdog",
+                "hot",
+                "sob",
+                "moai",
+                "newmoon",
+                "police",
+                "pouting",
+                "salute",
+                "shrimp",
+                "halo",
+                "sunglasses",
+                "whale"
+              ],
+              "maxLength": 16,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyEngagement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a reaction from a reply",
+        "tags": [
+          "topics"
+        ]
+      },
+      "put": {
+        "description": "Adds the caller's reaction with this token. Setting one already set changes nothing. like and dislike exclude each other: setting one removes the other. A like earns the reply's author 1 moemoepoint and notifies them. NOT_FOUND when getReply would not return the reply to the caller or its topic is hidden.",
+        "operationId": "setReplyReaction",
+        "parameters": [
+          {
+            "description": "Reply id.",
+            "in": "path",
+            "name": "reply_id",
+            "required": true,
+            "schema": {
+              "description": "Reply id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Reaction token the server currently accepts. like and dislike exclude each other: setting one removes the other.",
+            "in": "path",
+            "name": "reaction",
+            "required": true,
+            "schema": {
+              "description": "Reaction token the server currently accepts. like and dislike exclude each other: setting one removes the other.",
+              "enum": [
+                "like",
+                "dislike",
+                "heart",
+                "fire",
+                "party",
+                "love",
+                "clap",
+                "thinking",
+                "mindblown",
+                "scream",
+                "cry",
+                "pray",
+                "eyes",
+                "hundred",
+                "partyface",
+                "starstruck",
+                "angry",
+                "anxious",
+                "banana",
+                "eyebrow",
+                "voltage",
+                "hotdog",
+                "hot",
+                "sob",
+                "moai",
+                "newmoon",
+                "police",
+                "pouting",
+                "salute",
+                "shrimp",
+                "halo",
+                "sunglasses",
+                "whale"
+              ],
+              "maxLength": 16,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyEngagement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SELF_LIKE_FORBIDDEN when the caller likes their own reply; SCOPE_REQUIRED or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "React to a reply",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
+    "/replies/{reply_id}/source": {
+      "get": {
+        "description": "Returns the stored Markdown of the reply, to fill an edit form. It needs can_edit. NOT_FOUND under the same conditions as getReply.",
+        "operationId": "getReplySource",
+        "parameters": [
+          {
+            "description": "Reply id.",
+            "in": "path",
+            "name": "reply_id",
+            "required": true,
+            "schema": {
+              "description": "Reply id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplySource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller may read but not edit the reply; SCOPE_REQUIRED or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a reply's editable source",
         "tags": [
           "topics"
         ]
@@ -2833,6 +4472,159 @@
         "tags": [
           "topics"
         ]
+      },
+      "post": {
+        "description": "Creates a topic and returns it as getTopic would to its author. A caller may create as many topics in any 24 hours as their cached moemoepoint balance divided by 10, plus one. The sections g-seeking, g-other and t-help cost 10 moemoepoint and need that balance; the others earn 3. Mentions in the body notify up to 10 users.",
+        "operationId": "createTopic",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TopicCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Topic"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the new topic, such as /api/v1/topics/4121.",
+                  "format": "uri-reference",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "MOEMOEPOINT_INSUFFICIENT when a paid section is chosen without the balance for it; SCOPE_REQUIRED or ACCOUNT_BANNED."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED, or CONTENT_REJECTED when the trust-and-safety check refuses the title or body."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "TOPIC_DAILY_LIMIT_REACHED; limit is the caller's allowance."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a topic",
+        "tags": [
+          "topics"
+        ]
       }
     },
     "/topics/{topic_id}": {
@@ -2935,6 +4727,1247 @@
           {}
         ],
         "summary": "Get a topic",
+        "tags": [
+          "topics"
+        ]
+      },
+      "patch": {
+        "description": "Changes the fields present in the body and returns the topic as getTopic would. Absent fields keep their value. Editing needs can_edit; state needs can_hide or can_unhide. A change of the title or body sets edited_at and bumps the topic. Moving between paid and free sections charges or refunds the author the difference. NOT_FOUND under the same conditions as getTopic.",
+        "operationId": "updateTopic",
+        "parameters": [
+          {
+            "description": "Topic id.",
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "description": "Topic id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TopicPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Topic"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller lacks the capability a present field needs; SCOPE_REQUIRED or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED, or CONTENT_REJECTED when the trust-and-safety check refuses the title or body."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a topic",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
+    "/topics/{topic_id}/best-answer": {
+      "delete": {
+        "description": "Removes the best-answer mark and returns the topic. It needs can_set_best_answer. Clearing when none is set changes nothing. The reply's author loses the 7 moemoepoint it earned. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.",
+        "operationId": "clearBestAnswer",
+        "parameters": [
+          {
+            "description": "Topic id.",
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "description": "Topic id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Topic"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller lacks can_set_best_answer; SCOPE_REQUIRED or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Clear the best answer",
+        "tags": [
+          "topics"
+        ]
+      },
+      "put": {
+        "description": "Marks a reply of this topic as the best answer and returns the topic. It needs can_set_best_answer. Setting the current one changes nothing. It bumps the topic. The reply's author earns 7 moemoepoint and is notified, unless they are the topic's author; a replaced best answer's author loses the 7 it earned. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.",
+        "operationId": "setBestAnswer",
+        "parameters": [
+          {
+            "description": "Topic id.",
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "description": "Topic id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplyChoice"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Topic"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller lacks can_set_best_answer; SCOPE_REQUIRED or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED at /reply_id when the reply is not a visible reply of this topic."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set the best answer",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
+    "/topics/{topic_id}/favorite": {
+      "delete": {
+        "description": "Removes the topic from the caller's favorites and returns its engagement. Removing one not favorited changes nothing. It takes back the moemoepoint the favorite earned. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.",
+        "operationId": "unfavoriteTopic",
+        "parameters": [
+          {
+            "description": "Topic id.",
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "description": "Topic id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopicEngagement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unfavorite a topic",
+        "tags": [
+          "topics"
+        ]
+      },
+      "put": {
+        "description": "Adds the topic to the caller's favorites. Favoriting it again changes nothing. Another user's favorite earns the author 1 moemoepoint and notifies them. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.",
+        "operationId": "favoriteTopic",
+        "parameters": [
+          {
+            "description": "Topic id.",
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "description": "Topic id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopicEngagement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Favorite a topic",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
+    "/topics/{topic_id}/pinned-reply": {
+      "delete": {
+        "description": "Unpins the pinned reply and returns the topic. It needs can_pin_reply. Unpinning when none is pinned changes nothing. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.",
+        "operationId": "unpinReply",
+        "parameters": [
+          {
+            "description": "Topic id.",
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "description": "Topic id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Topic"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller lacks can_pin_reply; SCOPE_REQUIRED or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Unpin the pinned reply",
+        "tags": [
+          "topics"
+        ]
+      },
+      "put": {
+        "description": "Pins a reply of this topic, replacing any pinned one, and returns the topic. It needs can_pin_reply. Pinning the pinned one changes nothing. The reply's author is notified unless they pinned it themselves. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.",
+        "operationId": "pinReply",
+        "parameters": [
+          {
+            "description": "Topic id.",
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "description": "Topic id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplyChoice"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Topic"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller lacks can_pin_reply; SCOPE_REQUIRED or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED at /reply_id when the reply is not a visible reply of this topic."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Pin a reply",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
+    "/topics/{topic_id}/reactions": {
+      "get": {
+        "description": "Lists who reacted with what, newest first, as a cursor page. Reactions by banned users are left out; the server reads on to fill the page, so continue while next_cursor is present, whatever the page size. NOT_FOUND under the same conditions as getTopic.",
+        "operationId": "listTopicReactions",
+        "parameters": [
+          {
+            "description": "Topic id.",
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "description": "Topic id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListReaction"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER, LIMIT_TOO_LARGE, or INVALID_CURSOR."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List a topic's reactions",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
+    "/topics/{topic_id}/reactions/{reaction}": {
+      "delete": {
+        "description": "Removes the caller's reaction with this token and returns the topic's engagement. Removing one not set changes nothing. Removing a like takes back the moemoepoint it earned. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.",
+        "operationId": "removeTopicReaction",
+        "parameters": [
+          {
+            "description": "Topic id.",
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "description": "Topic id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Reaction token the server currently accepts. like and dislike exclude each other: setting one removes the other.",
+            "in": "path",
+            "name": "reaction",
+            "required": true,
+            "schema": {
+              "description": "Reaction token the server currently accepts. like and dislike exclude each other: setting one removes the other.",
+              "enum": [
+                "like",
+                "dislike",
+                "heart",
+                "fire",
+                "party",
+                "love",
+                "clap",
+                "thinking",
+                "mindblown",
+                "scream",
+                "cry",
+                "pray",
+                "eyes",
+                "hundred",
+                "partyface",
+                "starstruck",
+                "angry",
+                "anxious",
+                "banana",
+                "eyebrow",
+                "voltage",
+                "hotdog",
+                "hot",
+                "sob",
+                "moai",
+                "newmoon",
+                "police",
+                "pouting",
+                "salute",
+                "shrimp",
+                "halo",
+                "sunglasses",
+                "whale"
+              ],
+              "maxLength": 16,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopicEngagement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a reaction from a topic",
+        "tags": [
+          "topics"
+        ]
+      },
+      "put": {
+        "description": "Adds the caller's reaction with this token. Setting one already set changes nothing. like and dislike exclude each other: setting one removes the other. A like earns the author 1 moemoepoint and notifies them. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.",
+        "operationId": "setTopicReaction",
+        "parameters": [
+          {
+            "description": "Topic id.",
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "description": "Topic id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Reaction token the server currently accepts. like and dislike exclude each other: setting one removes the other.",
+            "in": "path",
+            "name": "reaction",
+            "required": true,
+            "schema": {
+              "description": "Reaction token the server currently accepts. like and dislike exclude each other: setting one removes the other.",
+              "enum": [
+                "like",
+                "dislike",
+                "heart",
+                "fire",
+                "party",
+                "love",
+                "clap",
+                "thinking",
+                "mindblown",
+                "scream",
+                "cry",
+                "pray",
+                "eyes",
+                "hundred",
+                "partyface",
+                "starstruck",
+                "angry",
+                "anxious",
+                "banana",
+                "eyebrow",
+                "voltage",
+                "hotdog",
+                "hot",
+                "sob",
+                "moai",
+                "newmoon",
+                "police",
+                "pouting",
+                "salute",
+                "shrimp",
+                "halo",
+                "sunglasses",
+                "whale"
+              ],
+              "maxLength": 16,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopicEngagement"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SELF_LIKE_FORBIDDEN when the caller likes their own topic; SCOPE_REQUIRED or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "React to a topic",
         "tags": [
           "topics"
         ]
@@ -3095,6 +6128,561 @@
           {}
         ],
         "summary": "List a topic's replies",
+        "tags": [
+          "topics"
+        ]
+      },
+      "post": {
+        "description": "Creates a reply at the next floor and returns it as getReply would to its author. Floors are never reused, so deleting the last reply leaves a gap. The topic author earns 1 moemoepoint from another user's reply and is notified; mentions notify up to 10 users. NOT_FOUND under the same conditions as getTopic.",
+        "operationId": "createReply",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Topic id.",
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "description": "Topic id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplyCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reply"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the new reply, such as /api/v1/replies/16335.",
+                  "format": "uri-reference",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED, or CONTENT_REJECTED when the trust-and-safety check refuses the body."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reply to a topic",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
+    "/topics/{topic_id}/source": {
+      "get": {
+        "description": "Returns the stored Markdown and every editable field, to fill an edit form. It needs can_edit. NOT_FOUND under the same conditions as getTopic.",
+        "operationId": "getTopicSource",
+        "parameters": [
+          {
+            "description": "Topic id.",
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "description": "Topic id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopicSource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller may read but not edit the topic; SCOPE_REQUIRED or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a topic's editable source",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
+    "/topics/{topic_id}/upvotes": {
+      "get": {
+        "description": "Lists upvotes newest first as a cursor page. Upvotes by banned users are left out; the server reads on to fill the page, so continue while next_cursor is present, whatever the page size. NOT_FOUND under the same conditions as getTopic.",
+        "operationId": "listTopicUpvotes",
+        "parameters": [
+          {
+            "description": "Topic id.",
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "description": "Topic id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListTopicUpvote"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER, LIMIT_TOO_LARGE, or INVALID_CURSOR."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List a topic's upvotes",
+        "tags": [
+          "topics"
+        ]
+      },
+      "post": {
+        "description": "Records an upvote. It costs the caller 10 moemoepoint, earns the author 5, sets upvoted_at and bumps the topic. A user may upvote the same topic again; each upvote is charged. It cannot be undone. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.",
+        "operationId": "upvoteTopic",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Topic id.",
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "description": "Topic id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpvoteCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopicUpvote"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SELF_UPVOTE_FORBIDDEN, or MOEMOEPOINT_INSUFFICIENT when the caller's cached balance is below 10; SCOPE_REQUIRED or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upvote a topic",
         "tags": [
           "topics"
         ]

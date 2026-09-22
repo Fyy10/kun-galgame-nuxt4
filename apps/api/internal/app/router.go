@@ -26,8 +26,11 @@ func (a *App) setupRoutes() {
 	if a.Authn != nil {
 		deps.Resolver = a.Authn
 	}
+	topicReads := a.newTopicV1()
 	a.APIv1 = apiv1.Setup(a.Fiber, deps,
-		topicapiv1.Register(a.newTopicV1()),
+		topicapiv1.Register(topicReads),
+		topicapiv1.RegisterWrites(a.newTopicV1Writes(topicReads)),
+		topicapiv1.RegisterInteractions(a.newTopicV1Interactions(topicReads)),
 		galgameapiv1.Register(a.GalgameV1),
 	)
 

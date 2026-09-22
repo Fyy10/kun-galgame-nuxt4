@@ -252,6 +252,14 @@ infra 的 `errors[]` 只有英文 `detail`。客户端要本地化「标题最�
 - 同 key 不同请求 → `409 IDEMPOTENCY_KEY_REUSED`；首个请求仍在处理 → `409 IDEMPOTENCY_REQUEST_IN_PROGRESS`。
 - 存储 2xx–4xx 的最终响应（与 infra 同）；5xx 与 429 释放键，允许重试。
 
+**K16 · 查看者槽位的置位与撤销**（W4 定）。「我的赞」「我的收藏」「本话题的最佳答案」「置顶回复」是槽位，不是有自己身份的资源：
+
+- `PUT` 置位、`DELETE` 撤销，都幂等：置已置的、撤未置的都是 200 且无副作用。
+- 两者都回 200，响应体是客户端重画所需的状态（目标的 engagement 快照，或完整资源）。
+- 删掉有自己身份的资源（回复、草稿）才是 204。
+- `/topics/{topic_id}/reactions/{reaction}` 指调用者自己那条表情，凭证即主语，与抽奖的 `entries/me` 同理。
+- 可重复、会扣费的互动（推）是 `POST` 建记录，必须带幂等键。
+
 ## §6 正文文档（K13）
 
 帖子、回复、评论等 Markdown 正文，v1 以**结构化节点树**下发，字段名 `content`。完整规格见 [03-content-doc.md](03-content-doc.md)（W1 定稿），这里只定原则：

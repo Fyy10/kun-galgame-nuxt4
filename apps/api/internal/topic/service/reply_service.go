@@ -190,7 +190,7 @@ func (s *ReplyService) CreateReply(
 	var newReply *topicModel.TopicReply
 
 	txErr := s.replyRepo.DB().Transaction(func(tx *gorm.DB) error {
-		maxFloor, err := s.replyRepo.GetMaxFloor(tx, req.TopicID)
+		floor, err := repository.NextReplyFloor(tx, req.TopicID)
 		if err != nil {
 			return err
 		}
@@ -198,7 +198,7 @@ func (s *ReplyService) CreateReply(
 		newReply = &topicModel.TopicReply{
 			UserID:  userID,
 			TopicID: req.TopicID,
-			Floor:   maxFloor + 1,
+			Floor:   floor,
 			Content: req.Content,
 		}
 		if err := s.replyRepo.CreateReply(tx, newReply); err != nil {

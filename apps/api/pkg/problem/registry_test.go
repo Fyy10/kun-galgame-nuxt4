@@ -28,6 +28,12 @@ var requiredCodes = []struct {
 	{CodeValidationFailed, DomainPlatform, 422},
 	{CodeInternalError, DomainPlatform, 500},
 	{CodeServiceUnavailable, DomainPlatform, 503},
+	{CodePermissionRequired, DomainModeration, 403},
+	{CodeContentRejected, DomainKungal, 422},
+	{CodeTopicDailyLimitReached, DomainKungal, 429},
+	{CodeMoemoepointInsufficient, DomainKungal, 403},
+	{CodeSelfLikeForbidden, DomainKungal, 403},
+	{CodeSelfUpvoteForbidden, DomainKungal, 403},
 }
 
 func TestRegistryClosedAndExact(t *testing.T) {

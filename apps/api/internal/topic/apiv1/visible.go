@@ -3,6 +3,7 @@ package apiv1
 import (
 	"context"
 	"errors"
+	"strconv"
 
 	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/repr"
@@ -53,6 +54,37 @@ func (s *Service) visibleTopic(ctx context.Context, idStr string) (*model.Topic,
 		return nil, nil, p
 	}
 	return topic, user, nil
+}
+
+func (s *Service) visibleReply(ctx context.Context, idStr string) (*model.Topic, *model.TopicReply, *middleware.UserInfo, *problem.Problem) {
+	if s == nil {
+		return nil, nil, nil, problem.Internal(errUnconfigured)
+	}
+	id, ok := parsePositiveID(idStr)
+	if !ok {
+		return nil, nil, nil, notFound()
+	}
+	row, err := s.replies.FindByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil, nil, notFound()
+		}
+		return nil, nil, nil, problem.Internal(err)
+	}
+	if row.Status != 0 {
+		return nil, nil, nil, notFound()
+	}
+	topic, user, p := s.visibleTopic(ctx, strconv.Itoa(row.TopicID))
+	if p != nil {
+		return nil, nil, nil, p
+	}
+	if row.TopicID != topic.ID {
+		return nil, nil, nil, notFound()
+	}
+	if p := s.rejectUnrenderableAuthor(ctx, row.UserID); p != nil {
+		return nil, nil, nil, p
+	}
+	return topic, row, user, nil
 }
 
 func (s *Service) rejectUnrenderableAuthor(ctx context.Context, userID int) *problem.Problem {

@@ -26,6 +26,12 @@ DELETE /api/topic/:tid/reply                          cors.New → middleware.Na
 DELETE /api/topic/draft/:id                           cors.New → middleware.NamePreference → OptionalAuth → Auth → TopicDraftHandler.Delete
 DELETE /api/update/history                            cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → UpdateHandler.DeleteHistory
 DELETE /api/update/todo                               cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → UpdateHandler.DeleteTodo
+DELETE /api/v1/replies/:reply_id                      cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/replies/:reply_id/reactions/:reaction  cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/topics/:topic_id/best-answer           cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/topics/:topic_id/favorite              cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/topics/:topic_id/pinned-reply          cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/topics/:topic_id/reactions/:reaction   cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/website-category                          cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → CategoryHandler.DeleteWebsiteCategory
 DELETE /api/website-tag                               cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → TagHandler.DeleteWebsiteTag
 DELETE /api/website-tag-group                         cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → TagGroupHandler.DeleteWebsiteTagGroup
@@ -183,9 +189,14 @@ GET    /api/v1/galgames/:galgame_id/moyu-patches      cors.New → v1Headers →
 GET    /api/v1/problems                               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/problems/reasons                       cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/replies/:reply_id                      cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/replies/:reply_id/reactions            cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/replies/:reply_id/source               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics                                 cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id                       cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/topics/:topic_id/reactions             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id/replies               cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/topics/:topic_id/source                cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/topics/:topic_id/upvotes               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/website                                   cors.New → middleware.NamePreference → OptionalAuth → WebsiteHandler.GetWebsites
 GET    /api/website-category                          cors.New → middleware.NamePreference → CategoryHandler.GetWebsiteCategories
 GET    /api/website-category/:name                    cors.New → middleware.NamePreference → CategoryHandler.GetWebsiteCategory
@@ -196,6 +207,8 @@ GET    /api/website/:domain                           cors.New → middleware.Na
 GET    /api/website/:domain/comments                  cors.New → middleware.NamePreference → OptionalAuth → ResourceCommentHandler.WebsiteList
 GET    /healthz                                       cors.New → App.setupRoutes
 PATCH  /api/galgame/collection/:cid                   cors.New → middleware.NamePreference → OptionalAuth → Auth → GalgameCollectionHandler.Update
+PATCH  /api/v1/replies/:reply_id                      cors.New → v1Headers → fiberAdapter.Handle
+PATCH  /api/v1/topics/:topic_id                       cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/admin/friend-link                         cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → FriendLinkHandler.Create
 POST   /api/admin/galgame/:gid/review                 cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → ClaimReviewHandler.Review
 POST   /api/admin/trust/review-items/:id/claim        cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → TrustHandler.ClaimReviewItem
@@ -260,6 +273,9 @@ POST   /api/update/todo/discard                       cors.New → middleware.Na
 POST   /api/user/avatar                               cors.New → middleware.NamePreference → Auth → ProfileHandler.UploadAvatar
 POST   /api/user/check-in                             cors.New → middleware.NamePreference → Auth → UserHandler.CheckIn
 POST   /api/user/creator/apply                        cors.New → middleware.NamePreference → Auth → CreatorHandler.Apply
+POST   /api/v1/topics                                 cors.New → v1Headers → fiberAdapter.Handle
+POST   /api/v1/topics/:topic_id/replies               cors.New → v1Headers → fiberAdapter.Handle
+POST   /api/v1/topics/:topic_id/upvotes               cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/topics/:topic_id/views                 cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/website                                   cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → WebsiteHandler.CreateWebsite
 POST   /api/website-category                          cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → CategoryHandler.CreateWebsiteCategory
@@ -319,6 +335,11 @@ PUT    /api/update/todo                               cors.New → middleware.Na
 PUT    /api/user/bio                                  cors.New → middleware.NamePreference → Auth → ProfileHandler.UpdateBio
 PUT    /api/user/notification-preferences             cors.New → middleware.NamePreference → Auth → UserHandler.UpdateNotificationPreferences
 PUT    /api/user/username                             cors.New → middleware.NamePreference → Auth → ProfileHandler.UpdateUsername
+PUT    /api/v1/replies/:reply_id/reactions/:reaction  cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/topics/:topic_id/best-answer           cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/topics/:topic_id/favorite              cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/topics/:topic_id/pinned-reply          cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/topics/:topic_id/reactions/:reaction   cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/website-category                          cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → CategoryHandler.UpdateWebsiteCategory
 PUT    /api/website-tag                               cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → TagHandler.UpdateWebsiteTag
 PUT    /api/website-tag-group                         cors.New → middleware.NamePreference → OptionalAuth → Auth → RequirePermission → TagGroupHandler.UpdateWebsiteTagGroup

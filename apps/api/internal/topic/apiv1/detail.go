@@ -43,16 +43,23 @@ type Topic struct {
 	BestAnswer        *Reply                  `json:"best_answer" doc:"The reply marked as the best answer. null when none is marked or it is not visible. It also appears in the replies collection at its floor."`
 	CreatedAt         repr.DateTime           `json:"created_at" doc:"Creation time."`
 	EditedAt          *repr.DateTime          `json:"edited_at" doc:"Time of the latest edit of the title or body. null when never edited."`
-	BumpedAt          repr.DateTime           `json:"bumped_at" doc:"Bump time. Replies, comments, poll votes and lottery events set it to now, but only for topics created within the last 3 months. It is not a last-activity time."`
+	BumpedAt          repr.DateTime           `json:"bumped_at" doc:"Bump time. Replies, comments, upvotes, a new best answer, edits of the title or body, poll votes and lottery events set it to now, but only for topics created within the last 3 months. It is not a last-activity time."`
 	UpvotedAt         *repr.DateTime          `json:"upvoted_at" doc:"Time of the latest upvote. null when the topic has never been upvoted."`
 	Viewer            *TopicViewer            `json:"viewer" doc:"The caller's own state on this topic. null for an anonymous caller."`
 }
 
 type TopicViewer struct {
-	HasLiked     bool `json:"has_liked" doc:"Whether the caller liked the topic."`
-	HasDisliked  bool `json:"has_disliked" doc:"Whether the caller disliked the topic."`
-	HasFavorited bool `json:"has_favorited" doc:"Whether the caller favorited the topic."`
-	HasUpvoted   bool `json:"has_upvoted" doc:"Whether the caller has upvoted the topic."`
+	HasLiked         bool `json:"has_liked" doc:"Whether the caller liked the topic."`
+	HasDisliked      bool `json:"has_disliked" doc:"Whether the caller disliked the topic."`
+	HasFavorited     bool `json:"has_favorited" doc:"Whether the caller favorited the topic."`
+	HasUpvoted       bool `json:"has_upvoted" doc:"Whether the caller has upvoted the topic."`
+	CanEdit          bool `json:"can_edit" doc:"Whether the caller may edit the topic: its author, or staff holding the edit permission. Requests authenticated with a Bearer token never carry staff powers."`
+	CanHide          bool `json:"can_hide" doc:"Whether the caller may hide the topic now: its author or staff holding the hide permission, while it is published."`
+	CanUnhide        bool `json:"can_unhide" doc:"Whether the caller may publish the hidden topic again. Its author may undo only a hide of their own; staff holding the hide permission may undo any."`
+	CanLike          bool `json:"can_like" doc:"Whether the caller may like the topic: anyone but its author, while it is published. Other reactions and favorites are open to every signed-in reader of a published topic and have no flag."`
+	CanUpvote        bool `json:"can_upvote" doc:"Whether the caller may upvote the topic: anyone but its author, while it is published. An upvote can still fail on the caller's moemoepoint balance."`
+	CanSetBestAnswer bool `json:"can_set_best_answer" doc:"Whether the caller may set or clear the best answer: its author or staff holding that permission, while the topic is published."`
+	CanPinReply      bool `json:"can_pin_reply" doc:"Whether the caller may pin or unpin a reply: its author or staff holding that permission, while the topic is published."`
 }
 
 type ReactionSummary struct {

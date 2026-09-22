@@ -60,6 +60,7 @@ import (
 	toolsetHandler "kun-galgame-api/internal/toolset/handler"
 	toolsetRepo "kun-galgame-api/internal/toolset/repository"
 	toolsetService "kun-galgame-api/internal/toolset/service"
+	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
 	topicHandler "kun-galgame-api/internal/topic/handler"
 	topicRepo "kun-galgame-api/internal/topic/repository"
 	topicService "kun-galgame-api/internal/topic/service"
@@ -106,6 +107,10 @@ type App struct {
 	Config      *config.Config
 	OAuthClient *oauth.Client
 	UserState   *repository.StateRepository
+	TopicAward  topicapiv1.AwardFunc
+	TrustCheck  *gate.CheckService
+	TrustScan   *gate.ScanService
+	Notifier    msgService.Notifier
 	UserClient  *userclient.Client
 	Authn       *middleware.Authenticator
 	ImageMeta   func(hashes []string) map[string]imageclient.ImageMeta
@@ -584,6 +589,9 @@ func New(cfg *config.Config) *App {
 	app := &App{
 		DB: db, Redis: rdb, Config: cfg, OAuthClient: oauthClient,
 		UserState:                      userStateRepo,
+		TrustCheck:                     trustCheck,
+		TrustScan:                      trustScan,
+		Notifier:                       notifier,
 		UserClient:                     uc,
 		Authn:                          authn,
 		ImageMeta:                      imageMetaResolve(imageMeta),

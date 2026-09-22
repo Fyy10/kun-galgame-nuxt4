@@ -27,6 +27,9 @@ type Reply struct {
 type ReplyViewer struct {
 	HasLiked    bool `json:"has_liked" doc:"Whether the caller liked the reply."`
 	HasDisliked bool `json:"has_disliked" doc:"Whether the caller disliked the reply."`
+	CanEdit     bool `json:"can_edit" doc:"Whether the caller may edit the reply: its author, or staff holding the edit permission. Requests authenticated with a Bearer token never carry staff powers."`
+	CanDelete   bool `json:"can_delete" doc:"Whether the caller may delete the reply: its author, or staff holding the delete permission."`
+	CanLike     bool `json:"can_like" doc:"Whether the caller may like the reply: anyone but its author, while the topic is published."`
 }
 
 type Comment struct {

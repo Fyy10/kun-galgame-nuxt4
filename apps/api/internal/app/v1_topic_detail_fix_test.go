@@ -262,8 +262,10 @@ func (f *detailFix) seed(t *testing.T) {
 		id, floor, user, status int
 		body                    string
 	}{
+		// Two replies shared floor 1 here until migration 100 made
+		// (topic_id, floor) unique; the traversal they guard is the same.
 		{920000370, 1, d1UserAlice, 0, "f1a"},
-		{920000371, 1, d1UserBob, 0, "f1b"},
+		{920000371, 2, d1UserBob, 0, "f1b"},
 		{920000372, 3, d1UserAlice, 0, "f3"},
 		{920000373, 4, d1UserAlice, 1, "hidden-floor"},
 		{920000374, 6, d1UserBanned, 0, "banned-floor"},
