@@ -4,17 +4,35 @@ import (
 	"context"
 	"errors"
 
+	v1 "kun-galgame-api/internal/apiv1"
 	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
+	msgService "kun-galgame-api/internal/message/service"
+	"kun-galgame-api/internal/middleware"
+	"kun-galgame-api/internal/moemoepoint"
+	"kun-galgame-api/internal/topic/model"
 	"kun-galgame-api/pkg/problem"
+
+	"gorm.io/gorm"
 )
 
+type AwardFunc func(userID, delta int, reason, ref, key string)
+
 type Interactions struct {
-	reads *Service
+	reads  *Service
+	db     *gorm.DB
+	notify msgService.Notifier
+	award  AwardFunc
 }
 
-func NewInteractions(reads *Service) *Interactions {
-	return &Interactions{reads: reads}
+func NewInteractions(reads *Service, db *gorm.DB, notify msgService.Notifier, award AwardFunc) *Interactions {
+	if db == nil && reads != nil && reads.topics != nil {
+		db = reads.topics.DB()
+	}
+	if award == nil {
+		award = moemoepoint.Award
+	}
+	return &Interactions{reads: reads, db: db, notify: notify, award: award}
 }
 
 type topicReactionInput struct {
@@ -84,60 +102,101 @@ type listReplyReactionsInput struct {
 	collect.Page
 }
 
-var errInteractionsNotImplemented = errors.New("apiv1 topic interactions: not implemented")
-
-func (x *Interactions) setTopicReaction(ctx context.Context, in *topicReactionInput) (*topicEngagementOutput, error) {
-	return nil, problem.Internal(errInteractionsNotImplemented)
+type pendingAward struct {
+	userID int
+	delta  int
+	reason string
+	ref    string
+	key    string
 }
 
-func (x *Interactions) removeTopicReaction(ctx context.Context, in *topicReactionInput) (*topicEngagementOutput, error) {
-	return nil, problem.Internal(errInteractionsNotImplemented)
+type engageError struct {
+	p *problem.Problem
 }
 
-func (x *Interactions) favoriteTopic(ctx context.Context, in *topicFavoriteInput) (*topicEngagementOutput, error) {
-	return nil, problem.Internal(errInteractionsNotImplemented)
+func (e engageError) Error() string {
+	if e.p == nil {
+		return ""
+	}
+	return e.p.Error()
 }
 
-func (x *Interactions) unfavoriteTopic(ctx context.Context, in *topicFavoriteInput) (*topicEngagementOutput, error) {
-	return nil, problem.Internal(errInteractionsNotImplemented)
+func (x *Interactions) ready() *problem.Problem {
+	if x == nil || x.reads == nil || x.db == nil {
+		return problem.Internal(errUnconfigured)
+	}
+	return nil
 }
 
-func (x *Interactions) upvoteTopic(ctx context.Context, in *upvoteTopicInput) (*upvoteTopicOutput, error) {
-	return nil, problem.Internal(errInteractionsNotImplemented)
+func (x *Interactions) caller(ctx context.Context) *middleware.UserInfo {
+	return v1.User(ctx)
 }
 
-func (x *Interactions) listTopicUpvotes(ctx context.Context, in *listTopicUpvotesInput) (*listTopicUpvotesOutput, error) {
-	return nil, problem.Internal(errInteractionsNotImplemented)
+func (x *Interactions) visiblePublishedTopic(ctx context.Context, idStr string) (*model.Topic, *middleware.UserInfo, *problem.Problem) {
+	if p := x.ready(); p != nil {
+		return nil, nil, p
+	}
+	topic, user, p := x.reads.visibleTopic(ctx, idStr)
+	if p != nil {
+		return nil, nil, p
+	}
+	if topic.Status != 0 {
+		return nil, nil, notFound()
+	}
+	return topic, user, nil
 }
 
-func (x *Interactions) listTopicReactions(ctx context.Context, in *listTopicReactionsInput) (*listReactionsOutput, error) {
-	return nil, problem.Internal(errInteractionsNotImplemented)
+func (x *Interactions) visiblePublishedReply(ctx context.Context, idStr string) (*model.Topic, *model.TopicReply, *middleware.UserInfo, *problem.Problem) {
+	if p := x.ready(); p != nil {
+		return nil, nil, nil, p
+	}
+	topic, reply, user, p := x.reads.visibleReply(ctx, idStr)
+	if p != nil {
+		return nil, nil, nil, p
+	}
+	if topic.Status != 0 {
+		return nil, nil, nil, notFound()
+	}
+	return topic, reply, user, nil
 }
 
-func (x *Interactions) setBestAnswer(ctx context.Context, in *setTopicReplyInput) (*topicOutput, error) {
-	return nil, problem.Internal(errInteractionsNotImplemented)
+func (x *Interactions) afterCommit(err error, jobs []pendingAward) error {
+	if err != nil {
+		return err
+	}
+	for _, j := range jobs {
+		x.award(j.userID, j.delta, j.reason, j.ref, j.key)
+	}
+	return nil
 }
 
-func (x *Interactions) clearBestAnswer(ctx context.Context, in *clearTopicReplyInput) (*topicOutput, error) {
-	return nil, problem.Internal(errInteractionsNotImplemented)
+func mapEngageErr(err error) error {
+	if err == nil {
+		return nil
+	}
+	var ee engageError
+	if errors.As(err, &ee) && ee.p != nil {
+		return ee.p
+	}
+	return problem.Internal(err)
 }
 
-func (x *Interactions) pinReply(ctx context.Context, in *setTopicReplyInput) (*topicOutput, error) {
-	return nil, problem.Internal(errInteractionsNotImplemented)
+func selfLikeForbidden() *problem.Problem {
+	return problem.New(problem.CodeSelfLikeForbidden, "Users cannot like their own topics, replies or comments.")
 }
 
-func (x *Interactions) unpinReply(ctx context.Context, in *clearTopicReplyInput) (*topicOutput, error) {
-	return nil, problem.Internal(errInteractionsNotImplemented)
+func selfUpvoteForbidden() *problem.Problem {
+	return problem.New(problem.CodeSelfUpvoteForbidden, "Users cannot upvote their own topics.")
 }
 
-func (x *Interactions) setReplyReaction(ctx context.Context, in *replyReactionInput) (*replyEngagementOutput, error) {
-	return nil, problem.Internal(errInteractionsNotImplemented)
+func permissionRequired() *problem.Problem {
+	return problem.New(problem.CodePermissionRequired, "The token lacks the permission this decision needs.")
 }
 
-func (x *Interactions) removeReplyReaction(ctx context.Context, in *replyReactionInput) (*replyEngagementOutput, error) {
-	return nil, problem.Internal(errInteractionsNotImplemented)
-}
-
-func (x *Interactions) listReplyReactions(ctx context.Context, in *listReplyReactionsInput) (*listReactionsOutput, error) {
-	return nil, problem.Internal(errInteractionsNotImplemented)
+func unknownReply() *problem.Problem {
+	return problem.New(
+		problem.CodeValidationFailed,
+		"The reply is not a visible reply of this topic.",
+		problem.AtPointer("/reply_id", problem.ReasonUnknownReference, "the reply is not a visible reply of this topic", nil),
+	)
 }
