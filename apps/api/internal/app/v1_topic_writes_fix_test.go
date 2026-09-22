@@ -301,6 +301,7 @@ func (f *writeFix) cleanup(t *testing.T) {
 		ours[0], ours[1], ours[0], ours[1]).Error
 	_ = f.db.Exec(`DELETE FROM topic_comment WHERE user_id BETWEEN ? AND ? OR topic_id IN (SELECT id FROM topic WHERE user_id BETWEEN ? AND ?)`,
 		ours[0], ours[1], ours[0], ours[1]).Error
+	_ = f.db.Exec(`DELETE FROM topic_draft WHERE user_id BETWEEN ? AND ?`, ours[0], ours[1]).Error
 	_ = f.db.Exec(`DELETE FROM topic_poll_vote WHERE poll_id IN (
 		SELECT id FROM topic_poll WHERE topic_id IN (SELECT id FROM topic WHERE user_id BETWEEN ? AND ?))`,
 		ours[0], ours[1]).Error

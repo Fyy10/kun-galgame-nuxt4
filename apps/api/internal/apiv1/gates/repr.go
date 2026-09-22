@@ -17,6 +17,14 @@ var g8Allow = map[string]bool{
 	"object":   true,
 	"state":    true,
 	"viewer":   true,
+	// A published topic always has a category; a draft is a half-written topic
+	// and 39 of the 69 on production have never had one chosen, so the draft's
+	// field is the same three-member enum but nullable. G8 went red on the
+	// drafts wave (2026-09-22) over exactly that difference. It is real and
+	// permanent, not an oversight. Keep the enum members identical on both
+	// sides — this entry stops the gate seeing the nullability, and it would
+	// equally stop it seeing a genuinely different vocabulary.
+	"category": true,
 }
 
 var g8Forbidden = []string{

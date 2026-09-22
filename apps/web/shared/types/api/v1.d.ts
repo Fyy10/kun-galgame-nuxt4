@@ -96,6 +96,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/topic-drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the caller's topic drafts
+         * @description Lists the caller's own topic drafts, most recently written first, ties broken by descending id. There is one sort and no sort parameter. A draft is private to its author. Another author's draft is NOT_FOUND, never 403: a stranger must not learn that the id exists.
+         */
+        get: operations["listTopicDrafts"];
+        put?: never;
+        /**
+         * Save a topic draft
+         * @description Saves the editor's current buffer as a new draft and returns it. Every field is optional because a draft is unfinished by definition; sections are not checked against category. **This always creates.** There is no update face and this one never overwrites: a draft is a snapshot, the client tracks no draft id, and loading one into the editor and saving again is meant to leave two. Deleting is the only way to make room once the cap is reached.
+         */
+        post: operations["createTopicDraft"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/topic-drafts/{draft_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a topic draft
+         * @description Returns one of the caller's own drafts, with the body as stored. A draft is private to its author. Another author's draft is NOT_FOUND, never 403: a stranger must not learn that the id exists.
+         */
+        get: operations["getTopicDraft"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a topic draft
+         * @description Deletes one of the caller's own drafts. Deleting it again is NOT_FOUND. A draft is private to its author. Another author's draft is NOT_FOUND, never 403: a stranger must not learn that the id exists.
+         */
+        delete: operations["deleteTopicDraft"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/polls/{poll_id}": {
         parameters: {
             query?: never;
@@ -977,6 +1025,17 @@ export interface components {
              */
             object: "list";
         };
+        ListTopicDraftSummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["TopicDraftSummary"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
         ListTopicSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["TopicSummary"][];
@@ -1756,6 +1815,80 @@ export interface components {
             sections: ("g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other")[];
             /** @description Topic title. Leading and trailing whitespace is removed before it is stored, and a title of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
             title: string;
+        };
+        TopicDraft: {
+            /**
+             * @description Chosen category. null when the author has not chosen one, which is the stored state of most drafts.
+             * @enum {string|null}
+             */
+            category: "galgame" | "technique" | "others" | null;
+            /** @description Draft body as Markdown source, stored as sent. Empty string when the author has not written one. Free text; never use it as a decision input. */
+            content_markdown: string;
+            /** @description Cover images by image-service hash, in stored order. Tokens that do not parse are skipped. Empty array if none. */
+            cover_image_hashes: string[];
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /** @description Draft id. JSON string of a decimal integer. */
+            id: string;
+            /** @description Whether the author marked the draft NSFW. */
+            is_nsfw: boolean;
+            /**
+             * @description Type discriminant. Always topic_draft.
+             * @enum {string}
+             */
+            object: "topic_draft";
+            /** @description Chosen section slugs, in stored order. Empty array if none. A draft is unfinished, so they are not checked against category. */
+            sections: ("g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other")[];
+            /** @description Draft title as stored, empty string when the author has not written one. Free text; never use it as a decision input. */
+            title: string;
+            /**
+             * Format: date-time
+             * @description Last write time. A draft is never rewritten, so it equals created_at for every draft written by this API.
+             */
+            updated_at: string;
+        };
+        TopicDraftCreate: {
+            /**
+             * @description Chosen category. Absent or null when the author has not chosen one.
+             * @enum {string}
+             */
+            category?: "galgame" | "technique" | "others";
+            /** @description Draft body as Markdown source. Stored as sent. Free text; never use it as a decision input. */
+            content_markdown?: string;
+            /** @description Cover images by image-service hash, in display order. Unlike createTopic, nothing is derived from the body. */
+            cover_image_hashes?: string[];
+            /** @description Whether to mark the draft NSFW. Defaults to false. */
+            is_nsfw?: boolean;
+            /** @description Chosen section slugs. Unlike createTopic they are not checked against category, and an empty list is allowed: a draft is unfinished by definition. */
+            sections?: ("g-walkthrough" | "g-chatting" | "g-article" | "g-seeking" | "g-news" | "g-releases" | "g-other" | "t-crack" | "t-web" | "t-languages" | "t-help" | "t-linux" | "t-practical" | "t-ai" | "t-android" | "t-adobe" | "t-algorithm" | "t-other" | "o-anime" | "o-comics" | "o-music" | "o-novel" | "o-daily" | "o-essay" | "o-forum" | "o-patch" | "o-other")[];
+            /** @description Draft title. Stored as sent. Free text; never use it as a decision input. */
+            title?: string;
+        };
+        TopicDraftSummary: {
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /** @description Draft id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * @description Type discriminant. Always topic_draft_summary.
+             * @enum {string}
+             */
+            object: "topic_draft_summary";
+            /** @description First 120 characters of the body as stored: raw Markdown, image tokens included, cut without regard for word or token boundaries. Free text; never use it as a decision input. */
+            summary: string;
+            /** @description Draft title as stored, empty string when the author has not written one. Free text; never use it as a decision input. */
+            title: string;
+            /**
+             * Format: date-time
+             * @description Last write time.
+             */
+            updated_at: string;
         };
         TopicEngagement: {
             /**
@@ -2538,6 +2671,328 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE: www.moyu.moe, the catalog or the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listTopicDrafts: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListTopicDraftSummary"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createTopicDraft: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TopicDraftCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopicDraft"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description DRAFT_LIMIT_REACHED when the caller already holds 30 drafts. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when the title and the body are both blank after trimming whitespace. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getTopicDraft: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Draft id. */
+                draft_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopicDraft"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the draft does not exist or belongs to another author. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteTopicDraft: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Draft id. */
+                draft_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the draft does not exist or belongs to another author. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
             503: {
                 headers: {
                     [name: string]: unknown;

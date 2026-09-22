@@ -31,6 +31,7 @@ var requiredCodes = []struct {
 	{CodePermissionRequired, DomainModeration, 403},
 	{CodeContentRejected, DomainKungal, 422},
 	{CodeTopicDailyLimitReached, DomainKungal, 429},
+	{CodeDraftLimitReached, DomainKungal, 409},
 	{CodeMoemoepointInsufficient, DomainKungal, 403},
 	{CodeSelfLikeForbidden, DomainKungal, 403},
 	{CodeSelfUpvoteForbidden, DomainKungal, 403},

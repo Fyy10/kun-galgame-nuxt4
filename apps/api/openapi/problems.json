@@ -164,6 +164,15 @@
     },
     {
       "object": "problem_type",
+      "code": "DRAFT_LIMIT_REACHED",
+      "domain": "kungal",
+      "status": 409,
+      "type": "https://developer.nextmoe.dev/problems/kungal/draft-limit-reached",
+      "title": "Draft limit reached",
+      "description": "The caller already holds the maximum number of drafts. A draft is never overwritten, so the only way to make room is to delete one. limit is that number."
+    },
+    {
+      "object": "problem_type",
       "code": "IDEMPOTENCY_REQUEST_IN_PROGRESS",
       "domain": "kungal",
       "status": 409,
