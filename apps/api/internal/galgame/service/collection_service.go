@@ -2,11 +2,9 @@ package service
 
 import (
 	"context"
-	stderrors "errors"
 	"log/slog"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	"kun-galgame-api/internal/galgame/client"
@@ -19,15 +17,18 @@ import (
 	"kun-galgame-api/pkg/errors"
 	"kun-galgame-api/pkg/userclient"
 
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
 const previewCoversPerCollection = 4
 
 // A collection is a catalog folder. galgame_collection is the alias table that
-// keeps this site's own ids alive (migration 091) and nothing else; every read
-// and write below goes to /v2/me/folders or /v2/folders with the signed-in
-// user's own access token, which is why every entry point takes one.
+// keeps this site's own ids alive (migration 091) and nothing else. Writes and
+// private reads go to /v2/me/folders with the signed-in user's access token.
+// Public folders are read with the application key even when the owner is
+// looking: walking /v2/me/folders/{id}/items on every page view is what spent
+// user 90769's 10k/day quota on 2026-09-20.
 //
 // The token is the user's OAuth access token and must carry folder:read /
 // folder:write. A session minted before those scopes were requested is 403
@@ -45,6 +46,7 @@ type CollectionService struct {
 	catalog        *catalogclient.Client
 	check          *gate.CheckService
 	scan           *gate.ScanService
+	rdb            *redis.Client
 	helpers        InteractionHelpers
 }
 
@@ -56,6 +58,7 @@ func NewCollectionService(
 	catalog *catalogclient.Client,
 	check *gate.CheckService,
 	scan *gate.ScanService,
+	rdb *redis.Client,
 ) *CollectionService {
 	return &CollectionService{
 		collectionRepo: collectionRepo,
@@ -65,57 +68,8 @@ func NewCollectionService(
 		catalog:        catalog,
 		check:          check,
 		scan:           scan,
+		rdb:            rdb,
 	}
-}
-
-func collectionErr(err error, fallback string) *errors.AppError {
-	switch {
-	case err == nil:
-		return nil
-	case stderrors.Is(err, catalogclient.ErrNotFound):
-		return errors.ErrNotFound("收藏夹不存在")
-	// A grant too narrow for folder:read and an expired session are different
-	// faults with different cures, and folding them together cost an outage on
-	// 2026-09-08: this returned code 205, whose client-side handler re-checks
-	// /api/user/status — which answers from this site's own cookie, finds it
-	// perfectly healthy, and returns without a word. Every collection read
-	// failed and nobody was told. Code 235 is what the five other scope-starved
-	// paths here already use (playtime, cover votes, edits, submissions, image
-	// upload) and its handler says the one thing that actually fixes it.
-	case stderrors.Is(err, catalogclient.ErrInsufficientScope):
-		return errors.ErrReauthRequired("收藏夹需要新的授权，请退出登录后重新登录以授予该权限")
-	case stderrors.Is(err, catalogclient.ErrUnauthorized):
-		return errors.ErrAuthExpired()
-	}
-	var apiErr *catalogclient.UserAPIError
-	if stderrors.As(err, &apiErr) {
-		switch apiErr.Status {
-		case 403:
-			return errors.ErrForbidden("你没有权限操作这个收藏夹")
-		case 422:
-			return errors.ErrBadRequest(folderRefusalText(apiErr.Message))
-		}
-	}
-	slog.Error("collection: catalog call failed", "err", err)
-	return errors.ErrInternal(fallback)
-}
-
-// Upstream answers a 422 in English, and this face has always spoken Chinese.
-// A hand-maintained map over another service's prose is a bad shape in general;
-// it is here because the alternative is showing readers a sentence in a
-// language the rest of the page is not in, and the fallback is that sentence,
-// so a phrase that changes upstream degrades rather than breaks. The two caps
-// are the only 422s a request that passed this site's own validation can hit.
-func folderRefusalText(upstream string) string {
-	switch {
-	case strings.Contains(upstream, "may keep at most"):
-		return "收藏夹数量已达上限"
-	case strings.Contains(upstream, "may hold at most"):
-		return "这个收藏夹已经装满了"
-	case strings.Contains(upstream, "default folder cannot be deleted"):
-		return "默认收藏夹不能删除"
-	}
-	return upstream
 }
 
 func (s *CollectionService) Create(ctx context.Context, userID int, token string, req *dto.CreateCollectionRequest) (int, *errors.AppError) {
@@ -409,20 +363,7 @@ func (s *CollectionService) GetDetail(ctx context.Context, viewerID int, token s
 		return nil, errors.ErrNotFound("收藏夹不存在")
 	}
 
-	var folder *catalogclient.Folder
-	var items []catalogclient.FolderItem
-	var cErr error
-	if isOwner && token != "" {
-		if folder, cErr = s.catalog.MyFolder(ctx, token, alias.CatalogFolderID); cErr == nil {
-			items, cErr = s.catalog.MyFolderItems(ctx, token, alias.CatalogFolderID)
-		}
-	} else {
-		// The public lane 404s a private folder for everyone including its
-		// owner, which is exactly the answer this face already gave.
-		if folder, cErr = s.catalog.PublicFolder(ctx, alias.CatalogFolderID); cErr == nil {
-			items, cErr = s.catalog.PublicFolderItems(ctx, alias.CatalogFolderID)
-		}
-	}
+	folder, items, cErr := s.loadFolderContents(ctx, alias.CatalogFolderID, isOwner, token)
 	if cErr != nil {
 		return nil, collectionErr(cErr, "读取收藏夹失败")
 	}
@@ -460,13 +401,7 @@ func (s *CollectionService) ListForUser(ctx context.Context, ownerID, viewerID i
 		return []dto.CollectionSummary{}, 0, nil
 	}
 
-	var folders []catalogclient.Folder
-	var err error
-	if viewerID == ownerID && token != "" {
-		folders, err = s.catalog.MyFolders(ctx, token)
-	} else {
-		folders, err = s.catalog.PublicFolders(ctx, int64(ownerID))
-	}
+	folders, previewToken, err := s.listFoldersForViewer(ctx, ownerID, viewerID, token)
 	if err != nil {
 		return nil, 0, collectionErr(err, "读取收藏夹列表失败")
 	}
@@ -480,10 +415,6 @@ func (s *CollectionService) ListForUser(ctx context.Context, ownerID, viewerID i
 	aliases, aErr := s.aliasesFor(ownerID, pageFolders)
 	if aErr != nil {
 		return nil, 0, aErr
-	}
-	previewToken := ""
-	if viewerID == ownerID {
-		previewToken = token
 	}
 	coverByFolder := s.resolvePreviewCovers(ctx, previewToken, pageFolders, isSFW)
 

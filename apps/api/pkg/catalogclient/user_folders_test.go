@@ -152,6 +152,53 @@ func TestMyFolderReadsUseTheUserToken(t *testing.T) {
 	}
 }
 
+func TestMyFolderHoldingsNamesItsWorksAndTakesTheUserToken(t *testing.T) {
+	face := &folderFace{pages: map[string][]string{
+		"/v2/me/folders/holdings": {`{"items":[
+			{"object":"folder_holding","work_id":"285","folder_ids":["11","12"]}
+		],"next_cursor":null}`},
+	}}
+	srv := face.server(t)
+	c := New(Config{BaseURL: srv.URL, AppKey: "k"})
+
+	got, err := c.MyFolderHoldings(context.Background(), "user-jwt", []int64{285, 898})
+	if err != nil {
+		t.Fatalf("MyFolderHoldings: %v", err)
+	}
+	if len(got) != 1 || got[0].WorkID != 285 || len(got[0].FolderIDs) != 2 {
+		t.Fatalf("decoded %+v", got)
+	}
+	call := face.calls()[0]
+	if call.Auth != "Bearer user-jwt" {
+		t.Fatalf("sent %q, want the user token", call.Auth)
+	}
+	if !strings.Contains(call.Query, "work_ids=") {
+		t.Fatalf("query %q carries no work_ids", call.Query)
+	}
+	if strings.Contains(call.Query, "cursor=") {
+		t.Fatalf("holdings is a batch read and must not paginate: %q", call.Query)
+	}
+}
+
+func TestMyFolderHoldingsChunksAtTheCap(t *testing.T) {
+	face := &folderFace{pages: map[string][]string{
+		"/v2/me/folders/holdings": {`{"items":[],"next_cursor":null}`},
+	}}
+	srv := face.server(t)
+	c := New(Config{BaseURL: srv.URL, AppKey: "k"})
+
+	ids := make([]int64, FolderHoldingsMax+1)
+	for i := range ids {
+		ids[i] = int64(i + 1)
+	}
+	if _, err := c.MyFolderHoldings(context.Background(), "user-jwt", ids); err != nil {
+		t.Fatalf("MyFolderHoldings: %v", err)
+	}
+	if n := len(face.calls()); n != 2 {
+		t.Fatalf("%d works over a cap of %d want 2 requests, got %d", len(ids), FolderHoldingsMax, n)
+	}
+}
+
 func TestMyFoldersContainingSendsTheFilter(t *testing.T) {
 	face := &folderFace{pages: map[string][]string{
 		"/v2/me/folders": {folderPage("", 11)},

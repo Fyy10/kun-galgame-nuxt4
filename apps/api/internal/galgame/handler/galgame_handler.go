@@ -2,6 +2,7 @@ package handler
 
 import (
 	"strconv"
+	"strings"
 
 	"kun-galgame-api/internal/galgame/dto"
 	"kun-galgame-api/internal/galgame/service"
@@ -75,5 +76,31 @@ func (h *GalgameHandler) MyInteractions(c fiber.Ctx) error {
 	if appErr != nil {
 		return response.Error(c, appErr)
 	}
-	return response.OK(c, h.galgameService.GetMyInteractions(c.Context(), user.ID, middleware.GetAccessToken(c)))
+	return response.OK(c, h.galgameService.GetMyInteractions(
+		c.Context(), user.ID, middleware.GetAccessToken(c), parseCSVInts(c.Query("work_ids"), 100),
+	))
+}
+
+func parseCSVInts(raw string, max int) []int {
+	if raw == "" || max < 1 {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]int, 0, len(parts))
+	seen := map[int]struct{}{}
+	for _, p := range parts {
+		n, err := strconv.Atoi(strings.TrimSpace(p))
+		if err != nil || n <= 0 {
+			continue
+		}
+		if _, ok := seen[n]; ok {
+			continue
+		}
+		seen[n] = struct{}{}
+		out = append(out, n)
+		if len(out) >= max {
+			break
+		}
+	}
+	return out
 }

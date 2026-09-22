@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { createToolsetResourceSchema } from '~/validations/toolset'
+import { applyResourceLinkBlur } from '~~/shared/utils/resourceLink'
 
 const props = defineProps<{
   toolsetId: number
@@ -71,7 +72,21 @@ watch(
   }
 )
 
+const commitRecognizedLink = () => {
+  if (props.type !== 'user') return
+  const recognized = applyResourceLinkBlur(
+    formData.content,
+    formData.code,
+    formData.password
+  )
+  if (!recognized.applied) return
+  formData.content = recognized.links.join(', ')
+  formData.code = recognized.code
+  formData.password = recognized.password
+}
+
 const submitLink = async () => {
+  commitRecognizedLink()
   const result = useKunSchemaValidator(createToolsetResourceSchema, formData)
   if (!result) {
     return
@@ -117,10 +132,12 @@ const submitLink = async () => {
       placeholder="备注 (建议写明您提供的资源的使用注意事项等)"
       v-model="formData.note"
     />
-    <KunTextarea
+    <ResourceLinkInput
       v-if="props.type === 'user'"
-      placeholder="资源链接 (如果您的自定义链接有多个, 请使用英文逗号分隔每个链接)"
       v-model="formData.content"
+      v-model:code="formData.code"
+      v-model:password="formData.password"
+      placeholder="资源链接 (可直接粘贴分享文本；多个链接用英文逗号分隔)"
     />
     <div class="flex justify-end gap-2">
       <KunButton variant="light" color="danger" @click="emits('onClose')">

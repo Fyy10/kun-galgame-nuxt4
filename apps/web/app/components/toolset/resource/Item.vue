@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { updateToolsetResourceSchema } from '~/validations/toolset'
 import { KUN_GALGAME_TOOLSET_STORAGE_MAP } from '~/constants/toolset'
+import { applyResourceLinkBlur } from '~~/shared/utils/resourceLink'
 
 const props = defineProps<{
   toolsetId: number
@@ -137,6 +138,18 @@ const handleDelete = async () => {
 }
 
 const handleSave = async () => {
+  if (base.value.type === 'user') {
+    const recognized = applyResourceLinkBlur(
+      formData.content,
+      formData.code,
+      formData.password
+    )
+    if (recognized.applied) {
+      formData.content = recognized.links.join(', ')
+      formData.code = recognized.code
+      formData.password = recognized.password
+    }
+  }
   const body = {
     toolset_resource_id: base.value.id,
     type: base.value.type,
@@ -310,10 +323,12 @@ const handleSave = async () => {
         v-model="formData.note"
         placeholder="资源备注 (可选, 建议您写明资源的使用方法和注意事项)"
       />
-      <KunTextarea
+      <ResourceLinkInput
         v-if="base.type === 'user'"
         v-model="formData.content"
-        placeholder="资源链接, 如果有多个资源链接, 请使用英语逗号分割每一个链接"
+        v-model:code="formData.code"
+        v-model:password="formData.password"
+        placeholder="资源链接 (可直接粘贴分享文本；多个链接用英文逗号分隔)"
       />
 
       <div class="flex justify-end gap-2">
