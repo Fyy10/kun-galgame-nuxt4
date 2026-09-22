@@ -15,7 +15,7 @@
 ### 2.1 网页（W0b 落地）
 
 - **类型**：`openapi-typescript` 从 `apps/api/openapi/kungal-v1.json` 生成 `apps/web/shared/types/api/v1.d.ts`（提交进仓；eslint / prettier 排除）。版本进 `devDependencies` 与 lockfile，不用 `pnpm dlx`。
-- **客户端**：`openapi-fetch`，按「路径 + 方法」推导参数、请求体、响应与错误的类型。写错一个字段名，`vue-tsc` 就报错。snake_case 迁移时那约 40 处「发出的字段名不对」，在这套机制下全部是编译错误。
+- **客户端**：`openapi-fetch`，按「路径 + 方法」推导参数、请求体、响应与错误的类型。写错一个字段名，`pnpm typecheck` 就报错（`pnpm vue-tsc --noEmit` 不会，见 04 §5 第 8 条）。snake_case 迁移时那约 40 处「发出的字段名不对」，在这套机制下全部是编译错误。
 - **SSR**：用 openapi-fetch 的中间件做三件事——服务端 / 浏览器两套 base URL、SSR 时转发 `kungal_session` cookie、服务端超时。页面级数据走 `useAsyncData` 包一层（`useApi`），沿用 Nuxt 的 payload 水合，不在客户端重复请求。
 - **错误**：客户端把非 2xx 统一收成 `Problem` 对象。展示只走 `problemMessage(problem, locale)`：按 `code` / `reason` / `params` 查 `i18n/locales/zh-CN/problem.json`，未知 code 按 status 兜底。调用点可以按 code 接管展示，例如 404 渲染自己的空态，或表单把 `errors[].pointer` 挂到对应控件下。**不得**把 `title` / `detail` 显示给用户。
 - **幂等键**：创建类 `POST` 由客户端在「用户点一次提交」时生成一个 UUIDv7，同一次提交的重试复用它。

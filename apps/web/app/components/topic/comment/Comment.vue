@@ -154,7 +154,7 @@ const handleSaveEdit = async (comment: Comment) => {
             <div v-if="editingId === comment.id" class="space-y-2">
               <KunTextarea
                 name="edit-comment"
-                placeholder="请输入您的评论, 最大字数为 1000"
+                placeholder="请输入您的评论, 最大字数为 1007"
                 :rows="4"
                 v-model="editValue"
               />

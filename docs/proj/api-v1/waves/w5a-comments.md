@@ -70,7 +70,7 @@
 
 - 发表：`{ "text": "…", "parent_comment_id": "12" | null }`。`reply_id` 在路径上；**`topic_id` 与 `target_user_id` 不在请求体里**，服务端推导。
 - 编辑：`{ "text": "…" }`。
-- `text` 的 `maxLength` 是 **1000**，按 K19 作用于原始值。
+- `text` 的 `maxLength` 是 **1007**，按 K19 作用于原始值。这个数来自 `topic_comment.content` 的 `varchar(1007)`，也是旧网页一直在用的上限（占位符原文「最大字数为1007」）。**我起初写成 1000 是错的**——那是生产实测的最长值，不是上限；写成 1000 会无声收紧用户可输入的字数，并且造出一个往返陷阱：归一化可能把正文变长（贴纸 URL → 更长的 token），于是 `GET /comments/{id}/source` 回来的源文可能超过写面上限、原样存不回去。
 
 ## 4. 逐条裁决（对普查 §5）
 
@@ -135,6 +135,6 @@
 照 [04-parallel-tracks.md](../04-parallel-tracks.md) §5，一条不少。特别提醒：
 
 - 第 4 条——**自己的临时库**，`KUN_REQUIRE_TEST_DB=1`，`-count=1 -p 1`。没有库的执行者只能产出草稿（W4 的收藏 500 就是这么来的）。
-- 第 8 条——网页改完要**真的 SSR 渲染一遍**评论区。`vue-tsc` 永远不解析模板里的组件。
+- 第 8 条——网页改完要**真的 SSR 渲染一遍**评论区。类型检查永远不解析模板里的组件；而且要跑 `pnpm typecheck`，`pnpm vue-tsc --noEmit` 在本仓库是空转（见 04 §5）。
 - 网页侧：`Comment.vue:168` 的 `{{ comment.text }}` 换成 `~/components/content/Document.vue`（回复已在用）；预览用 `contentPlainText()`。
 - 旧路由删除与基线下调**不在本轨**，由督查在验收后统一做。

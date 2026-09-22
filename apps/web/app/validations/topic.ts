@@ -122,7 +122,7 @@ export const updateReplySchema = z.object({
 // through to a 422.
 const commentText = z
   .string()
-  .max(1000, { message: '单条评论的最大长度为 1000 个字符' })
+  .max(1007, { message: '单条评论的最大长度为 1007 个字符' })
   .refine((text) => text.trim().length > 0, { message: '评论内容不能为空' })
 
 export const createCommentSchema = z.object({

@@ -189,17 +189,17 @@ func TestV1CommentTextLength(t *testing.T) {
 	f := newCommentFix(t, nil)
 
 	resp, out := f.postComment(t, w3ReplyMin, "sess-alice", keyUUID(40), map[string]any{
-		"text": strings.Repeat("a", 1000),
+		"text": strings.Repeat("a", 1007),
 	})
 	if resp.StatusCode != http.StatusCreated {
-		t.Fatalf("1000 characters %d %+v", resp.StatusCode, out)
+		t.Fatalf("1007 characters %d %+v", resp.StatusCode, out)
 	}
 
 	resp, out = f.postComment(t, w3ReplyMin, "sess-alice", keyUUID(41), map[string]any{
-		"text": " " + strings.Repeat("a", 1000) + " ",
+		"text": " " + strings.Repeat("a", 1007) + " ",
 	})
 	if resp.StatusCode != http.StatusUnprocessableEntity || out["code"] != "VALIDATION_FAILED" {
-		t.Fatalf("1000 characters plus surrounding spaces %d %+v", resp.StatusCode, out)
+		t.Fatalf("1007 characters plus surrounding spaces %d %+v", resp.StatusCode, out)
 	}
 	errs, _ := out["errors"].([]any)
 	e, _ := errs[0].(map[string]any)
@@ -207,7 +207,7 @@ func TestV1CommentTextLength(t *testing.T) {
 		t.Fatalf("errors[0] %v", e)
 	}
 	params, _ := e["params"].(map[string]any)
-	if asInt(params["max_length"]) != 1000 {
+	if asInt(params["max_length"]) != 1007 {
 		t.Fatalf("params %v", params)
 	}
 

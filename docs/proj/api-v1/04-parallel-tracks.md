@@ -52,7 +52,9 @@
 5. 分页全量遍历：小 `limit` 翻完所有页，与直接 SQL 排序逐条相等，无重复无遗漏，**并且数据里要有并列的排序键**（见 §7）；
 6. 督查出的变异清单，每条都要能让某个测试变红；
 7. 每个声明的错误码至少一个用例；
-8. 网页：`vue-tsc` + eslint + vitest，外加**真的 SSR 渲染一遍改过的页面**（vue-tsc 永远不解析模板里的组件）；
+8. 网页：**`pnpm typecheck`**（不是 `pnpm vue-tsc --noEmit`，见下）+ eslint + vitest，外加**真的 SSR 渲染一遍改过的页面**（类型检查永远不解析模板里的组件）；
+
+   > **`pnpm vue-tsc --noEmit` 在本仓库什么都不检查。** `apps/web/tsconfig.json` 是 `{"references": […], "files": []}`，不带 `-b` 就是编译一个空程序，永远 exit 0。实测：往 `Like.vue` 里塞一句 `const x: number = "not a number"`，它照样 exit 0，而 `pnpm typecheck`（`vue-tsc -b --force`）当场报错。W5a 之前的几波「typecheck 通过」都是这么来的，包括督查自己跑的。
 9. 浏览器实测——督查在验收时做，不算轨的活。
 
 ## 6. 变异清单由督查出题

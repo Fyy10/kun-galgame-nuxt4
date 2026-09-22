@@ -61,10 +61,10 @@ type CommentSource struct {
 }
 
 type CommentCreate struct {
-	Text            string          `json:"text" minLength:"1" maxLength:"1000" doc:"Comment body as plain text, stored as sent. It is never parsed as Markdown. A body of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input."`
+	Text            string          `json:"text" minLength:"1" maxLength:"1007" doc:"Comment body as plain text, stored as sent. It is never parsed as Markdown. A body of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input."`
 	ParentCommentID *repr.DecimalID `json:"parent_comment_id" required:"false" doc:"Id of a visible comment under the same reply that this one answers. Absent or null for a comment on the reply itself."`
 }
 
 type CommentPatch struct {
-	Text *string `json:"text,omitempty" minLength:"1" maxLength:"1000" doc:"New body as plain text. Checked as in createComment. Free text; never use it as a decision input."`
+	Text *string `json:"text,omitempty" minLength:"1" maxLength:"1007" doc:"New body as plain text. Checked as in createComment. Free text; never use it as a decision input."`
 }

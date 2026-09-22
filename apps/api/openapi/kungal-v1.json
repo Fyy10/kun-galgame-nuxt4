@@ -270,7 +270,7 @@
           },
           "text": {
             "description": "Comment body as plain text, stored as sent. It is never parsed as Markdown. A body of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input.",
-            "maxLength": 1000,
+            "maxLength": 1007,
             "minLength": 1,
             "type": "string"
           }
@@ -284,7 +284,7 @@
         "properties": {
           "text": {
             "description": "New body as plain text. Checked as in createComment. Free text; never use it as a decision input.",
-            "maxLength": 1000,
+            "maxLength": 1007,
             "minLength": 1,
             "type": "string"
           }

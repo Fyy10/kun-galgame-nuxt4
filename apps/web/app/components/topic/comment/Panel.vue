@@ -81,7 +81,7 @@ const handleClose = () => {
 
     <KunTextarea
       name="comment"
-      placeholder="请输入您的评论, 最大字数为 1000"
+      placeholder="请输入您的评论, 最大字数为 1007"
       :rows="5"
       v-model="commentValue"
     />
