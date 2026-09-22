@@ -54,8 +54,8 @@ infra `refs/api-v2/`（01 公理与黑名单 · 02 协议 · 04 表示 · 05 集
 | W0b | 前端地基（生成类型、类型化客户端、错误本地化目录）+ 话题列表切到 v1、删旧路由（[记录](waves/w0b-frontend-foundation.md)） | ✅ 2026-09-19 上线，旧路由已删 |
 | W1 | 结构化正文文档（Go 序列化 + Vue 渲染器 + 数据普查，[规格](03-content-doc.md)） | ✅ 2026-09-19（[验收](waves/w1-content-doc.md)） |
 | W2 | 话题详情 + 回复读面（[记录](waves/w2-topic-detail.md)） | ✅ 2026-09-19（未上线） |
-| W3 | 话题 / 回复写面（[记录](waves/w3-topic-writes.md)） | ✅ 2026-09-22 合入（未上线） |
-| W4 | 互动（点赞、收藏、推、表情、最佳答案、置顶；隐藏并进 W3 的 PATCH）（[记录](waves/w4-interactions.md)） | ✅ 2026-09-22 Go 侧合入；网页侧派发中 |
+| W3 | 话题 / 回复写面（[记录](waves/w3-topic-writes.md)） | ✅ 2026-09-22 后端+网页均合入（未上线） |
+| W4 | 互动（点赞、收藏、推、表情、最佳答案、置顶；隐藏并进 W3 的 PATCH）（[记录](waves/w4-interactions.md)） | ✅ 2026-09-22 后端+网页均合入，浏览器实测过（未上线） |
 | W5 | 评论（含评论点赞与按评论定位）、投票、抽奖、草稿、图片上传、其余话题读面 | ⏳ |
 
 执行方式：按 `.claude/skills/dispatch-cursor/` 派发 cursor-agent（Grok 4.6 Extra High），在独立 worktree 的沙箱里实现；Claude 负责裁决、写英文任务书、跑 DB 测试与运行时实测、提交并合入 master。
