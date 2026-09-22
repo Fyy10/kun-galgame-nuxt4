@@ -14,4 +14,13 @@
 -- deploy that precedes this migration; run 102 only after that deploy is
 -- live, with --only=102.
 
+-- AND RESTART THE API IMMEDIATELY AFTER. Dropping a column changes the
+-- result type of every prepared statement that selected it, and pgx v5 caches
+-- prepared statements per connection, so live connections answer
+-- "cached plan must not change result type (SQLSTATE 0A000)" until they are
+-- recycled. Running this on 2026-09-22 at 15:38:22 UTC put six reply-list
+-- requests into 500 from reply_keyset.go:40 over the next 57 seconds; a
+-- `docker compose restart kungal-api` ended it at once. ConnMaxLifetime would
+-- have cleared it eventually, which is not the same as not breaking.
+
 ALTER TABLE topic_reply DROP COLUMN IF EXISTS comment_count;
