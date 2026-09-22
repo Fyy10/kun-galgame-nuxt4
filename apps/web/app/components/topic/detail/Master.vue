@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import ContentDocument from '~/components/content/Document.vue'
-import type { Topic } from '#shared/utils/api/schemas'
+import type {
+  ReplyEngagement,
+  Topic,
+  TopicEngagement
+} from '#shared/utils/api/schemas'
 import { documentImageHashes } from '#shared/utils/content/plainText'
 import { toKunReactions } from '~/utils/reactionSummary'
 import { toKunUserWithPoints } from '~/utils/userRef'
@@ -9,18 +13,35 @@ const props = defineProps<{
   topic: Topic
 }>()
 
+const replaceTopic = inject<(topic: Topic) => void>('replaceTopic', () => {})
+
 const unseenCovers = computed(() => {
   const hashes = documentImageHashes(props.topic.content)
   return props.topic.cover_images.filter((image) => !hashes.has(image.hash))
 })
 
+const applyEngagement = (engagement: TopicEngagement | ReplyEngagement) => {
+  if (engagement.object !== 'topic_engagement') {
+    return
+  }
+  replaceTopic({
+    ...props.topic,
+    like_count: engagement.like_count,
+    dislike_count: engagement.dislike_count,
+    viewer: engagement.viewer,
+    reactions: engagement.reactions
+  })
+}
+
 provide(
   reactionsKey,
   useReactions({
-    topicId: Number(props.topic.id),
+    topicId: props.topic.id,
     targetUserId: Number(props.topic.author.id),
     reactions: toKunReactions(props.topic.reactions),
-    showReactors: true
+    sync: () => toKunReactions(props.topic.reactions),
+    showReactors: true,
+    onEngagement: applyEngagement
   })
 )
 </script>
@@ -95,7 +116,7 @@ provide(
 
       <KunDivider />
 
-      <TopicUpvoteRecords :topic-id="Number(topic.id)" />
+      <TopicUpvoteRecords :topic-id="topic.id" />
 
       <div class="flex flex-wrap items-center gap-1.5">
         <TopicReactionBar />

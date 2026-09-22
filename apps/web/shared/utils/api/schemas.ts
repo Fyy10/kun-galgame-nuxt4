@@ -1,14 +1,25 @@
-import type { components } from '../../types/api/v1'
+import type { components, operations } from '../../types/api/v1'
 
 export type Image = components['schemas']['Image']
 export type TopicSummary = components['schemas']['TopicSummary']
 export type Topic = components['schemas']['Topic']
 export type TopicViewer = components['schemas']['TopicViewer']
+export type TopicSource = components['schemas']['TopicSource']
+export type TopicCreate = components['schemas']['TopicCreate']
+export type TopicPatch = components['schemas']['TopicPatch']
+export type TopicEngagement = components['schemas']['TopicEngagement']
+export type TopicUpvote = components['schemas']['TopicUpvote']
+export type AccessGrants = components['schemas']['AccessGrants']
 export type Reply = components['schemas']['Reply']
 export type ReplyViewer = components['schemas']['ReplyViewer']
+export type ReplySource = components['schemas']['ReplySource']
+export type ReplyEngagement = components['schemas']['ReplyEngagement']
 export type Comment = components['schemas']['Comment']
 export type CommentViewer = components['schemas']['CommentViewer']
+export type Reaction = components['schemas']['Reaction']
 export type ReactionSummary = components['schemas']['ReactionSummary']
+export type ReactionToken =
+  operations['setTopicReaction']['parameters']['path']['reaction']
 export type ListReply = components['schemas']['ListReply']
 export type UserRef = components['schemas']['UserRef']
 export type ListMoyuPatch = components['schemas']['ListMoyuPatch']

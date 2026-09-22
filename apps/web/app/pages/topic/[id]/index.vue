@@ -42,7 +42,16 @@ const { data, problem, refresh } = await useApi<Topic>(
     })
 )
 
+const topic = ref<Topic | undefined>(data.value)
+watch(data, (next) => {
+  if (next) {
+    topic.value = next
+  }
+})
 provide('refreshTopic', refresh)
+provide('replaceTopic', (next: Topic) => {
+  topic.value = next
+})
 
 onBeforeRouteLeave(async () => {
   let proceed = true
@@ -184,8 +193,8 @@ if (data.value) {
 
 <template>
   <div>
-    <template v-if="data">
-      <TopicDetail v-if="isShowTopic" :topic="data" />
+    <template v-if="topic">
+      <TopicDetail v-if="isShowTopic" :topic="topic" />
 
       <KunCard v-else :is-hoverable="false" :is-transparent="false">
         <p>这个话题含有 NSFW 内容, 您需要点击确认以显示这个话题</p>

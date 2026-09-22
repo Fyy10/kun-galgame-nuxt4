@@ -3,7 +3,13 @@ import ContentDocument from '~/components/content/Document.vue'
 import { scrollPage } from '../_helper'
 import { useQuoteContent } from '~/composables/topic/useQuoteContent'
 import { useTopicReplies } from '~/composables/topic/useTopicReplies'
-import type { Reply } from '#shared/utils/api/schemas'
+import type { ComputedRef } from 'vue'
+import type {
+  Reply,
+  ReplyEngagement,
+  Topic,
+  TopicEngagement
+} from '#shared/utils/api/schemas'
 import { contentPlainText } from '~/utils/contentPlainText'
 import { toKunReactions } from '~/utils/reactionSummary'
 import { toKunUserWithPoints } from '~/utils/userRef'
@@ -17,20 +23,50 @@ const props = defineProps<{
 }>()
 
 const { scrollToReplyId } = storeToRefs(useTempReplyStore())
-const { refreshReply } = useTopicReplies(props.reply.topic_id)
+const { refreshReply, updateReply } = useTopicReplies(props.reply.topic_id)
+const pageTopic = inject<ComputedRef<Topic>>('pageTopic')
+const replaceTopic = inject<(topic: Topic) => void>('replaceTopic', () => {})
 
 const activeFloor = inject('activeReplyFloor', ref(0))
 const isActive = computed(
   () => activeFloor.value > 0 && activeFloor.value === props.reply.floor
 )
 
+const applyEngagement = (engagement: TopicEngagement | ReplyEngagement) => {
+  if (engagement.object !== 'reply_engagement') {
+    return
+  }
+  const next: Reply = {
+    ...props.reply,
+    like_count: engagement.like_count,
+    dislike_count: engagement.dislike_count,
+    viewer: engagement.viewer,
+    reactions: engagement.reactions
+  }
+  updateReply(next)
+  const topic = pageTopic?.value
+  if (
+    topic &&
+    (topic.pinned_reply?.id === next.id || topic.best_answer?.id === next.id)
+  ) {
+    replaceTopic({
+      ...topic,
+      pinned_reply:
+        topic.pinned_reply?.id === next.id ? next : topic.pinned_reply,
+      best_answer: topic.best_answer?.id === next.id ? next : topic.best_answer
+    })
+  }
+}
+
 provide(
   reactionsKey,
   useReactions({
-    replyId: Number(props.reply.id),
+    replyId: props.reply.id,
     targetUserId: Number(props.reply.author.id),
     reactions: toKunReactions(props.reply.reactions),
-    showReactors: true
+    sync: () => toKunReactions(props.reply.reactions),
+    showReactors: true,
+    onEngagement: applyEngagement
   })
 )
 

@@ -1,5 +1,11 @@
 <script setup lang="ts">
+import { settle } from '#shared/utils/api/problem'
+import { KUN_MOEMOEPOINT } from '~/constants/moemoepoint'
+import { useIdempotencyKey } from '~/composables/useIdempotencyKey'
+
 const { isOpen, target, close } = useUpvoteModal()
+const api = useApiClient()
+const createKey = useIdempotencyKey()
 
 const description = ref('')
 const pending = ref(false)
@@ -16,16 +22,26 @@ watch(description, (v) => {
 
 const submit = async () => {
   if (!target.value || pending.value) return
+  const note = description.value.trim()
+  const body = note ? { note } : {}
   pending.value = true
-  const result = await kunFetch<string>(
-    `/topic/${target.value.topicId}/upvote`,
-    { method: 'PUT', body: { description: description.value.trim() } }
+  const result = await settle(
+    api.POST('/topics/{topic_id}/upvotes', {
+      params: {
+        path: { topic_id: target.value.topicId },
+        header: { 'Idempotency-Key': createKey.take(body) }
+      },
+      body
+    })
   )
   pending.value = false
-  if (!result) return
-
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
+  }
+  createKey.clear()
   useMessage(10238, 'success')
-  close(true)
+  close(result.data)
 }
 </script>
 
@@ -35,9 +51,14 @@ const submit = async () => {
       <h3 class="text-lg font-medium">确定推这个话题吗？</h3>
       <p class="text-default-500 text-sm">
         推话题将消耗您
-        <span class="text-warning-600 font-medium">10</span>
+        <span class="text-warning-600 font-medium">{{
+          KUN_MOEMOEPOINT.upvoteSender
+        }}</span>
         萌萌点，并给被推者增加
-        <span class="text-success font-medium">5</span> 萌萌点。
+        <span class="text-success font-medium">{{
+          KUN_MOEMOEPOINT.upvoteOwner
+        }}</span>
+        萌萌点。
       </p>
       <div>
         <KunInput

@@ -190,4 +190,48 @@ describe('TopicDetail', () => {
       fetchSpy.mock.calls.filter((call) => isViews(call[0] as Request))
     ).toHaveLength(1)
   })
+
+  it('applies a created reply and an updated v1 Reply, and removes a deleted one', async () => {
+    stubFetch([reply('11', 11)])
+    wrapper = await mountSuspended(TopicDetail, {
+      props: { topic: topic('504') },
+      route: '/topic/504'
+    })
+    await vi.waitFor(() => {
+      expect(wrapper!.text()).toContain('floor 11')
+    })
+    const store = useTempReplyStore()
+    store.setSuccessfulReply({
+      type: 'updated',
+      data: reply('11', 11, {
+        content: {
+          object: 'document',
+          children: [
+            {
+              object: 'paragraph',
+              children: [{ object: 'text', value: 'edited body' }]
+            }
+          ]
+        }
+      })
+    })
+    await vi.waitFor(() => {
+      expect(wrapper!.text()).toContain('edited body')
+    })
+    store.setSuccessfulReply({
+      type: 'created',
+      data: reply('12', 12)
+    })
+    await vi.waitFor(() => {
+      expect(wrapper!.text()).toContain('floor 12')
+    })
+    store.setSuccessfulReply({
+      type: 'deleted',
+      data: { id: '11' }
+    })
+    await vi.waitFor(() => {
+      expect(wrapper!.text()).not.toContain('edited body')
+    })
+    expect(wrapper!.text()).toContain('floor 12')
+  })
 })

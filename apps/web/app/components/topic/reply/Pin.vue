@@ -1,18 +1,16 @@
 <script setup lang="ts">
-import type { Reply } from '#shared/utils/api/schemas'
+import type { Reply, Topic } from '#shared/utils/api/schemas'
+import { settle } from '#shared/utils/api/problem'
+import type { ComputedRef } from 'vue'
 
 const props = defineProps<{
   reply: Reply
 }>()
 
-const { id } = usePersistUserStore()
-const canPinReply = useCan('reply.pin')
-const topicUserId = inject<number>('topicUserId')
-const refreshTopic = inject<() => Promise<unknown>>('refreshTopic', () =>
-  Promise.resolve()
-)
-
-const isDisabled = !canPinReply.value && topicUserId !== id
+const api = useApiClient()
+const pageTopic = inject<ComputedRef<Topic>>('pageTopic')
+const replaceTopic = inject<(topic: Topic) => void>('replaceTopic', () => {})
+const canPin = computed(() => pageTopic?.value.viewer?.can_pin_reply === true)
 
 const handleUpdateReplyPin = async () => {
   const res = await useComponentMessageStore().alert(
@@ -24,33 +22,35 @@ const handleUpdateReplyPin = async () => {
     return
   }
 
-  const result = await kunFetch<string>(
-    `/topic/${Number(props.reply.topic_id)}/reply/pin`,
-    {
-      method: 'PUT',
-      body: {
-        topic_id: Number(props.reply.topic_id),
-        reply_id: Number(props.reply.id)
-      }
-    }
+  const topicId = props.reply.topic_id
+  const result = await settle(
+    props.reply.is_pinned
+      ? api.DELETE('/topics/{topic_id}/pinned-reply', {
+          params: { path: { topic_id: topicId } }
+        })
+      : api.PUT('/topics/{topic_id}/pinned-reply', {
+          params: { path: { topic_id: topicId } },
+          body: { reply_id: props.reply.id }
+        })
   )
-
-  if (result) {
-    useMessage(
-      props.reply.is_pinned ? '取消置顶回复成功' : '置顶回复成功',
-      'success'
-    )
-    await refreshTopic()
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage(
+    props.reply.is_pinned ? '取消置顶回复成功' : '置顶回复成功',
+    'success'
+  )
+  replaceTopic(result.data)
 }
 </script>
 
 <template>
   <KunButton
+    v-if="canPin"
     variant="light"
     :color="reply.is_pinned ? 'warning' : 'default'"
     size="sm"
-    :disabled="isDisabled"
     @click="handleUpdateReplyPin"
     class-name="whitespace-nowrap gap-2 justify-start"
   >

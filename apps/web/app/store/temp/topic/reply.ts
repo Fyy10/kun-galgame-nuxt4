@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type {
   ReplyReference,
+  ReplyRewriteData,
   ReplyStoreTemp,
   SuccessfulReplyEvent
 } from '~/store/types/topic/reply'
@@ -25,11 +26,11 @@ export const useTempReplyStore = defineStore(
       pendingQuote.value = null
     }
 
-    const setRewriteData = (reply: TopicReply) => {
+    const setRewriteData = (reply: ReplyRewriteData) => {
       isReplyRewriting.value = true
       replyRewrite.value = {
         id: reply.id,
-        mainContent: reply.content_markdown
+        mainContent: reply.mainContent
       }
     }
 

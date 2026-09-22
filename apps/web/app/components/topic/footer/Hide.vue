@@ -1,30 +1,31 @@
 <script setup lang="ts">
+import { settle } from '#shared/utils/api/problem'
+import type { Topic } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
-  topicId: number
-  state: 'published' | 'hidden'
-  hiddenBy: 'author' | 'moderator' | 'trust' | null
+  topic: Topic
 }>()
 
 const { id } = usePersistUserStore()
-const canHideTopic = useCan('topic.hide')
-const topicUserId = inject<number>('topicUserId')
-const refreshTopic = inject<() => Promise<unknown>>('refreshTopic', () =>
-  Promise.resolve()
-)
+const api = useApiClient()
+const replaceTopic = inject<(topic: Topic) => void>('replaceTopic', () => {})
 
-const isAuthor = computed(() => !!id && topicUserId === id)
-const isHidden = computed(() => props.state === 'hidden')
+const isAuthor = computed(() => !!id && String(id) === props.topic.author.id)
+const isHidden = computed(() => props.topic.state === 'hidden')
 
 type HideMode = 'hide' | 'unhide' | 'blocked' | 'none'
 
 const mode = computed<HideMode>(() => {
-  if (!isHidden.value) {
-    return isAuthor.value || canHideTopic.value ? 'hide' : 'none'
+  if (props.topic.viewer?.can_hide) {
+    return 'hide'
   }
-  if (canHideTopic.value || (isAuthor.value && props.hiddenBy === 'author')) {
+  if (props.topic.viewer?.can_unhide) {
     return 'unhide'
   }
-  return isAuthor.value ? 'blocked' : 'none'
+  if (isHidden.value && isAuthor.value) {
+    return 'blocked'
+  }
+  return 'none'
 })
 
 const confirmCopy = computed(() => {
@@ -62,15 +63,20 @@ const handleUpdateTopicHideStatus = async () => {
 
   const wasHidden = isHidden.value
   isPending.value = true
-  const result = await kunFetch<string>(`/topic/${props.topicId}/hide`, {
-    method: 'PUT'
-  })
+  const result = await settle(
+    api.PATCH('/topics/{topic_id}', {
+      params: { path: { topic_id: props.topic.id } },
+      body: { state: wasHidden ? 'published' : 'hidden' }
+    })
+  )
   isPending.value = false
 
-  if (result) {
-    useMessage(wasHidden ? '取消隐藏话题成功' : '隐藏话题成功', 'success')
-    await refreshTopic()
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage(wasHidden ? '取消隐藏话题成功' : '隐藏话题成功', 'success')
+  replaceTopic(result.data)
 }
 </script>
 

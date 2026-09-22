@@ -1,12 +1,14 @@
+import type { Reply } from '#shared/utils/api/schemas'
+
 export interface ReplyRewriteData {
-  id: number
+  id: string
   mainContent: string
 }
 
-export interface SuccessfulReplyEvent {
-  data: { id: number | string; floor: number }
-  type: 'created' | 'updated' | 'deleted'
-}
+export type SuccessfulReplyEvent =
+  | { type: 'created'; data: Reply }
+  | { type: 'updated'; data: Reply }
+  | { type: 'deleted'; data: { id: string } }
 
 export interface ReplyReference {
   userId: number

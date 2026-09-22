@@ -25,6 +25,7 @@ export interface EditStoreTemp {
   accessScope: TopicAccessScope
   accessRoles: TopicAccessRole[]
   accessUserIds: number[]
+  accessUsers: KunUser[]
 
   isTopicRewriting: boolean
 }

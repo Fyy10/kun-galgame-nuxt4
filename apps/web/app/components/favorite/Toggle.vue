@@ -3,8 +3,9 @@ const props = withDefaults(
   defineProps<{
     favorited: boolean
     count: number
-    endpoint: string
+    endpoint?: string
     body?: Record<string, unknown>
+    action?: (next: boolean) => Promise<boolean>
     messages?: [string | number, string | number]
     label?: string
     tooltip?: string
@@ -15,7 +16,9 @@ const props = withDefaults(
     tooltip: '收藏',
     size: 'md',
     body: undefined,
-    messages: undefined
+    messages: undefined,
+    endpoint: undefined,
+    action: undefined
   }
 )
 
@@ -47,12 +50,18 @@ const onChange = async (next: boolean) => {
     return
   }
   pending.value = true
-  const result = await kunFetch(props.endpoint, {
-    method: 'PUT',
-    ...(props.body ? { body: props.body } : {})
-  })
+  let ok = false
+  if (props.action) {
+    ok = await props.action(next)
+  } else {
+    const result = await kunFetch(props.endpoint!, {
+      method: 'PUT',
+      ...(props.body ? { body: props.body } : {})
+    })
+    ok = Boolean(result)
+  }
   pending.value = false
-  if (!result) {
+  if (!ok) {
     revert(next)
     return
   }

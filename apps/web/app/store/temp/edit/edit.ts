@@ -15,6 +15,7 @@ export const useTempEditStore = defineStore(
     const accessScope = ref<EditStoreTemp['accessScope']>('public')
     const accessRoles = ref<EditStoreTemp['accessRoles']>([])
     const accessUserIds = ref<EditStoreTemp['accessUserIds']>([])
+    const accessUsers = ref<EditStoreTemp['accessUsers']>([])
     const isTopicRewriting = ref<EditStoreTemp['isTopicRewriting']>(false)
 
     const resetRewriteTopicData = () => {
@@ -28,6 +29,7 @@ export const useTempEditStore = defineStore(
       accessScope.value = 'public'
       accessRoles.value = []
       accessUserIds.value = []
+      accessUsers.value = []
       isTopicRewriting.value = false
     }
 
@@ -42,6 +44,7 @@ export const useTempEditStore = defineStore(
       accessScope,
       accessRoles,
       accessUserIds,
+      accessUsers,
       isTopicRewriting,
       resetRewriteTopicData
     }

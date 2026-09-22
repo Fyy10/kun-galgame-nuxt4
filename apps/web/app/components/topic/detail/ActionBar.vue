@@ -70,11 +70,7 @@ const handleShare = () => {
           分享
         </KunButton>
         <TopicFooterRewrite menu :topic="topic" />
-        <TopicFooterHide
-          :topic-id="Number(topic.id)"
-          :state="topic.state"
-          :hidden-by="topic.hidden_by"
-        />
+        <TopicFooterHide :topic="topic" />
         <ReportButton
           v-if="Number(topic.author.id) !== id"
           menu

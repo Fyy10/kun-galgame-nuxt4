@@ -3,6 +3,7 @@ import {
   kunUserTopicNavItem,
   type KUN_USER_PAGE_TOPIC_TYPE
 } from '~/constants/user'
+import { settle } from '#shared/utils/api/problem'
 
 const props = defineProps<{
   userId: number
@@ -10,6 +11,7 @@ const props = defineProps<{
 }>()
 
 const { id: currentUserId } = usePersistUserStore()
+const api = useApiClient()
 const canViewHiddenTopic = useCan('topic.view_hidden')
 const canSeeHidden = computed(
   () => currentUserId === props.userId || canViewHiddenTopic.value
@@ -36,15 +38,18 @@ const handleUpdateTopicHideStatus = async (topicId: number) => {
     return
   }
 
-  const result = await kunFetch<string>(`/topic/${topicId}/hide`, {
-    method: 'PUT',
-    body: { topicId }
-  })
-
-  if (result) {
-    useMessage('取消隐藏话题成功', 'success')
-    await navigateTo(`/topic/${topicId}`)
+  const result = await settle(
+    api.PATCH('/topics/{topic_id}', {
+      params: { path: { topic_id: String(topicId) } },
+      body: { state: 'published' }
+    })
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  useMessage('取消隐藏话题成功', 'success')
+  await navigateTo(`/topic/${topicId}`)
 }
 </script>
 

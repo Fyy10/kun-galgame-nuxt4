@@ -31,8 +31,9 @@ const {
   loadMore,
   loadEarlier,
   setSort,
+  addNewReply,
+  updateReply,
   removeReply,
-  refreshReply,
   retry
 } = useTopicReplies(props.topic.id)
 
@@ -101,6 +102,10 @@ onMounted(() => {
 
 provide('topicUserId', authorId.value)
 provide('activeReplyFloor', activeFloor)
+provide(
+  'pageTopic',
+  computed(() => props.topic)
+)
 
 const featuredReplies = computed(() => {
   const items: Reply[] = []
@@ -158,15 +163,23 @@ watch(
 
     switch (event.type) {
       case 'created':
+        addNewReply(event.data)
+        nextTick(() => {
+          scrollToFloor(event.data.floor)
+        })
+        break
       case 'updated':
-        void refreshReply(String(event.data.id)).then(() => {
-          nextTick(() => {
-            scrollToFloor(event.data.floor)
-          })
+        if (replies.value.some((reply) => reply.id === event.data.id)) {
+          updateReply(event.data)
+        } else {
+          addNewReply(event.data)
+        }
+        nextTick(() => {
+          scrollToFloor(event.data.floor)
         })
         break
       case 'deleted':
-        removeReply(String(event.data.id))
+        removeReply(event.data.id)
         break
     }
 

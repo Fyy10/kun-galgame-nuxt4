@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { KunTooltip } from '#components'
-import { toTopicAccessRoles, toTopicAccessScope } from '~/constants/topic'
+import { applyTopicSource } from '~/composables/topic/applyTopicSource'
+import { settle } from '#shared/utils/api/problem'
 import type { Topic } from '#shared/utils/api/schemas'
 
 const props = defineProps<{
@@ -8,48 +9,20 @@ const props = defineProps<{
   menu?: boolean
 }>()
 
-const {
-  id,
-  title,
-  content,
-  category,
-  section,
-  isNSFW,
-  coverImages,
-  accessScope,
-  accessRoles,
-  accessUserIds,
-  isTopicRewriting
-} = storeToRefs(useTempEditStore())
-const { id: userId } = usePersistUserStore()
-const canEditAnyTopic = useCan('topic.edit_any')
-const isShowRewrite = computed(
-  () => userId === Number(props.topic.author.id) || canEditAnyTopic.value
-)
+const api = useApiClient()
+const isShowRewrite = computed(() => props.topic.viewer?.can_edit === true)
 
 const rewriteTopic = async () => {
-  const detail = await kunFetch<TopicDetail>(
-    `/topic/${Number(props.topic.id)}`,
-    {
-      method: 'GET',
-      query: { topic_id: Number(props.topic.id) }
-    }
+  const result = await settle(
+    api.GET('/topics/{topic_id}/source', {
+      params: { path: { topic_id: props.topic.id } }
+    })
   )
-  if (!detail) {
+  if (!result.ok) {
+    reportProblem(result.problem)
     return
   }
-  id.value = detail.id
-  title.value = detail.title
-  content.value = detail.content_markdown
-  category.value = detail.category
-  section.value = detail.section ?? []
-  isNSFW.value = !!detail.is_nsfw
-  coverImages.value = detail.cover_images ?? []
-  accessScope.value = toTopicAccessScope(detail.access_scope)
-  accessRoles.value = toTopicAccessRoles(detail.access_grants?.roles)
-  accessUserIds.value = detail.access_grants?.user_ids ?? []
-  isTopicRewriting.value = true
-
+  applyTopicSource(result.data)
   await navigateTo('/edit/topic')
 }
 </script>

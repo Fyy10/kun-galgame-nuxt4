@@ -1,26 +1,32 @@
+import type { TopicUpvote } from '#shared/utils/api/schemas'
+
 export interface UpvoteTarget {
-  topicId: number
+  topicId: string
   targetUserId: number
 }
 
 const isOpen = ref(false)
 const target = ref<UpvoteTarget | null>(null)
-let settle: ((pushed: boolean) => void) | null = null
+const lastCreated = ref<TopicUpvote | null>(null)
+let settleUpvote: ((pushed: TopicUpvote | false) => void) | null = null
 
 export const useUpvoteModal = () => {
   const open = (t: UpvoteTarget) =>
-    new Promise<boolean>((resolve) => {
+    new Promise<TopicUpvote | false>((resolve) => {
       target.value = t
-      settle = resolve
+      settleUpvote = resolve
       isOpen.value = true
     })
 
-  const close = (pushed: boolean) => {
-    const resolve = settle
-    settle = null
+  const close = (result: TopicUpvote | false) => {
+    if (result) {
+      lastCreated.value = result
+    }
+    const resolve = settleUpvote
+    settleUpvote = null
     isOpen.value = false
-    resolve?.(pushed)
+    resolve?.(result)
   }
 
-  return { isOpen, target, open, close }
+  return { isOpen, target, lastCreated, open, close }
 }

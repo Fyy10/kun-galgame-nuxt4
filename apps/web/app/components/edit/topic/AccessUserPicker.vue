@@ -9,6 +9,7 @@ interface TopicAccessUser {
 
 const props = defineProps<{
   limit: number
+  knownUsers?: KunUser[]
 }>()
 
 const selected = defineModel<number[]>({ required: true })
@@ -41,6 +42,16 @@ const resolveMissing = async (ids: number[]) => {
 
 onMounted(() =>
   watch(selected, (ids) => void resolveMissing(ids), { immediate: true })
+)
+
+watch(
+  () => props.knownUsers,
+  (users) => {
+    for (const user of users ?? []) {
+      known.value[user.id] = user
+    }
+  },
+  { immediate: true }
 )
 
 watchDebounced(
