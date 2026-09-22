@@ -125,8 +125,6 @@ type App struct {
 	TopicHandler                   *topicHandler.TopicHandler
 	TopicDraftHandler              *topicHandler.TopicDraftHandler
 	ReplyHandler                   *topicHandler.ReplyHandler
-	TopicCommentHandler            *topicHandler.CommentHandler
-	PollHandler                    *topicHandler.PollHandler
 	LotteryHandler                 *topicHandler.LotteryHandler
 	MessageHandler                 *msgHandler.MessageHandler
 	MessageChatHandler             *msgHandler.ChatHandler
@@ -436,13 +434,11 @@ func New(cfg *config.Config) *App {
 	topicTaxonomyRepo := topicRepo.NewTopicTaxonomyRepository(db)
 	replyRepository := topicRepo.NewReplyRepository(db)
 	topicCommentRepo := topicRepo.NewCommentRepository(db)
-	pollRepository := topicRepo.NewPollRepository(db)
 	lotteryRepository := topicRepo.NewLotteryRepository(db)
 	draftRepository := topicRepo.NewTopicDraftRepository(db)
 	topicSvc := topicService.NewTopicService(topicRepository, topicListRepo, topicTaxonomyRepo, rdb, uc, userStateRepo)
-	replySvc := topicService.NewReplyService(replyRepository, topicCommentRepo, topicRepository, userStateRepo, uc, rdb, trustCheck, trustScan)
-	commentSvc := topicService.NewCommentService(replyRepository, topicCommentRepo, userStateRepo, uc, rdb, trustCheck, trustScan)
-	pollSvc := topicService.NewPollService(pollRepository, topicRepository, userStateRepo, uc, rdb, trustCheck, trustScan)
+	replySvc := topicService.NewReplyService(replyRepository, topicRepository, userStateRepo, uc, rdb, trustCheck, trustScan)
+	commentSvc := topicService.NewCommentService(replyRepository, topicCommentRepo)
 	lotteryBox, err := secretbox.New(cfg.Lottery.CodeKey)
 	if err != nil {
 		slog.Error("KUN_LOTTERY_CODE_KEY 无效, 兑换码托管已禁用 (抽奖其余功能不受影响)", "error", err)
@@ -609,8 +605,6 @@ func New(cfg *config.Config) *App {
 		TopicHandler:                   topicHandler.NewTopicHandler(topicSvc),
 		TopicDraftHandler:              topicHandler.NewTopicDraftHandler(draftSvc),
 		ReplyHandler:                   topicHandler.NewReplyHandler(replySvc),
-		TopicCommentHandler:            topicHandler.NewCommentHandler(commentSvc),
-		PollHandler:                    topicHandler.NewPollHandler(pollSvc),
 		LotteryHandler:                 topicHandler.NewLotteryHandler(lotterySvc),
 		MessageHandler:                 msgHandler.NewMessageHandler(messageSvc),
 		MessageChatHandler:             msgHandler.NewChatHandler(chatSvc),

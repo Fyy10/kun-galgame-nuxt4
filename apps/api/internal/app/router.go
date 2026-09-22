@@ -212,8 +212,6 @@ func (a *App) setupRoutes() {
 	api.Delete("/topic/draft/:id", topicDraftAuth, a.TopicDraftHandler.Delete)
 
 	optAuth.Get("/topic/:tid/reply/locate", a.ReplyHandler.GetReplyLocate)
-	optAuth.Get("/topic/:tid/poll/topic", a.PollHandler.GetPollsByTopic)
-	optAuth.Get("/topic/:tid/poll/log", a.PollHandler.GetVoteLog)
 	optAuth.Get("/topic/:tid/lottery/topic", a.LotteryHandler.GetLotteriesByTopic)
 	optAuth.Get("/topic/:tid/lottery/entrants", a.LotteryHandler.GetEntrants)
 
@@ -245,16 +243,6 @@ func (a *App) setupRoutes() {
 	authed.Get("/perm/mine", a.AdminUserPermissionHandler.GetMine)
 
 	authed.Get("/topic/interactions/mine", a.TopicHandler.MyInteractions)
-
-	authed.Post("/topic/:tid/comment", a.TopicCommentHandler.CreateComment)
-	authed.Put("/topic/:tid/comment", a.TopicCommentHandler.UpdateComment)
-	authed.Put("/topic/:tid/comment/like", a.TopicCommentHandler.ToggleCommentLike)
-	authed.Delete("/topic/:tid/comment", a.TopicCommentHandler.DeleteComment)
-
-	authed.Post("/topic/:tid/poll", a.PollHandler.CreatePoll)
-	authed.Put("/topic/:tid/poll", a.PollHandler.UpdatePoll)
-	authed.Delete("/topic/:tid/poll", a.PollHandler.DeletePoll)
-	authed.Post("/topic/:tid/poll/vote", a.PollHandler.Vote)
 
 	authed.Post("/topic/:tid/lottery", a.LotteryHandler.CreateLottery)
 	authed.Put("/topic/:tid/lottery", a.LotteryHandler.UpdateLottery)

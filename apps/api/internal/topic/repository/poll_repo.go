@@ -26,12 +26,6 @@ func (r *PollRepository) FindByID(id int) (*model.TopicPoll, error) {
 	return &poll, err
 }
 
-func (r *PollRepository) FindByTopicID(topicID int) ([]model.TopicPoll, error) {
-	var polls []model.TopicPoll
-	err := r.db.Where("topic_id = ?", topicID).Order("created DESC").Find(&polls).Error
-	return polls, err
-}
-
 func (r *PollRepository) CountByTopicID(topicID int) (int64, error) {
 	var count int64
 	err := r.db.Model(&model.TopicPoll{}).Where("topic_id = ?", topicID).Count(&count).Error
@@ -44,102 +38,10 @@ func (r *PollRepository) FindOptionsByPollID(pollID int) ([]model.TopicPollOptio
 	return options, err
 }
 
-func (r *PollRepository) FindUserVoteOptionIDs(pollID, userID int) ([]int, error) {
-	var optionIDs []int
-	err := r.db.Model(&model.TopicPollVote{}).
-		Where("poll_id = ? AND user_id = ?", pollID, userID).
-		Pluck("option_id", &optionIDs).Error
-	return optionIDs, err
-}
-
-func (r *PollRepository) HasUserVoted(pollID, userID int) (bool, error) {
-	var count int64
-	err := r.db.Model(&model.TopicPollVote{}).
-		Where("poll_id = ? AND user_id = ?", pollID, userID).
-		Count(&count).Error
-	return count > 0, err
-}
-
-func (r *PollRepository) FindDistinctVoterIDs(pollID, limit int) ([]int, error) {
-	var ids []int
-	err := r.db.Table("topic_poll_vote").
-		Distinct("user_id").
-		Where("poll_id = ?", pollID).
-		Limit(limit).
-		Pluck("user_id", &ids).Error
-	return ids, err
-}
-
-func (r *PollRepository) CountDistinctVoters(pollID int) (int, error) {
-	var count int64
-	err := r.db.Model(&model.TopicPollVote{}).
-		Where("poll_id = ?", pollID).
-		Distinct("user_id").
-		Count(&count).Error
-	return int(count), err
-}
-
-func (r *PollRepository) CountTotalVotes(pollID int) (int, error) {
-	var count int64
-	err := r.db.Model(&model.TopicPollVote{}).
-		Where("poll_id = ?", pollID).
-		Count(&count).Error
-	return int(count), err
-}
-
-type VoteLogRow struct {
-	ID         int
-	UserID     int
-	OptionText string
-	CreatedAt  time.Time
-}
-
-func (r *PollRepository) FindVoteLogs(pollID, page, limit int) ([]VoteLogRow, int64, error) {
-	var rows []VoteLogRow
-	var total int64
-
-	r.db.Model(&model.TopicPollVote{}).Where("poll_id = ?", pollID).Count(&total)
-
-	err := r.db.Table("topic_poll_vote v").
-		Select(`v.id, v.user_id,
-			o.text AS option_text, v.created AS created_at`).
-		Joins("JOIN topic_poll_option o ON o.id = v.option_id").
-		Where("v.poll_id = ?", pollID).
-		Order("v.created DESC").
-		Offset((page - 1) * limit).
-		Limit(limit).
-		Find(&rows).Error
-	return rows, total, err
-}
-
-func (r *PollRepository) CreatePoll(tx *gorm.DB, poll *model.TopicPoll) error {
-	return tx.Create(poll).Error
-}
-
-func (r *PollRepository) CreatePollOption(tx *gorm.DB, opt *model.TopicPollOption) error {
-	return tx.Create(opt).Error
-}
-
 func (r *PollRepository) TouchTopicStatusUpdateTime(tx *gorm.DB, topicID int, t time.Time) error {
 	return tx.Model(&model.Topic{}).
 		Where("id = ? AND created > ?", topicID, model.BumpCutoff(t)).
 		Updates(map[string]any{"status_update_time": t}).Error
-}
-
-func (r *PollRepository) DeleteUserVotes(tx *gorm.DB, pollID, userID int) error {
-	return tx.Where("poll_id = ? AND user_id = ?", pollID, userID).
-		Delete(&model.TopicPollVote{}).Error
-}
-
-func (r *PollRepository) AdjustOptionVoteCount(tx *gorm.DB, optionID, delta int) error {
-	return tx.Model(&model.TopicPollOption{}).Where("id = ?", optionID).
-		Update("vote_count", gorm.Expr("vote_count + ?", delta)).Error
-}
-
-func (r *PollRepository) CreateVote(tx *gorm.DB, pollID, optionID, userID int) error {
-	return tx.Create(&model.TopicPollVote{
-		PollID: pollID, OptionID: optionID, UserID: userID,
-	}).Error
 }
 
 func (r *PollRepository) DeletePollCascade(tx *gorm.DB, pollID int) error {
@@ -150,32 +52,4 @@ func (r *PollRepository) DeletePollCascade(tx *gorm.DB, pollID int) error {
 		return err
 	}
 	return tx.Delete(&model.TopicPoll{}, pollID).Error
-}
-
-func (r *PollRepository) UpdatePollFields(tx *gorm.DB, pollID int, fields map[string]any) error {
-	if len(fields) == 0 {
-		return nil
-	}
-	return tx.Model(&model.TopicPoll{}).Where("id = ?", pollID).Updates(fields).Error
-}
-
-func (r *PollRepository) FindOptionsByIDs(ids []int) ([]model.TopicPollOption, error) {
-	if len(ids) == 0 {
-		return nil, nil
-	}
-	var opts []model.TopicPollOption
-	err := r.db.Where("id IN ?", ids).Find(&opts).Error
-	return opts, err
-}
-
-func (r *PollRepository) UpdateOptionText(tx *gorm.DB, optionID int, text string) error {
-	return tx.Model(&model.TopicPollOption{}).Where("id = ?", optionID).
-		Update("text", text).Error
-}
-
-func (r *PollRepository) DeleteOptionsByIDs(tx *gorm.DB, ids []int) error {
-	if len(ids) == 0 {
-		return nil
-	}
-	return tx.Where("id IN ?", ids).Delete(&model.TopicPollOption{}).Error
 }

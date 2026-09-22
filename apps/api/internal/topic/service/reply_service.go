@@ -15,7 +15,6 @@ import (
 
 type ReplyService struct {
 	replyRepo   *repository.ReplyRepository
-	commentRepo *repository.CommentRepository
 	topicRepo   *repository.TopicRepository
 	stateRepo   *userRepo.StateRepository
 	userClient  *userclient.Client
@@ -27,7 +26,6 @@ type ReplyService struct {
 
 func NewReplyService(
 	replyRepo *repository.ReplyRepository,
-	commentRepo *repository.CommentRepository,
 	topicRepo *repository.TopicRepository,
 	stateRepo *userRepo.StateRepository,
 	userClient *userclient.Client,
@@ -37,7 +35,6 @@ func NewReplyService(
 ) *ReplyService {
 	return &ReplyService{
 		replyRepo:   replyRepo,
-		commentRepo: commentRepo,
 		topicRepo:   topicRepo,
 		stateRepo:   stateRepo,
 		userClient:  userClient,

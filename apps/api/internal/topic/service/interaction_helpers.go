@@ -5,16 +5,11 @@ import (
 	"kun-galgame-api/internal/infrastructure/markdown"
 	msgModel "kun-galgame-api/internal/message/model"
 	msgService "kun-galgame-api/internal/message/service"
-	"kun-galgame-api/internal/moemoepoint"
 
 	"gorm.io/gorm"
 )
 
 type InteractionHelpers struct{}
-
-func (InteractionHelpers) AdjustMoemoepoint(_ *gorm.DB, userID, delta int, reason, ref string) {
-	moemoepoint.Award(userID, delta, reason, ref, moemoepoint.KeyNonce(reason, ref))
-}
 
 func (InteractionHelpers) CreateTopicMessageWithContent(
 	tx *gorm.DB,

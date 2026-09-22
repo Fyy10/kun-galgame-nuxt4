@@ -1,21 +1,14 @@
 package app
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
-	"net/http/httptest"
 	"sync"
 	"sync/atomic"
 	"testing"
-	"time"
 
-	"kun-galgame-api/internal/middleware"
-
-	"github.com/gofiber/fiber/v3"
 	"gorm.io/gorm"
 
 	"kun-galgame-api/internal/constants"
@@ -39,27 +32,6 @@ func (f *writeFix) createReply(t *testing.T, topicID int, session, idem, content
 		return resp, problemMap(t, raw)
 	}
 	return resp, replyBody(t, raw)
-}
-
-func (f *writeFix) doLegacy(t *testing.T, method, rawURL, session string, payload any) (*http.Response, []byte) {
-	t.Helper()
-	b, err := json.Marshal(payload)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req := httptest.NewRequest(method, rawURL, bytes.NewReader(b))
-	req.Header.Set("Content-Type", "application/json")
-	req.AddCookie(&http.Cookie{Name: middleware.SessionCookieName, Value: session})
-	resp, err := f.Fiber.Test(req, fiber.TestConfig{Timeout: 30 * time.Second})
-	if err != nil {
-		t.Fatal(err)
-	}
-	raw, err := io.ReadAll(resp.Body)
-	_ = resp.Body.Close()
-	if err != nil {
-		t.Fatal(err)
-	}
-	return resp, raw
 }
 
 func (f *writeFix) floorOf(t *testing.T, replyID int) int {

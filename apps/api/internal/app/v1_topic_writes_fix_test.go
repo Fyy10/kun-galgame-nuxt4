@@ -166,7 +166,6 @@ func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
 	state := userRepo.NewStateRepository(db)
 	topicR := topicRepo.NewTopicRepository(db)
 	replyR := topicRepo.NewReplyRepository(db)
-	commentR := topicRepo.NewCommentRepository(db)
 	f.App = &App{
 		Fiber:      newFiber(),
 		Config:     cfg,
@@ -185,13 +184,7 @@ func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
 			return out
 		},
 		ReplyHandler: handler.NewReplyHandler(topicService.NewReplyService(
-			replyR, commentR, topicR, state, uc, rdb, gate.NewCheckService(nil), gate.NewScanService(nil),
-		)),
-		TopicCommentHandler: handler.NewCommentHandler(topicService.NewCommentService(
-			replyR, commentR, state, uc, rdb, gate.NewCheckService(nil), gate.NewScanService(nil),
-		)),
-		PollHandler: handler.NewPollHandler(topicService.NewPollService(
-			topicRepo.NewPollRepository(db), topicR, state, uc, rdb, gate.NewCheckService(nil), gate.NewScanService(nil),
+			replyR, topicR, state, uc, rdb, gate.NewCheckService(nil), gate.NewScanService(nil),
 		)),
 		LotteryHandler: handler.NewLotteryHandler(topicService.NewLotteryService(
 			topicRepo.NewLotteryRepository(db), topicR, state, uc, nil, nil, "",
@@ -460,4 +453,13 @@ func mentionBody(ids ...int) string {
 		fmt.Fprintf(&b, "[@u](kungal-user:%d) ", id)
 	}
 	return b.String()
+}
+
+func (f *writeFix) scalar(t *testing.T, query string, args ...any) int {
+	t.Helper()
+	var n int
+	if err := f.db.Raw(query, args...).Scan(&n).Error; err != nil {
+		t.Fatal(err)
+	}
+	return n
 }
