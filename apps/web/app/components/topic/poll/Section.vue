@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { usePoll } from '~/composables/topic/usePoll'
+import type { Poll } from '#shared/utils/api/schemas'
 
 const props = defineProps<{
   topicId: number
@@ -9,13 +9,20 @@ const props = defineProps<{
 
 const isCreateOpen = defineModel<boolean>('isCreateOpen', { default: false })
 
-const { getPoll } = usePoll(props.topicId)
-
+const topicId = computed(() => String(props.topicId))
 const isModalOpen = ref(false)
-const pollToEdit = ref<TopicPoll | undefined>(undefined)
+const pollToEdit = ref<Poll | undefined>(undefined)
 
-const { data, refresh } = await getPoll()
-const polls = computed(() => data.value || [])
+const { data, refresh } = await useApi(
+  () => `topic-polls:${topicId.value}`,
+  (api, { signal }) =>
+    api.GET('/topics/{topic_id}/polls', {
+      params: { path: { topic_id: topicId.value } },
+      signal
+    })
+)
+
+const polls = computed(() => data.value?.items ?? [])
 
 watch(isCreateOpen, (open) => {
   if (!open) {
@@ -26,8 +33,8 @@ watch(isCreateOpen, (open) => {
   isCreateOpen.value = false
 })
 
-const openEditModal = (pollData: TopicPoll) => {
-  pollToEdit.value = pollData
+const openEditModal = (poll: Poll) => {
+  pollToEdit.value = poll
   isModalOpen.value = true
 }
 </script>
@@ -38,7 +45,6 @@ const openEditModal = (pollData: TopicPoll) => {
       v-for="poll in polls"
       :key="poll.id"
       :poll="poll"
-      :is-topic-admin="isTopicAdmin"
       @edit="openEditModal"
       @refresh="refresh"
     />

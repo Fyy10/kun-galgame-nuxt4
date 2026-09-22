@@ -1,92 +1,65 @@
-import type { PollFormData } from '~/components/topic/poll/types'
+import { settle } from '#shared/utils/api/problem'
+import type { PollCreate, PollPatch } from '#shared/utils/api/schemas'
+import { useIdempotencyKey } from '~/composables/useIdempotencyKey'
 
-export const usePoll = (topicId: number) => {
-  const getPoll = () => {
-    return useKunFetch<TopicPoll[]>(`/topic/${topicId}/poll/topic`, {
-      query: { topic_id: topicId },
-      lazy: true
-    })
-  }
+export const usePoll = (topicId: MaybeRefOrGetter<string>) => {
+  const api = useApiClient()
+  const createKey = useIdempotencyKey()
 
-  const createPoll = async (data: PollFormData) => {
-    const res = await kunFetch<TopicPoll>(`/topic/${topicId}/poll`, {
-      method: 'POST',
-      body: {
-        ...data,
-        options: data.options.map((o) => ({ text: o.text }))
-      }
-    })
-    return res
-  }
-
-  const updatePoll = async (
-    pollId: number,
-    initialOptions: TopicPollOption[],
-    data: PollFormData
-  ) => {
-    const optionsPayload = {
-      add: data.options
-        .filter((o) => o._status === 'new')
-        .map((o) => ({ text: o.text })),
-      update: data.options
-        .filter((o) => o._status === 'existing' && o.id)
-        .filter((o) => {
-          const init = initialOptions.find((io) => io.id === o.id)
-          return init && init.text !== o.text
-        })
-        .map((o) => ({ option_id: o.id!, text: o.text })),
-      delete: data.options
-        .filter((o) => o._status === 'deleted' && o.id)
-        .map((o) => o.id)
+  const createPoll = async (body: PollCreate) => {
+    const target = toValue(topicId)
+    const result = await settle(
+      api.POST('/topics/{topic_id}/polls', {
+        params: {
+          path: { topic_id: target },
+          header: {
+            'Idempotency-Key': createKey.take(`/topics/${target}/polls`, body)
+          }
+        },
+        body
+      })
+    )
+    if (result.ok) {
+      createKey.clear()
     }
-
-    const requestData = {
-      poll_id: pollId,
-      title: data.title,
-      description: data.description,
-      type: data.type,
-      min_choice: data.min_choice,
-      max_choice: data.max_choice,
-      deadline: data.deadline,
-      result_visibility: data.result_visibility,
-      is_anonymous: data.is_anonymous,
-      can_change_vote: data.can_change_vote,
-      options: optionsPayload
-    }
-
-    await kunFetch<string>(`/topic/${topicId}/poll`, {
-      method: 'PUT',
-      body: requestData
-    })
+    return result
   }
 
-  const deletePoll = async (pollId: number) => {
-    const res = await useComponentMessageStore().alert(
+  const updatePoll = (pollId: string, body: PollPatch) =>
+    settle(
+      api.PATCH('/polls/{poll_id}', {
+        params: { path: { poll_id: pollId } },
+        body
+      })
+    )
+
+  const deletePoll = async (pollId: string) => {
+    const confirmed = await useComponentMessageStore().alert(
       '确定要删除这个投票吗？',
       '删除投票后, 所有投票数据都将丢失, 该操作不可恢复!'
     )
-    if (!res) {
-      return
+    if (!confirmed) {
+      return undefined
     }
-
-    await kunFetch<string>(`/topic/${topicId}/poll`, {
-      method: 'DELETE',
-      query: { poll_id: pollId }
-    })
+    return settle(
+      api.DELETE('/polls/{poll_id}', { params: { path: { poll_id: pollId } } })
+    )
   }
 
-  const submitVote = async (pollId: number, optionIds: number[]) => {
-    await kunFetch<string>(`/topic/${topicId}/poll/vote`, {
-      method: 'POST',
-      body: { poll_id: pollId, option_id_array: optionIds }
-    })
-  }
+  const setVote = (pollId: string, optionIds: string[]) =>
+    settle(
+      api.PUT('/polls/{poll_id}/vote', {
+        params: { path: { poll_id: pollId } },
+        body: { option_ids: optionIds }
+      })
+    )
 
-  return {
-    getPoll,
-    createPoll,
-    updatePoll,
-    deletePoll,
-    submitVote
-  }
+  const clearVote = (pollId: string) =>
+    settle(
+      api.DELETE('/polls/{poll_id}/vote', {
+        params: { path: { poll_id: pollId } }
+      })
+    )
+
+  return { createPoll, updatePoll, deletePoll, setVote, clearVote }
 }

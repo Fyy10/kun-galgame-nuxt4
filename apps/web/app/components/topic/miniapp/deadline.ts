@@ -14,6 +14,11 @@ export const deadlineFromPicker = (picked?: string) => {
   return new Date(year, month - 1, day, 23, 59, 59).toISOString()
 }
 
+// /api/v1 types an instant as exactly 20 characters — RFC 3339 UTC with second
+// precision — so toISOString()'s milliseconds fail both maxLength and pattern.
+export const closesAtFromPicker = (picked?: string) =>
+  deadlineFromPicker(picked)?.replace(/\.\d{3}Z$/, 'Z')
+
 // The picker cannot read back what the API stores, so an existing deadline has
 // to be narrowed to the same yyyy-MM-dd shape before the modal opens.
 export const deadlineToPicker = (value?: string | Date | null) => {
