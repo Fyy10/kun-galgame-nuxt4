@@ -4,6 +4,78 @@
  */
 
 export interface paths {
+    "/comments/{comment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a comment
+         * @description Returns one comment, for a permalink. NOT_FOUND when the comment does not exist, is hidden, was written by a banned user, or sits under a reply getReply would not return to the caller.
+         */
+        get: operations["getComment"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a comment
+         * @description Deletes the comment with its likes. It needs can_delete. Its own replies stay and become top-level comments. An author deleting their own comment is charged 3 moemoepoint times one plus its likes; staff deleting it charges the author 3. The charge never blocks the deletion: it is capped at the author's cached balance, so an author with nothing left pays nothing. NOT_FOUND under the same conditions as getComment.
+         */
+        delete: operations["deleteComment"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a comment
+         * @description Changes the comment body and returns the comment as getComment would. It needs can_edit. A changed body sets edited_at; the topic is not bumped and nobody is notified again. An unchanged body is not checked again. NOT_FOUND under the same conditions as getComment.
+         */
+        patch: operations["updateComment"];
+        trace?: never;
+    };
+    "/comments/{comment_id}/like": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Like a comment
+         * @description Adds the caller's like and returns the comment. Liking one already liked changes nothing. It earns the comment's author 1 moemoepoint and notifies them once. NOT_FOUND when getComment would not return the comment to the caller.
+         */
+        put: operations["likeComment"];
+        post?: never;
+        /**
+         * Remove a like from a comment
+         * @description Removes the caller's like and returns the comment. Removing one not set changes nothing. It takes back the moemoepoint the like earned, but not the notification it sent. NOT_FOUND when getComment would not return the comment to the caller.
+         */
+        delete: operations["unlikeComment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/comments/{comment_id}/source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a comment's editable source
+         * @description Returns the stored plain text of the comment, to fill an edit form. It needs can_edit. NOT_FOUND under the same conditions as getComment.
+         */
+        get: operations["getCommentSource"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/galgames/{galgame_id}/moyu-patches": {
         parameters: {
             query?: never;
@@ -90,6 +162,26 @@ export interface paths {
          * @description Changes the reply body and returns the reply as getReply would. It needs can_edit. A changed body sets edited_at; the topic is not bumped. NOT_FOUND under the same conditions as getReply.
          */
         patch: operations["updateReply"];
+        trace?: never;
+    };
+    "/replies/{reply_id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Comment on a reply
+         * @description Creates a comment under the reply and returns it as getComment would to its author. The body is plain text and is never parsed as Markdown; /image/{hash} tokens in it become image nodes. in_reply_to_user is derived here, not sent: the parent comment's author, or the reply's author without a parent. That user earns 1 moemoepoint and is notified, unless they are the caller. NOT_FOUND under the same conditions as getReply.
+         */
+        post: operations["createComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/replies/{reply_id}/reactions": {
@@ -450,6 +542,8 @@ export interface components {
         Comment: {
             /** @description Comment author. */
             author: components["schemas"]["UserRef"];
+            /** @description Comment body as a node tree. A comment is plain text, so it holds at most one paragraph, and only text, break, image, mention and reply_reference nodes appear in it. */
+            content: components["schemas"]["ContentDocument"];
             /**
              * Format: date-time
              * @description Creation time.
@@ -462,7 +556,7 @@ export interface components {
             edited_at: string | null;
             /** @description Comment id. JSON string of a decimal integer. */
             id: string;
-            /** @description The user the comment answers: the parent comment's author, or the reply's author for a top-level comment. */
+            /** @description The user the comment answers. The server derives it when the comment is written: the parent comment's author, or the reply's author for a top-level comment. A comment written before 2026-09-22 can instead name a third party its author picked in a retired UI, so it is not always one of those two. */
             in_reply_to_user: components["schemas"]["UserRef"];
             /**
              * Format: int64
@@ -478,12 +572,39 @@ export interface components {
             parent_comment_id: string | null;
             /** @description Id of the reply the comment is under. */
             reply_id: string;
-            /** @description Comment text. Plain text, not Markdown; render it as text. Free text; never use it as a decision input. */
-            text: string;
             /** @description The caller's own state on this comment. null for an anonymous caller. */
             viewer: components["schemas"]["CommentViewer"] | null;
         };
+        CommentCreate: {
+            /** @description Id of a visible comment under the same reply that this one answers. Absent or null for a comment on the reply itself. */
+            parent_comment_id?: string | null;
+            /** @description Comment body as plain text, stored as sent. It is never parsed as Markdown. A body of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
+            text: string;
+        };
+        CommentPatch: {
+            /** @description New body as plain text. Checked as in createComment. Free text; never use it as a decision input. */
+            text?: string;
+        };
+        CommentSource: {
+            /** @description Id of the comment. */
+            comment_id: string;
+            /**
+             * @description Type discriminant. Always comment_source.
+             * @enum {string}
+             */
+            object: "comment_source";
+            /** @description Id of the reply the comment is under. */
+            reply_id: string;
+            /** @description Comment body as the stored plain text, tokens included. Free text; never use it as a decision input. */
+            text: string;
+        };
         CommentViewer: {
+            /** @description Whether the caller may delete the comment: its author, or staff holding the delete permission. */
+            can_delete: boolean;
+            /** @description Whether the caller may edit the comment: its author, or staff holding the edit permission, while the topic is published. Requests authenticated with a Bearer token never carry staff powers. */
+            can_edit: boolean;
+            /** @description Whether the caller may like the comment: anyone but its author. */
+            can_like: boolean;
             /** @description Whether the caller liked the comment. */
             has_liked: boolean;
         };
@@ -1538,6 +1659,488 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Comment id. */
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comment"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Comment id. */
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller may read but not delete the comment; SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Comment id. */
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommentPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comment"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller may read but not edit the comment; SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED, or CONTENT_REJECTED when the trust-and-safety check refuses the body. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    likeComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Comment id. */
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comment"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SELF_LIKE_FORBIDDEN when the caller likes their own comment; SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    unlikeComment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Comment id. */
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comment"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getCommentSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Comment id. */
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentSource"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller may read but not edit the comment; SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listGalgameMoyuPatches: {
         parameters: {
             query?: never;
@@ -1878,6 +2481,118 @@ export interface operations {
                 };
             };
             /** @description VALIDATION_FAILED, or CONTENT_REJECTED when the trust-and-safety check refuses the body. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createComment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                /** @description Reply id. */
+                reply_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommentCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comment"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when the body is blank or parent_comment_id is not a visible comment of this reply, or CONTENT_REJECTED when the trust-and-safety check refuses the body. */
             422: {
                 headers: {
                     [name: string]: unknown;

@@ -93,7 +93,7 @@ const handleNewComment = () => {
       <LazyTopicCommentPanel
         v-if="isCommentPanelVisible"
         class="mt-4"
-        :reply-id="Number(reply.id)"
+        :reply-id="reply.id"
         :target-user="author(reply)"
         @get-comment="handleNewComment"
         @close-panel="isCommentPanelVisible = false"

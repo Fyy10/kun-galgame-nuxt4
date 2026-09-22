@@ -116,3 +116,21 @@ export const updateReplySchema = z.object({
     .min(1, { message: '回复内容不能为空' })
     .max(10007, { message: '单条回复的最大长度为 10007 个字符' })
 })
+
+// K19: the server applies maxLength to the raw value and trims afterwards, so
+// counting a trimmed string here would let "1000 characters plus a space"
+// through to a 422.
+const commentText = z
+  .string()
+  .max(1000, { message: '单条评论的最大长度为 1000 个字符' })
+  .refine((text) => text.trim().length > 0, { message: '评论内容不能为空' })
+
+export const createCommentSchema = z.object({
+  text: commentText,
+  parent_comment_id: z
+    .string()
+    .regex(/^[0-9]+$/, { message: '父评论 id 格式不正确' })
+    .optional()
+})
+
+export const updateCommentSchema = z.object({ text: commentText })

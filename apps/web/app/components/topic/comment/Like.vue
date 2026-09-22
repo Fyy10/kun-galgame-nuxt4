@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import type { Comment } from '#shared/utils/api/schemas'
+import { settle } from '#shared/utils/api/problem'
 
 const props = defineProps<{
   comment: Comment
 }>()
 
 const { id } = usePersistUserStore()
-const topicId = inject<number>('topicId', 0)
+const api = useApiClient()
 const isLiked = ref(props.comment.viewer?.has_liked ?? false)
 const likeCount = ref(props.comment.like_count)
 const pending = ref(false)
@@ -35,21 +36,26 @@ const onChange = async (next: boolean) => {
     revert(next)
     return
   }
-  if (id === Number(props.comment.author.id)) {
+  if (!props.comment.viewer?.can_like) {
     useMessage(10218, 'warn')
     revert(next)
     return
   }
   pending.value = true
-  const result = await kunFetch<string>(`/topic/${topicId}/comment/like`, {
-    method: 'PUT',
-    body: { comment_id: Number(props.comment.id) }
-  })
+  const params = { params: { path: { comment_id: props.comment.id } } }
+  const result = await settle(
+    next
+      ? api.PUT('/comments/{comment_id}/like', params)
+      : api.DELETE('/comments/{comment_id}/like', params)
+  )
   pending.value = false
-  if (!result) {
+  if (!result.ok) {
+    reportProblem(result.problem)
     revert(next)
     return
   }
+  likeCount.value = result.data.like_count
+  isLiked.value = result.data.viewer?.has_liked ?? next
   useMessage(next ? '点赞评论成功' : '取消点赞成功', 'success')
 }
 </script>

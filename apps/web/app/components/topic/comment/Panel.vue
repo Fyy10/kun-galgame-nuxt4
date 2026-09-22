@@ -1,49 +1,70 @@
 <script setup lang="ts">
+import type { Comment } from '#shared/utils/api/schemas'
+import { settle } from '#shared/utils/api/problem'
+import { createCommentSchema } from '~/validations/topic'
+import { useIdempotencyKey } from '~/composables/useIdempotencyKey'
+
 const props = defineProps<{
-  replyId: number
+  replyId: string
   targetUser: KunUser
-  parentCommentId?: number
+  parentCommentId?: string
 }>()
 
 const emits = defineEmits<{
-  getComment: [newComment: TopicComment]
+  getComment: [newComment: Comment]
   closePanel: []
 }>()
 
 const { name } = usePersistUserStore()
-const topicId = inject<number>('topicId')
+const api = useApiClient()
+const createKey = useIdempotencyKey()
 const commentValue = ref('')
 const isPublishing = ref(false)
 
 const handlePublishComment = async () => {
-  if (!commentValue.value.trim()) {
-    useMessage(10221, 'warn')
+  if (isPublishing.value) {
     return
   }
 
-  if (commentValue.value.trim().length > 1007) {
-    useMessage(10222, 'warn')
+  const body = {
+    text: commentValue.value,
+    ...(props.parentCommentId
+      ? { parent_comment_id: props.parentCommentId }
+      : {})
+  }
+  const parsed = createCommentSchema.safeParse(body)
+  if (!parsed.success) {
+    const message = JSON.parse(parsed.error.message)[0]
+    useMessage(formatKunZodIssue(message), 'warn')
     return
   }
 
   isPublishing.value = true
-  const comment = await kunFetch<TopicComment>(`/topic/${topicId}/comment`, {
-    method: 'POST',
-    body: {
-      topic_id: topicId,
-      reply_id: props.replyId,
-      target_user_id: props.targetUser.id,
-      parent_comment_id: props.parentCommentId,
-      content: commentValue.value
-    }
-  })
+  const result = await settle(
+    api.POST('/replies/{reply_id}/comments', {
+      params: {
+        path: { reply_id: props.replyId },
+        header: {
+          'Idempotency-Key': createKey.take(
+            `/replies/${props.replyId}/comments`,
+            body
+          )
+        }
+      },
+      body
+    })
+  )
   isPublishing.value = false
 
-  if (comment) {
-    emits('getComment', comment)
-    useMessage(10224, 'success')
-    emits('closePanel')
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  createKey.clear()
+  commentValue.value = ''
+  emits('getComment', result.data)
+  useMessage(10224, 'success')
+  emits('closePanel')
 }
 
 const handleClose = () => {
@@ -60,7 +81,7 @@ const handleClose = () => {
 
     <KunTextarea
       name="comment"
-      placeholder="请输入您的评论, 最大字数为1007"
+      placeholder="请输入您的评论, 最大字数为 1000"
       :rows="5"
       v-model="commentValue"
     />
