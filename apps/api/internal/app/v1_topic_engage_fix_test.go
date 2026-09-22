@@ -366,6 +366,13 @@ func (f *engageFix) count(t *testing.T, q string, args ...any) int {
 	return n
 }
 
+func (f *engageFix) runSQL(t *testing.T, q string, args ...any) {
+	t.Helper()
+	if err := f.db.Exec(q, args...).Error; err != nil {
+		t.Fatalf("sql: %v\n%s", err, q)
+	}
+}
+
 func (f *engageFix) topicInt(t *testing.T, id int, col string) int {
 	t.Helper()
 	var n int
@@ -375,6 +382,46 @@ func (f *engageFix) topicInt(t *testing.T, id int, col string) int {
 	return n
 }
 
+func (f *engageFix) topicNullInt(t *testing.T, id int, col string) *int {
+	t.Helper()
+	var n *int
+	if err := f.db.Raw("SELECT "+col+" FROM topic WHERE id = ?", id).Scan(&n).Error; err != nil {
+		t.Fatal(err)
+	}
+	return n
+}
+
+func (f *engageFix) topicTime(t *testing.T, id int, col string) time.Time {
+	t.Helper()
+	var ts time.Time
+	if err := f.db.Raw("SELECT "+col+" FROM topic WHERE id = ?", id).Scan(&ts).Error; err != nil {
+		t.Fatal(err)
+	}
+	return ts
+}
+
+func (f *engageFix) xmin(t *testing.T, table string, id int) string {
+	t.Helper()
+	var s string
+	if err := f.db.Raw("SELECT xmin::text FROM "+table+" WHERE id = ?", id).Scan(&s).Error; err != nil {
+		t.Fatal(err)
+	}
+	return s
+}
+
+func (f *engageFix) sqlIDs(t *testing.T, q string, args ...any) []string {
+	t.Helper()
+	var ids []int
+	if err := f.db.Raw(q, args...).Scan(&ids).Error; err != nil {
+		t.Fatal(err)
+	}
+	out := make([]string, len(ids))
+	for i, id := range ids {
+		out[i] = strID(id)
+	}
+	return out
+}
+
 func (f *engageFix) replyInt(t *testing.T, id int, col string) int {
 	t.Helper()
 	var n int
@@ -382,6 +429,30 @@ func (f *engageFix) replyInt(t *testing.T, id int, col string) int {
 		t.Fatal(err)
 	}
 	return n
+}
+
+func (f *engageFix) reactionRowID(t *testing.T, replyID, userID int, tok string) int {
+	t.Helper()
+	var id int
+	if err := f.db.Raw(
+		`SELECT id FROM topic_reply_reaction WHERE topic_reply_id = ? AND user_id = ? AND reaction = ?`,
+		replyID, userID, tok,
+	).Scan(&id).Error; err != nil {
+		t.Fatal(err)
+	}
+	return id
+}
+
+func (f *engageFix) favoriteRowID(t *testing.T, topicID, userID int) int {
+	t.Helper()
+	var id int
+	if err := f.db.Raw(
+		`SELECT id FROM topic_favorite WHERE topic_id = ? AND user_id = ?`,
+		topicID, userID,
+	).Scan(&id).Error; err != nil {
+		t.Fatal(err)
+	}
+	return id
 }
 
 func (f *engageFix) messages(t *testing.T, receiver int, typ string) []map[string]any {
