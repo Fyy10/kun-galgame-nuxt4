@@ -23,6 +23,9 @@ func (s *LotteryService) GetEntrants(
 	if err != nil {
 		return nil, errors.ErrNotFound("未找到该抽奖")
 	}
+	if appErr := requireTopicReadByID(s.topicRepo, lottery.TopicID, userInfo); appErr != nil {
+		return nil, appErr
+	}
 	canModerate := false
 	viewerID := 0
 	if userInfo != nil {
@@ -61,6 +64,9 @@ func (s *LotteryService) GetLotteriesByTopic(
 	userInfo *middleware.UserInfo,
 	isSFW bool,
 ) ([]dto.TopicLotteryResponse, *errors.AppError) {
+	if appErr := requireTopicReadByID(s.topicRepo, topicID, userInfo); appErr != nil {
+		return nil, appErr
+	}
 	lotteries, err := s.lotteryRepo.FindByTopicID(topicID)
 	if err != nil {
 		return nil, errors.ErrInternal("获取抽奖失败")

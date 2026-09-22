@@ -188,6 +188,10 @@ func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
 		PollHandler: handler.NewPollHandler(topicService.NewPollService(
 			topicRepo.NewPollRepository(db), topicR, state, uc, rdb, gate.NewCheckService(nil), gate.NewScanService(nil),
 		)),
+		LotteryHandler: handler.NewLotteryHandler(topicService.NewLotteryService(
+			topicRepo.NewLotteryRepository(db), topicR, state, uc, nil, nil, "",
+			gate.NewCheckService(nil), gate.NewScanService(nil),
+		)),
 	}
 	f.setupRoutes()
 	f.spec = newSpecConformance(t)

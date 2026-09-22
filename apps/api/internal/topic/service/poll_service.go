@@ -140,6 +140,9 @@ func (s *PollService) GetPollsByTopic(
 	topicID int,
 	userInfo *middleware.UserInfo,
 ) ([]dto.TopicPollResponse, *errors.AppError) {
+	if appErr := requireTopicReadByID(s.topicRepo, topicID, userInfo); appErr != nil {
+		return nil, appErr
+	}
 	polls, err := s.pollRepo.FindByTopicID(topicID)
 	if err != nil {
 		return nil, errors.ErrInternal("获取投票失败")
@@ -426,6 +429,9 @@ func (s *PollService) GetVoteLog(
 	poll, err := s.pollRepo.FindByID(pollID)
 	if err != nil {
 		return nil, 0, errors.ErrNotFound("未找到该投票")
+	}
+	if appErr := requireTopicReadByID(s.topicRepo, poll.TopicID, userInfo); appErr != nil {
+		return nil, 0, appErr
 	}
 
 	userID := 0

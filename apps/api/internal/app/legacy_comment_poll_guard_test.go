@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -207,5 +208,117 @@ func TestLegacyCommentRefusesADeletedReply(t *testing.T) {
 		})
 	if resp.StatusCode != http.StatusNotFound {
 		t.Fatalf("comment on a deleted reply %d %s", resp.StatusCode, raw)
+	}
+}
+
+const (
+	w3PollHidden    = 930000403
+	w3OptHidden     = 930000431
+	w3LotteryHidden = 930000441
+)
+
+// The four poll and lottery read faces took a topic id straight to their own
+// table. Against production, GET /api/topic/2561/poll/topic answered 200 to an
+// anonymous caller with the question, the options and every option's vote
+// count, while GET /api/v1/topics/2561 answered 404 for the same topic.
+func (f *writeFix) seedHiddenTopicPollAndLottery(t *testing.T) {
+	t.Helper()
+	at := time.Date(2026, 8, 1, 12, 0, 0, 0, time.UTC)
+	run := func(q string, args ...any) {
+		t.Helper()
+		if err := f.db.Exec(q, args...).Error; err != nil {
+			t.Fatalf("seed hidden: %v", err)
+		}
+	}
+	run(`INSERT INTO topic_poll (id, title, description, type, min_choice, max_choice, status,
+		result_visibility, is_anonymous, can_change_vote, topic_id, user_id, created, updated)
+		VALUES (?, 'secret poll', 'secret', 'single', 1, 1, 'open', 'always', false, true, ?, ?, ?, ?)`,
+		w3PollHidden, w3TopicHidden, w3UserAlice, at, at)
+	run(`INSERT INTO topic_poll_option (id, text, poll_id, vote_count, created, updated)
+		VALUES (?, 'secret option', ?, 3, ?, ?)`, w3OptHidden, w3PollHidden, at, at)
+	run(`INSERT INTO topic_lottery (id, topic_id, user_id, title, description, status, created, updated)
+		VALUES (?, ?, ?, 'secret lottery', '', 'open', ?, ?)`,
+		w3LotteryHidden, w3TopicHidden, w3UserAlice, at, at)
+}
+
+func TestLegacyPollReadsRefuseAHiddenTopic(t *testing.T) {
+	f := newWriteFix(t, gate.Checker(nil))
+	f.alice(t)
+	f.seedHiddenTopicPollAndLottery(t)
+
+	for _, tt := range []struct {
+		name, session string
+	}{
+		{"anonymous", ""},
+		{"stranger", "sess-bob"},
+	} {
+		t.Run(tt.name+" poll list", func(t *testing.T) {
+			resp, raw := f.doLegacy(t, http.MethodGet,
+				fmt.Sprintf("/api/topic/%d/poll/topic?topic_id=%d", w3TopicHidden, w3TopicHidden),
+				tt.session, nil)
+			if resp.StatusCode != http.StatusNotFound {
+				t.Fatalf("poll list on a hidden topic = %d, want 404: %s", resp.StatusCode, raw)
+			}
+			if strings.Contains(string(raw), "secret") {
+				t.Fatalf("the refusal leaked the poll: %s", raw)
+			}
+		})
+		t.Run(tt.name+" vote log", func(t *testing.T) {
+			resp, raw := f.doLegacy(t, http.MethodGet,
+				fmt.Sprintf("/api/topic/%d/poll/log?poll_id=%d&page=1&limit=5", w3TopicHidden, w3PollHidden),
+				tt.session, nil)
+			if resp.StatusCode != http.StatusNotFound {
+				t.Fatalf("vote log on a hidden topic = %d, want 404: %s", resp.StatusCode, raw)
+			}
+		})
+		t.Run(tt.name+" lottery entrants", func(t *testing.T) {
+			resp, raw := f.doLegacy(t, http.MethodGet,
+				fmt.Sprintf("/api/topic/%d/lottery/entrants?lottery_id=%d", w3TopicHidden, w3LotteryHidden),
+				tt.session, nil)
+			if resp.StatusCode != http.StatusNotFound {
+				t.Fatalf("entrants of a hidden topic's lottery = %d, want 404: %s", resp.StatusCode, raw)
+			}
+		})
+		t.Run(tt.name+" lottery list", func(t *testing.T) {
+			resp, raw := f.doLegacy(t, http.MethodGet,
+				fmt.Sprintf("/api/topic/%d/lottery/topic?topic_id=%d", w3TopicHidden, w3TopicHidden),
+				tt.session, nil)
+			if resp.StatusCode != http.StatusNotFound {
+				t.Fatalf("lottery list on a hidden topic = %d, want 404: %s", resp.StatusCode, raw)
+			}
+			if strings.Contains(string(raw), "secret") {
+				t.Fatalf("the refusal leaked the lottery: %s", raw)
+			}
+		})
+	}
+}
+
+func TestLegacyPollReadsStillServeAVisibleTopic(t *testing.T) {
+	f := newWriteFix(t, gate.Checker(nil))
+	f.alice(t)
+	f.seedPolls(t)
+
+	resp, raw := f.doLegacy(t, http.MethodGet,
+		fmt.Sprintf("/api/topic/%d/poll/topic?topic_id=%d", w3TopicPub, w3TopicPub), "sess-bob", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("poll list on a public topic = %d, want 200: %s", resp.StatusCode, raw)
+	}
+	if !strings.Contains(string(raw), "poll a") {
+		t.Fatalf("the public topic's poll went missing: %s", raw)
+	}
+}
+
+func TestLegacyPollReadsServeTheAuthorOfAHiddenTopic(t *testing.T) {
+	f := newWriteFix(t, gate.Checker(nil))
+	f.alice(t)
+	f.seedHiddenTopicPollAndLottery(t)
+
+	resp, raw := f.doLegacy(t, http.MethodGet,
+		fmt.Sprintf("/api/topic/%d/poll/topic?topic_id=%d", w3TopicHidden, w3TopicHidden), "sess-alice", nil)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("poll list for the hidden topic's own author = %d, want 200: %s", resp.StatusCode, raw)
+	}
+	if !strings.Contains(string(raw), "secret poll") {
+		t.Fatalf("the author lost sight of their own poll: %s", raw)
 	}
 }
