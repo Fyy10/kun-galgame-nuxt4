@@ -117,7 +117,7 @@ export const useTopicSubmitter = () => {
       const created = await settle(
         api.POST('/topics', {
           params: {
-            header: { 'Idempotency-Key': createKey.take(payload) }
+            header: { 'Idempotency-Key': createKey.take('/topics', payload) }
           },
           body: payload
         })

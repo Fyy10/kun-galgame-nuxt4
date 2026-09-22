@@ -38,11 +38,7 @@ const toggleFavorite = async (next: boolean) => {
     return false
   }
   if (props.topic) {
-    replaceTopic({
-      ...props.topic,
-      favorite_count: result.data.favorite_count,
-      viewer: result.data.viewer
-    })
+    replaceTopic(mergeTopicEngagement(props.topic, result.data))
   }
   return true
 }

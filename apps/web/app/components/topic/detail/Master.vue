@@ -24,13 +24,7 @@ const applyEngagement = (engagement: TopicEngagement | ReplyEngagement) => {
   if (engagement.object !== 'topic_engagement') {
     return
   }
-  replaceTopic({
-    ...props.topic,
-    like_count: engagement.like_count,
-    dislike_count: engagement.dislike_count,
-    viewer: engagement.viewer,
-    reactions: engagement.reactions
-  })
+  replaceTopic(mergeTopicEngagement(props.topic, engagement))
 }
 
 provide(

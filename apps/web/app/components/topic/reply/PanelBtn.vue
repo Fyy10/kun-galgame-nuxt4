@@ -41,7 +41,12 @@ const handlePublish = async () => {
     api.POST('/topics/{topic_id}/replies', {
       params: {
         path: { topic_id: topicId.value },
-        header: { 'Idempotency-Key': createKey.take(body) }
+        header: {
+          'Idempotency-Key': createKey.take(
+            `/topics/${topicId.value}/replies`,
+            body
+          )
+        }
       },
       body
     })

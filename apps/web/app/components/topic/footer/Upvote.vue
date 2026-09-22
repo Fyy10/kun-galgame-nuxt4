@@ -53,6 +53,7 @@ const handleClickUpvote = async () => {
     replaceTopic({
       ...props.topic,
       upvote_count: upvoteCount.value,
+      upvoted_at: pushed.created_at,
       viewer: props.topic.viewer
         ? { ...props.topic.viewer, has_upvoted: true }
         : props.topic.viewer

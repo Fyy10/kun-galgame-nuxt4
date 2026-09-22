@@ -141,7 +141,9 @@ describe('unsetting a viewer slot sends DELETE', () => {
     const wrapper = await mountSuspended(TopicFooterFavorite, {
       props: { topic: topic({ viewer: topicViewer({ has_favorited: true }) }) }
     })
-    await wrapper.findComponent({ name: 'KunReaction' }).vm.$emit('change', false)
+    await wrapper
+      .findComponent({ name: 'KunReaction' })
+      .vm.$emit('change', false)
     expect(captured[0]!.method).toBe('DELETE')
     expect(captured[0]!.url).toContain('/topics/42/favorite')
     wrapper.unmount()
@@ -163,6 +165,52 @@ describe('unsetting a viewer slot sends DELETE', () => {
     await fresh.findComponent({ name: 'KunReaction' }).vm.$emit('change', true)
     expect(second[0]!.method).toBe('PUT')
     fresh.unmount()
+  })
+
+  // The write answers with the whole engagement snapshot; applying only the
+  // two fields the button changed left the other counts stale on the page.
+  it('applies every field of the engagement snapshot, not just the count it changed', async () => {
+    const snapshot = {
+      object: 'topic_engagement',
+      topic_id: '42',
+      like_count: 7,
+      dislike_count: 2,
+      favorite_count: 5,
+      upvote_count: 3,
+      upvoted_at: '2026-03-01T00:00:00.000Z',
+      reactions: [
+        {
+          reaction: 'like',
+          count: 7,
+          reactors: [],
+          viewer: { has_reacted: true }
+        }
+      ],
+      viewer: topicViewer({ has_favorited: true, has_liked: true })
+    }
+    captureFetch(snapshot)
+    usePersistUserStore().id = 1
+    const replaced: Topic[] = []
+    const wrapper = await mountSuspended(TopicFooterFavorite, {
+      props: {
+        topic: topic({ viewer: topicViewer({ has_favorited: false }) })
+      },
+      global: { provide: { replaceTopic: (t: Topic) => replaced.push(t) } }
+    })
+    await wrapper
+      .findComponent({ name: 'KunReaction' })
+      .vm.$emit('change', true)
+    await vi.waitFor(() => expect(replaced).toHaveLength(1))
+    const next = replaced[0]!
+    expect(next.like_count).toBe(7)
+    expect(next.dislike_count).toBe(2)
+    expect(next.favorite_count).toBe(5)
+    expect(next.upvote_count).toBe(3)
+    expect(next.upvoted_at).toBe('2026-03-01T00:00:00.000Z')
+    expect(next.reactions).toHaveLength(1)
+    expect(next.viewer?.has_favorited).toBe(true)
+    expect(next.title).toBe('Topic')
+    wrapper.unmount()
   })
 
   it('clears the best answer with DELETE and sets it with PUT', async () => {

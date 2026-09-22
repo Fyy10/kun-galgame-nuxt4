@@ -29,7 +29,12 @@ const submit = async () => {
     api.POST('/topics/{topic_id}/upvotes', {
       params: {
         path: { topic_id: target.value.topicId },
-        header: { 'Idempotency-Key': createKey.take(body) }
+        header: {
+          'Idempotency-Key': createKey.take(
+            `/topics/${target.value.topicId}/upvotes`,
+            body
+          )
+        }
       },
       body
     })
