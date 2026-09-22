@@ -150,6 +150,7 @@ bash apps/api/scripts/testdb-bootstrap.sh    # 把空库建成生产形状
 | 位置 | 谁的 |
 |---|---|
 | `internal/<自己的域>/**`、自己域的网页目录、自己的波次文档 | **你的**，随便改 |
+| 一个**跨前缀的老 handler**（如 `ResourceCommentHandler` 管 5 个前缀） | **归它整个连通分量的那一轨**。看板按共用 handler 切分，不按 URL 前缀——`/api/admin/topic/*` 是话题轨的，`/api/user/:id/toolsets` 是 toolset 轨的。**共用 handler 要等它服务的所有前缀都迁完才能删**，删早了别的轨当场 404 |
 | `pkg/problem/registry.go` + `registry_test.go` + `i18n/locales/zh-CN/problem.json` | **共享**，见下 |
 | `internal/app/app.go` 字段、`internal/app/router.go` 挂载点 | **共享**，只加自己的一行，不重排别人的 |
 | `internal/apiv1/**`（表示层、`collect` 游标） | **别碰**。要改停下来问——它是所有域的地基 |

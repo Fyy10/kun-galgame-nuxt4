@@ -74,22 +74,28 @@ git ls-remote --heads origin 'api-v1/*'
 
 ### 待认领
 
-旧 `/api/*` 路由 **299 条**。T1–T3 是话题轨（`/api/topic/**` 的残余 27 条），W6 起按域切。`legacy_route_baseline` = 300，因为它数的是「所有非 `/api/v1` 的路由」，`/healthz` 也在里面——**基线的地板是 1，不是 0**。一行一个可独立执行的域。
+旧 `/api/*` 路由 **299 条**。`legacy_route_baseline` = 300，因为它数的是「所有非 `/api/v1` 的路由」，`/healthz` 也在里面——**基线的地板是 1，不是 0**。
 
-| 波 | 域 | 旧路由 | 迁移号段 | 备注 |
+> **切分依据是「共用同一个老 handler」，不是 URL 前缀。** 这个仓库里老 handler 大量跨前缀：`ResourceCommentHandler` 一个人管 15 条 / 5 个前缀；`/api/admin/**` 的 24 条分属 11 个 handler、各归各的域；`/api/user/:id/toolsets` 是 toolset 的面；`GET /api/resource` 是 `TopicHandler.GetResourceList`，即话题列表的资源区分面。**按前缀分轨会让两个 session 撞在同一个 handler 上，而且谁也删不掉它**——共用 handler 要等它服务的**所有**前缀都迁完才能删。下表按连通分量切，每行对外零耦合。
+
+| 轨 | 模块（含跨前缀的归属） | 路由 | 迁移号段 | 备注 |
 |---|---|---|---|---|
-| T1 | 清理：旧评论 `/topic/:tid/comment*` + 旧投票 `/topic/:tid/poll*` | 10 | — | W5a/W5b 已取代，**只删不写**；顺带降基线；`topic_poll.status` 的 drop 在它之后另起一轮 deploy-then-drop |
-| T2 | 话题草稿 `/topic/draft*` + 两条零散读面 `/topic/interactions/mine`、`/topic/:tid/reply/locate` | 6 | 110–114 | 草稿生产 69 条 / 57 人 |
-| T3 | 话题抽奖 `/topic/:tid/lottery*` | 11 | 115–119 | 一个完整状态机，**不要拆成两个 session**；生产只有 2 个抽奖、0 个兑换码，价值最低但端点最多 |
-| W6 | 用户 `/user/**` | 25 | 120–129 | 资料、签到、偏好、创作者、各种「我的 X」列表 |
-| W7 | 消息 `/message/**` | 11 | 130–134 | 私信 + 系统通知 + 红点 |
-| W8 | galgame 主域 `/galgame/**` | 50 | 135–149 | 最大的一块，可再拆读面 / 写面两波 |
-| W9 | galgame 周边 `-quiz` `-rating` `-resource` `-edit` `-tag` `-series` `-staff` `-engine` `-character` `-official` | 55 | 150–164 | 彼此独立，可再拆 |
-| W10 | 站点导航 `/website*` `-tag` `-category` `-tag-group` | 24 | 165–169 | |
-| W11 | 文档 `/doc/**` | 15 | 170–174 | |
-| W12 | 工具箱 `/toolset/**` | 18 | 175–179 | |
-| W13 | 管理面 `/admin/**` + `/perm` `/trust` `/report` | 29 | 180–184 | 权限最敏感，普查要最细 |
-| W14 | 更新日志 `/update/**` | 11 | 185–189 | |
-| W15 | 零散：`/search` `/news` `/image` `/ranking` `/community` `/auth` `/activity` `/rss` `/section` `/resource` `/home` `/friend-link` `/category` `/app` | 34 | 190–199 | 可按需拆成几个小 PR。其中 `/section` `/ranking/topic` `/rss/topic` `/home` `/image/topic` `/search` 的话题部分**属于话题轨的邻接面**：它们和别的域共用实现，**整条端点归 W15 一个人写**，话题轨只提需求，不半途接手 |
+| **T** | **话题**：`/topic/**` 27 + `/admin/topic*` 3 + `/resource` 1 | **31** | 110–119 | 已认领（本轨）。内部三个 PR 串行：清理旧评论/投票 10 条 → 草稿+零散 6 条 → 抽奖 11 条 |
+| U | 用户 `/user/**`（不含「某用户的 X」列表面，那些归各自的域） | 25 | 120–129 | 资料、签到、偏好、创作者、红点 |
+| M | 消息 `/message/**` | 11 | 130–134 | 私信 + 系统通知 |
+| RC | **资源评论**：`ResourceCommentHandler` 的 15 条，横跨 `galgame-quiz` `galgame-rating` `galgame-resource` `toolset` `website` | 15 | 135–139 | **五个域的绊脚石，优先拿下**；底层是 infra 社区原语，论坛只是 BFF |
+| G | galgame 主域 + `-edit` + `-quiz` + `-resource` + `toolset` + 各自的 admin/user 面 | 92 | 140–159 | 最大的一坨，**一个 owner**，内部自己切 3–4 个 PR 串行 |
+| GE | galgame 实体六件套 `-character` `-engine` `-official` `-series` `-staff` `-tag` | 18 | 160–164 | 共用 `EntityHandler`，必须同一轨 |
+| D | 文档 `/doc` + `/website-tag` + `/website-category` | 26 | 165–169 | 共用 `TagHandler` / `CategoryHandler` |
+| UP | 更新日志 `/update/**` | 11 | 170–174 | |
+| WS | 站点 `/website` + `/website-tag-group` | 11 | 175–179 | |
+| TS | 举报与信任 `/report` `/trust` + `/admin/trust*` | 7 | 180–184 | |
+| P | 权限 `/perm` + `/admin` 的权限面 | 7 | 185–189 | |
+| GR | galgame 评分 `/galgame-rating` | 6 | 190–194 | |
+| X | 零散：`/search` 6、`/friend-link`(+admin) 5、`/news` 4、`/image` 4、`/ranking` 3、`/community` 3、`/auth` 3、`/activity` 3、`/rss` 2、`/category`+`/section` 2、`/admin` 总览 2、`/home` 1、`/app` 1 | 39 | 195–209 | 可拆成几个小 PR |
+
+**不存在「admin 轨」**：`/api/admin/**` 是 11 个 handler 各自域的管理面（`TopicAdminHandler`→话题、`PurgeHandler`→用户、`ArticleHandler`→文档、`TrustHandler`→信任…），各域迁自己的。
+
+**同时开几个**：建议 **4–5 条并行**，做完一条补一条。瓶颈不是 session 数量，是①合并即部署且必须串行、②`registry.go`/`problem.json`/`router.go`/`app.go`/两个金文件是全轨共用、③你自己的注意力。首批推荐 **T（本轨）+ U + M + RC**，想再加一条就上 **G**（它最长，早开早完）。
 
 执行方式：**每个域一个独立会话**，在自己的 worktree 里按 [05-session-sop.md](05-session-sop.md) 从普查做到 PR；合并即上线。2026-09-22 之前是「督查派发 cursor-agent + 直接落 master」，已由 PR 流程取代——原因见 [04 §8](04-parallel-tracks.md)。
