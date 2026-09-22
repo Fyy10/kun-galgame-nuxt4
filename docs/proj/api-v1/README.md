@@ -38,8 +38,11 @@ infra `refs/api-v2/`（01 公理与黑名单 · 02 协议 · 04 表示 · 05 集
 
 ## 阅读顺序
 
+**新开一个会话来做一个域，先读 [05-session-sop.md](05-session-sop.md)**，它是作业手册，其余是它引用的材料。
+
 | 文件 | 内容 |
 |---|---|
+| [05-session-sop.md](05-session-sop.md) | 独立会话作业手册：认领、worktree、临时库、五步、九条闸、PR、上线 |
 | [01-standard.md](01-standard.md) | 面与凭证、错误与 i18n、表示层、集合、写面、正文文档、命名表 |
 | [02-governance.md](02-governance.md) | 契约单一来源、代码生成、CI 门、演进与退役、App 兼容、逐端点迁移清单 |
 | [04-parallel-tracks.md](04-parallel-tracks.md) | 并行轨协议：五条车道、共享面预分配、九条测试闸、合并策略 |
@@ -48,17 +51,45 @@ infra `refs/api-v2/`（01 公理与黑名单 · 02 协议 · 04 表示 · 05 集
 
 ## 波次看板
 
+**认领方式：把空分支推上去。** 远端分支就是认领表，没有别的地方登记：
+
+```bash
+git ls-remote --heads origin 'api-v1/*'
+```
+
+分支名 `api-v1/<波次>-<域>`。迁移号只能从自己那一段里取（W3 与 W4 撞过 098）；104–109 留给在途修复。
+
+### 已完成
+
 | 波 | 范围 | 状态 |
 |---|---|---|
 | W0a | 后端地基（huma、problem 注册表、身份、幂等、游标、spec 生成、CI 门、DB 测试进 CI）+ `GET /api/v1/topics` | ✅ 2026-09-18 |
-| W0b | 前端地基（生成类型、类型化客户端、错误本地化目录）+ 话题列表切到 v1、删旧路由（[记录](waves/w0b-frontend-foundation.md)） | ✅ 2026-09-19 上线，旧路由已删 |
-| W1 | 结构化正文文档（Go 序列化 + Vue 渲染器 + 数据普查，[规格](03-content-doc.md)） | ✅ 2026-09-19（[验收](waves/w1-content-doc.md)） |
-| W2 | 话题详情 + 回复读面（[记录](waves/w2-topic-detail.md)） | ✅ 2026-09-22 上线 |
-| W3 | 话题 / 回复写面（[记录](waves/w3-topic-writes.md)） | ✅ 2026-09-22 上线，旧路由已删 |
-| W4 | 互动（点赞、收藏、推、表情、最佳答案、置顶；隐藏并进 W3 的 PATCH）（[记录](waves/w4-interactions.md)） | ✅ 2026-09-22 上线，旧路由已删 |
-| W5a | 话题评论（发表 / 编辑 / 删除 / 点赞）（[契约](waves/w5a-comments.md)） | ✅ 2026-09-22 上线（迁移 101） |
-| W5b | 投票（8 个 v1 端点取代 6 条旧路由）（[契约](waves/w5b-polls.md)） | 🚧 契约已定 |
-| W5c | 话题草稿（4 端点，生产 69 条 / 57 人） | ⏳ |
-| W5d+ | 抽奖（11 端点，**生产只有 2 个抽奖、0 个兑换码**，排在最后）、图片上传、其余话题读面、按评论定位 | ⏳ |
+| W0b | 前端地基（生成类型、类型化客户端、错误本地化目录）+ 话题列表切到 v1（[记录](waves/w0b-frontend-foundation.md)） | ✅ 2026-09-19 |
+| W1 | 结构化正文文档（[规格](03-content-doc.md)、[验收](waves/w1-content-doc.md)） | ✅ 2026-09-19 |
+| W2 | 话题详情 + 回复读面（[记录](waves/w2-topic-detail.md)） | ✅ 2026-09-22 |
+| W3 | 话题 / 回复写面（[记录](waves/w3-topic-writes.md)） | ✅ 2026-09-22 |
+| W4 | 互动：点赞、收藏、推、表情、最佳答案、置顶（[记录](waves/w4-interactions.md)） | ✅ 2026-09-22 |
+| W5a | 话题评论（[契约](waves/w5a-comments.md)，迁移 101） | ✅ 2026-09-22 |
+| W5b | 投票（8 个 v1 端点取代 6 条旧路由，[契约](waves/w5b-polls.md)，迁移 103） | ✅ 2026-09-22 |
 
-执行方式：按 `.claude/skills/dispatch-cursor/` 派发 cursor-agent（Grok 4.6 Extra High），在独立 worktree 的沙箱里实现；Claude 负责裁决、写英文任务书、跑 DB 测试与运行时实测、提交并合入 master。
+### 待认领
+
+旧 `/api/*` 路由 **299 条**。`legacy_route_baseline` = 300，因为它数的是「所有非 `/api/v1` 的路由」，`/healthz` 也在里面——**基线的地板是 1，不是 0**。一行一个可独立执行的域。
+
+| 波 | 域 | 旧路由 | 迁移号段 | 备注 |
+|---|---|---|---|---|
+| W5c | 话题草稿 `/topic/draft*` | 4 | 110–114 | 生产 69 条 / 57 人 |
+| W5d | 话题抽奖 `/topic/:tid/lottery*` | 11 | 115–119 | 生产只有 2 个抽奖、0 个兑换码；**排在最后** |
+| W5e | 旧评论 + 旧投票路由清理 | 10 | — | W5a/W5b 已取代，只删不写；顺带降基线 |
+| W6 | 用户 `/user/**` | 25 | 120–129 | 资料、签到、偏好、创作者、各种「我的 X」列表 |
+| W7 | 消息 `/message/**` | 11 | 130–134 | 私信 + 系统通知 + 红点 |
+| W8 | galgame 主域 `/galgame/**` | 50 | 135–149 | 最大的一块，可再拆读面 / 写面两波 |
+| W9 | galgame 周边 `-quiz` `-rating` `-resource` `-edit` `-tag` `-series` `-staff` `-engine` `-character` `-official` | 55 | 150–164 | 彼此独立，可再拆 |
+| W10 | 站点导航 `/website*` `-tag` `-category` `-tag-group` | 24 | 165–169 | |
+| W11 | 文档 `/doc/**` | 15 | 170–174 | |
+| W12 | 工具箱 `/toolset/**` | 18 | 175–179 | |
+| W13 | 管理面 `/admin/**` + `/perm` `/trust` `/report` | 29 | 180–184 | 权限最敏感，普查要最细 |
+| W14 | 更新日志 `/update/**` | 11 | 185–189 | |
+| W15 | 零散：`/search` `/news` `/image` `/ranking` `/community` `/auth` `/activity` `/rss` `/section` `/resource` `/home` `/friend-link` `/category` `/app`，外加两条漏网的话题读面 `/topic/interactions/mine`、`/topic/:tid/reply/locate` | 36 | 190–199 | 可按需拆成几个小 PR |
+
+执行方式：**每个域一个独立会话**，在自己的 worktree 里按 [05-session-sop.md](05-session-sop.md) 从普查做到 PR；合并即上线。2026-09-22 之前是「督查派发 cursor-agent + 直接落 master」，已由 PR 流程取代——原因见 [04 §8](04-parallel-tracks.md)。
