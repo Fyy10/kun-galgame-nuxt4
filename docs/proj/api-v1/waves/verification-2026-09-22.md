@@ -58,7 +58,14 @@
 
 dev 上通过完整中间件链实测：传 `target_user_id: 1`（陌生人），服务端返回的 `target_user` 是楼层作者；跨话题 `reply_id` 回 404。
 
-## 8. 顺带记下的、留给 W5 的小事
+## 8. 动态卡片（跨页面的那半边）
+
+派发报告担心两件事，都实测过：
+
+- **「动态卡片的 `topic_id ?? 0` 会让表情写不进去」——现网走不到。** `ActivityCardTopic` 只在 `TOPIC_CREATION` 渲染、`ActivityCardTopicUpvote` 只在 `TOPIC_UPVOTE` 渲染，而 dev 的动态流里这两种活动 **100% 带 `topic_id`**（其余类型不带，但它们渲染的是别的卡）。回退到 0 的分支是死路径。
+- **卡片的初始收藏态仍来自旧的 `/topic/interactions/mine`，写却走 v1。** 这不是回归，反而修好了一个旧 bug：那个列表是每会话只拉一次的缓存，如果用户先在话题页收藏、再回动态流，缓存是陈旧的——旧版 `PUT` 是**切换**，这一下会把刚收藏的取消掉，界面却显示已收藏；v1 的 `PUT` 是**置位**，同样一下得到正确结果。K16 的幂等语义在这里是净收益。
+
+## 9. 顺带记下的、留给 W5 的小事
 
 - `DELETE /api/topic/:tid/comment` 从 query string 读 **`commentId`（驼峰）**，与全站 snake_case 不一致。
 - 网页仍然发送 `target_user_id`，服务端已忽略它。没有一并删掉是为了不让网页与 API 产生部署先后依赖；评论随 W5 进 v1 时这个字段整个消失。
