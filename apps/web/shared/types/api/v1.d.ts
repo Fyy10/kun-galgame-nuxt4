@@ -144,6 +144,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/topic-states": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the caller's own state on a batch of topics
+         * @description Answers, for each topic id named in topic_ids, whether the caller favorited it and which reaction tokens they left on it. It is a batch read and is not paginated: topic_ids is required, holds 1 to 100 ids, and there is no cursor and no limit. A topic the caller may read but has no state on comes back with has_favorited false and an empty reactions array — that is an answer, not a miss. Every requested id that does not come back sits in missing, whether it does not exist or the caller may not read it; the two are not told apart, so the face cannot be used to probe for ids.
+         */
+        get: operations["listTopicStates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/polls/{poll_id}": {
         parameters: {
             query?: never;
@@ -654,6 +674,17 @@ export interface components {
             /** @description Granted users when access_scope is users, in grant order. The author is never listed. Banned and deleted users keep their entry with name null. Empty array otherwise. */
             users: components["schemas"]["UserRef"][];
         };
+        BatchListTopicState: {
+            /** @description One member per requested id that the caller may see. Empty array, never null. */
+            items: components["schemas"]["TopicState"][];
+            /** @description Requested ids that did not come back, in the order they were requested. Empty array, never null. The reason is deliberately not given. */
+            missing: string[];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
         /** @description A block node. Switch on object; render an unknown type's children, or its value as text. */
         BlockNode: components["schemas"]["ParagraphNode"] | components["schemas"]["HeadingNode"] | components["schemas"]["ThematicBreakNode"] | components["schemas"]["BlockquoteNode"] | components["schemas"]["ListNode"] | components["schemas"]["CodeNode"] | components["schemas"]["MathNode"] | components["schemas"]["TableNode"] | components["schemas"]["SpoilerNode"];
         BlockquoteNode: {
@@ -714,6 +745,11 @@ export interface components {
             object: "comment";
             /** @description Id of the comment this one answers. null for a comment on the reply itself. The parent may be absent from comments. */
             parent_comment_id: string | null;
+            /**
+             * Format: int64
+             * @description Floor of the reply the comment is under. Same value as that reply's floor: an address assigned when the reply was created and never renumbered, so it is not a position. It is what a deep link to this comment scrolls to.
+             */
+            reply_floor: number;
             /** @description Id of the reply the comment is under. */
             reply_id: string;
             /** @description The caller's own state on this comment. null for an anonymous caller. */
@@ -1990,6 +2026,19 @@ export interface components {
             /** @description Id of the topic. */
             topic_id: string;
         };
+        TopicState: {
+            /** @description Whether the caller favorited the topic. */
+            has_favorited: boolean;
+            /**
+             * @description Type discriminant. Always topic_state.
+             * @enum {string}
+             */
+            object: "topic_state";
+            /** @description The caller's own reaction tokens on the topic, oldest first. Empty array if none. Tokens, not tallies: reactions elsewhere in this API means the per-token summary with counts and reactors. */
+            reaction_tokens: string[];
+            /** @description Id of the topic this state is about. */
+            topic_id: string;
+        };
         TopicSummary: {
             /** @description Topic author. */
             author: components["schemas"]["UserRef"];
@@ -2976,6 +3025,83 @@ export interface operations {
             };
             /** @description NOT_FOUND when the draft does not exist or belongs to another author. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listTopicStates: {
+        parameters: {
+            query: {
+                /** @description Topic ids to answer for, comma-separated. 1 to 100 of them. */
+                topic_ids: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchListTopicState"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when topic_ids is absent, empty, holds more than 100 ids, or holds something that is not a positive decimal integer. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

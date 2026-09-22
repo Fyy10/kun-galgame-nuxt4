@@ -32,6 +32,22 @@ func Register(svc *Service) func(huma.API) {
 			},
 		}), svc.listTopics)
 
+		huma.Register(api, v1.Required(huma.Operation{
+			OperationID: "listTopicStates",
+			Method:      http.MethodGet,
+			Path:        "/me/topic-states",
+			Summary:     "Get the caller's own state on a batch of topics",
+			Description: "Answers, for each topic id named in topic_ids, whether the caller favorited it and which reaction tokens they left on it. " +
+				"It is a batch read and is not paginated: topic_ids is required, holds 1 to 100 ids, and there is no cursor and no limit. " +
+				"A topic the caller may read but has no state on comes back with has_favorited false and an empty reactions array — that is an answer, not a miss. " +
+				"Every requested id that does not come back sits in missing, whether it does not exist or the caller may not read it; " +
+				"the two are not told apart, so the face cannot be used to probe for ids.",
+			Tags: []string{"topics"},
+			Responses: problemResponses(map[int]string{
+				422: "VALIDATION_FAILED when topic_ids is absent, empty, holds more than 100 ids, or holds something that is not a positive decimal integer.",
+			}),
+		}), svc.listTopicStates)
+
 		huma.Register(api, v1.Optional(huma.Operation{
 			OperationID: "getTopic",
 			Method:      http.MethodGet,

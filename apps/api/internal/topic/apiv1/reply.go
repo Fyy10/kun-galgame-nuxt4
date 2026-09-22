@@ -36,6 +36,7 @@ type Comment struct {
 	Object          string                  `json:"object" enum:"comment" maxLength:"7" doc:"Type discriminant. Always comment."`
 	ID              repr.DecimalID          `json:"id" doc:"Comment id. JSON string of a decimal integer."`
 	ReplyID         repr.DecimalID          `json:"reply_id" doc:"Id of the reply the comment is under."`
+	ReplyFloor      int                     `json:"reply_floor" minimum:"1" doc:"Floor of the reply the comment is under. Same value as that reply's floor: an address assigned when the reply was created and never renumbered, so it is not a position. It is what a deep link to this comment scrolls to."`
 	ParentCommentID *repr.DecimalID         `json:"parent_comment_id" doc:"Id of the comment this one answers. null for a comment on the reply itself. The parent may be absent from comments."`
 	Author          repr.UserRef            `json:"author" doc:"Comment author."`
 	InReplyToUser   repr.UserRef            `json:"in_reply_to_user" doc:"The user the comment answers. The server derives it when the comment is written: the parent comment's author, or the reply's author for a top-level comment. A comment written before 2026-09-22 can instead name a third party its author picked in a retired UI, so it is not always one of those two."`

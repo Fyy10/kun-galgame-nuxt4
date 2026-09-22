@@ -185,6 +185,7 @@ GET    /api/v1/comments/:comment_id/source            cors.New → v1Headers →
 GET    /api/v1/galgames/:galgame_id/moyu-patches      cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/topic-drafts                        cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/me/topic-drafts/:draft_id              cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/me/topic-states                        cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/polls/:poll_id                         cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/polls/:poll_id/votes                   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/problems                               cors.New → v1Headers → fiberAdapter.Handle

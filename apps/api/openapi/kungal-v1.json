@@ -35,6 +35,42 @@
         ],
         "type": "object"
       },
+      "BatchListTopicState": {
+        "properties": {
+          "items": {
+            "description": "One member per requested id that the caller may see. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/TopicState"
+            },
+            "type": "array"
+          },
+          "missing": {
+            "description": "Requested ids that did not come back, in the order they were requested. Empty array, never null. The reason is deliberately not given.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "missing"
+        ],
+        "type": "object"
+      },
       "BlockNode": {
         "description": "A block node. Switch on object; render an unknown type's children, or its value as text.",
         "discriminator": {
@@ -222,6 +258,12 @@
               "null"
             ]
           },
+          "reply_floor": {
+            "description": "Floor of the reply the comment is under. Same value as that reply's floor: an address assigned when the reply was created and never renumbered, so it is not a position. It is what a deep link to this comment scrolls to.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
           "reply_id": {
             "description": "Id of the reply the comment is under.",
             "maxLength": 20,
@@ -245,6 +287,7 @@
           "object",
           "id",
           "reply_id",
+          "reply_floor",
           "parent_comment_id",
           "author",
           "in_reply_to_user",
@@ -3936,6 +3979,50 @@
         ],
         "type": "object"
       },
+      "TopicState": {
+        "properties": {
+          "has_favorited": {
+            "description": "Whether the caller favorited the topic.",
+            "type": "boolean"
+          },
+          "object": {
+            "description": "Type discriminant. Always topic_state.",
+            "enum": [
+              "topic_state"
+            ],
+            "maxLength": 11,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "reaction_tokens": {
+            "description": "The caller's own reaction tokens on the topic, oldest first. Empty array if none. Tokens, not tallies: reactions elsewhere in this API means the per-token summary with counts and reactors.",
+            "items": {
+              "description": "Reaction token, such as like, dislike, heart or clap. The vocabulary grows; show an unknown token with a neutral fallback.",
+              "maxLength": 16,
+              "pattern": "^[a-z][a-z0-9_]*$",
+              "type": "string",
+              "x-vocabulary": "reaction",
+              "x-vocabulary-closed": false
+            },
+            "maxItems": 64,
+            "type": "array"
+          },
+          "topic_id": {
+            "description": "Id of the topic this state is about.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "topic_id",
+          "has_favorited",
+          "reaction_tokens"
+        ],
+        "type": "object"
+      },
       "TopicSummary": {
         "properties": {
           "author": {
@@ -5517,6 +5604,116 @@
           }
         ],
         "summary": "Get a topic draft",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
+    "/me/topic-states": {
+      "get": {
+        "description": "Answers, for each topic id named in topic_ids, whether the caller favorited it and which reaction tokens they left on it. It is a batch read and is not paginated: topic_ids is required, holds 1 to 100 ids, and there is no cursor and no limit. A topic the caller may read but has no state on comes back with has_favorited false and an empty reactions array — that is an answer, not a miss. Every requested id that does not come back sits in missing, whether it does not exist or the caller may not read it; the two are not told apart, so the face cannot be used to probe for ids.",
+        "operationId": "listTopicStates",
+        "parameters": [
+          {
+            "description": "Topic ids to answer for, comma-separated. 1 to 100 of them.",
+            "explode": false,
+            "in": "query",
+            "name": "topic_ids",
+            "required": true,
+            "schema": {
+              "description": "Topic ids to answer for, comma-separated. 1 to 100 of them.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 100,
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchListTopicState"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when topic_ids is absent, empty, holds more than 100 ids, or holds something that is not a positive decimal integer."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get the caller's own state on a batch of topics",
         "tags": [
           "topics"
         ]

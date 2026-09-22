@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 
+	"kun-galgame-api/internal/topic/model"
+
 	"gorm.io/gorm"
 )
 
@@ -20,4 +22,14 @@ func NextReplyFloor(tx *gorm.DB, topicID int) (int, error) {
 		return 0, err
 	}
 	return floor, nil
+}
+
+// A comment read on its own does not know the floor of the reply it sits
+// under, and the caller needs it to scroll a deep link to the right place.
+// Reading it whole would drag the reply's body along for one integer.
+func (r *ReplyRepository) FloorByID(replyID int) (int, error) {
+	var floor int
+	err := r.db.Model(&model.TopicReply{}).
+		Where("id = ?", replyID).Limit(1).Pluck("floor", &floor).Error
+	return floor, err
 }

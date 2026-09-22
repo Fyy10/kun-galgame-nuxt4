@@ -194,18 +194,18 @@ func (p *replyPack) mapOne(cdn string, topic *model.Topic, row model.TopicReply,
 		Reactions:         react,
 		IsPinned:          topic != nil && topic.PinnedReplyID != nil && *topic.PinnedReplyID == row.ID,
 		IsBestAnswer:      topic != nil && topic.BestAnswerID != nil && *topic.BestAnswerID == row.ID,
-		Comments:          p.mapComments(cdn, topic, row.ID, viewer),
+		Comments:          p.mapComments(cdn, topic, row.ID, row.Floor, viewer),
 		CreatedAt:         repr.Timestamp(row.CreatedAt),
 		EditedAt:          repr.TimestampPtr(row.Edited),
 		Viewer:            rv,
 	}
 }
 
-func (p *replyPack) mapComments(cdn string, topic *model.Topic, replyID int, viewer *middleware.UserInfo) []Comment {
+func (p *replyPack) mapComments(cdn string, topic *model.Topic, replyID, replyFloor int, viewer *middleware.UserInfo) []Comment {
 	rows := p.comments[replyID]
 	out := make([]Comment, 0, len(rows))
 	for _, row := range rows {
-		mapped, ok := p.mapComment(cdn, topic, row, viewer)
+		mapped, ok := p.mapComment(cdn, topic, row, replyFloor, viewer)
 		if !ok {
 			continue
 		}
@@ -214,7 +214,7 @@ func (p *replyPack) mapComments(cdn string, topic *model.Topic, replyID int, vie
 	return out
 }
 
-func (p *replyPack) mapComment(cdn string, topic *model.Topic, row repository.CommentListRow, viewer *middleware.UserInfo) (Comment, bool) {
+func (p *replyPack) mapComment(cdn string, topic *model.Topic, row repository.CommentListRow, replyFloor int, viewer *middleware.UserInfo) (Comment, bool) {
 	u, ok := p.users[row.UserID]
 	if ok && !userclient.IsRenderable(u) {
 		return Comment{}, false
@@ -241,6 +241,7 @@ func (p *replyPack) mapComment(cdn string, topic *model.Topic, row repository.Co
 		Object:          "comment",
 		ID:              repr.ID(row.ID),
 		ReplyID:         repr.ID(row.TopicReplyID),
+		ReplyFloor:      replyFloor,
 		ParentCommentID: optID(row.ParentCommentID),
 		Author:          author,
 		InReplyToUser:   target,

@@ -24,7 +24,7 @@ var (
 	}
 	commentKeys = []string{
 		"author", "content", "created_at", "edited_at", "id", "in_reply_to_user", "like_count",
-		"object", "parent_comment_id", "reply_id", "viewer",
+		"object", "parent_comment_id", "reply_floor", "reply_id", "viewer",
 	}
 	reactionKeys = []string{"count", "reaction", "reactors", "viewer"}
 )

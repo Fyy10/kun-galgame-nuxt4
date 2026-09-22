@@ -59,7 +59,11 @@ func (s *Service) buildOneComment(ctx context.Context, topic *model.Topic, comme
 		likedC: liked,
 		users:  users,
 	}
-	mapped, ok := pack.mapComment(s.cdn, topic, *row, viewer)
+	floor, err := s.replies.FloorByID(row.TopicReplyID)
+	if err != nil {
+		return nil, problem.Internal(err)
+	}
+	mapped, ok := pack.mapComment(s.cdn, topic, *row, floor, viewer)
 	if !ok {
 		return nil, notFound()
 	}
