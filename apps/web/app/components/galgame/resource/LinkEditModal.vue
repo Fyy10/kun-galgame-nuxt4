@@ -7,6 +7,10 @@ import {
   splitResourceSize
 } from '~~/shared/utils/resourceSize'
 import {
+  applyResourceLinkBlur,
+  splitResourceLinkText
+} from '~~/shared/utils/resourceLink'
+import {
   LANGUAGE_OPTIONS,
   PLATFORM_OPTIONS,
   RESOURCE_TYPE_OPTIONS,
@@ -116,6 +120,7 @@ const snapshotFromResource = (): FormShape => {
 }
 
 const form = ref<FormShape>(snapshotFromResource())
+const linkText = ref(form.value.link.join(', '))
 const size = reactive(splitResourceSize(form.value.size))
 const sizeInput = ref<{ inputRef?: HTMLInputElement | null } | null>(null)
 
@@ -127,6 +132,7 @@ const paintSizeAmount = () => {
 watch(open, (isOpen) => {
   if (!isOpen) return
   form.value = snapshotFromResource()
+  linkText.value = form.value.link.join(', ')
   Object.assign(size, splitResourceSize(form.value.size))
 })
 watch(size, () => {
@@ -149,6 +155,17 @@ const isSubmitting = ref(false)
 const handleSubmit = async () => {
   if (isSubmitting.value) return
   form.value.size = joinResourceSize(size)
+  const recognized = applyResourceLinkBlur(
+    linkText.value,
+    form.value.code,
+    form.value.password
+  )
+  form.value.link = recognized.links.length
+    ? recognized.links
+    : splitResourceLinkText(linkText.value)
+  form.value.code = recognized.code
+  form.value.password = recognized.password
+  linkText.value = form.value.link.join(', ')
   if (!checkGalgameResourcePublish(form.value)) return
 
   const method = isEditing.value ? 'PUT' : 'POST'
@@ -210,19 +227,14 @@ const typeOptions = computed(() => {
 
       <GalgameResourceHelp />
 
-      <KunTextarea
-        :model-value="form.link.join(',')"
+      <ResourceLinkInput
+        v-model="linkText"
+        v-model:code="form.code"
+        v-model:password="form.password"
         label="资源链接"
         required
-        description="网盘 / 磁链 / 网址，同一资源多链接用英文逗号分隔"
+        description="网盘 / 磁链 / 网址。可直接粘贴分享文本，多链接用逗号分隔"
         placeholder="https://..."
-        @update:model-value="
-          (v) =>
-            (form.link = String(v)
-              .split(',')
-              .map((s) => s.trim())
-              .filter(Boolean))
-        "
       />
 
       <KunInput

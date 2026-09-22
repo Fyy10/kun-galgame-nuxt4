@@ -70,6 +70,19 @@ export const KUN_GALGAME_PROVIDER_LABEL_MAP: Record<ProviderKey, string> = {
   other: '其他 (自建网盘等不限速)'
 }
 
+export const KUN_GALGAME_PROVIDER_ICON_MAP: Record<ProviderKey, string> = {
+  baidu: 'lucide:cloud',
+  aliyun: 'lucide:cloud',
+  quark: 'lucide:atom',
+  pan123: 'lucide:hash',
+  tianyiyun: 'lucide:cloud-sun',
+  caiyun: 'lucide:cloud-cog',
+  xunlei: 'lucide:zap',
+  uc: 'lucide:smartphone',
+  lanzou: 'lucide:package',
+  other: 'lucide:ellipsis'
+}
+
 export type GalgameResourceProviderBucketKey =
   | 'baidu'
   | 'quark'
