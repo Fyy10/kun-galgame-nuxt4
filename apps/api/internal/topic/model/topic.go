@@ -122,7 +122,6 @@ type TopicReply struct {
 
 	LikeCount    int `gorm:"column:like_count;default:0" json:"like_count"`
 	DislikeCount int `gorm:"column:dislike_count;default:0" json:"dislike_count"`
-	CommentCount int `gorm:"column:comment_count;default:0" json:"comment_count"`
 
 	CreatedAt time.Time `gorm:"column:created" json:"created"`
 	UpdatedAt time.Time `gorm:"column:updated" json:"updated"`
