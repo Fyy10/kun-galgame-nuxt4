@@ -132,9 +132,6 @@ func (w *Writes) createComment(ctx context.Context, in *createCommentInput) (*cr
 		preview := truncatePreview(strings.TrimSpace(body), constants.TextPreviewLength)
 		return h.CreateReplyMessage(tx, user.ID, inReplyTo, "commented", preview, topic.ID, 0, id)
 	})
-	if p := txProblem(err); p != nil {
-		return nil, p
-	}
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
@@ -249,9 +246,6 @@ func (w *Writes) deleteComment(ctx context.Context, in *commentInput) (*struct{}
 		}
 		return nil
 	})
-	if p := txProblem(err); p != nil {
-		return nil, p
-	}
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
