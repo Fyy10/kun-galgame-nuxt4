@@ -23,8 +23,8 @@ var (
 		"reactions", "topic_id", "viewer",
 	}
 	commentKeys = []string{
-		"author", "created_at", "edited_at", "id", "in_reply_to_user", "like_count", "object",
-		"parent_comment_id", "reply_id", "text", "viewer",
+		"author", "content", "created_at", "edited_at", "id", "in_reply_to_user", "like_count",
+		"object", "parent_comment_id", "reply_id", "viewer",
 	}
 	reactionKeys = []string{"count", "reaction", "reactors", "viewer"}
 )
@@ -275,19 +275,19 @@ func assertPinnedComments(t *testing.T, raw json.RawMessage) {
 			t.Errorf("comment %d keys %v", i, keys)
 		}
 	}
-	if string(comments[0]["text"]) != `"parent-text"` || string(comments[0]["parent_comment_id"]) != `null` {
+	if docPlainText(t, comments[0]["content"]) != "parent-text" || string(comments[0]["parent_comment_id"]) != `null` {
 		t.Errorf("parent %s", comments[0])
 	}
 	if string(comments[0]["like_count"]) != `2` {
 		t.Errorf("parent likes %s", comments[0]["like_count"])
 	}
-	if string(comments[1]["text"]) != `"orphan-text"` || string(comments[1]["parent_comment_id"]) != `"920000403"` {
+	if docPlainText(t, comments[1]["content"]) != "orphan-text" || string(comments[1]["parent_comment_id"]) != `"920000403"` {
 		t.Errorf("orphan keeps parent id: %s", comments[1])
 	}
 	if string(comments[1]["in_reply_to_user"]) != `{"object":"user","id":"920000002","name":"banned","avatar":null}` {
 		t.Errorf("in_reply_to banned %s", comments[1]["in_reply_to_user"])
 	}
-	if string(comments[2]["text"]) != `"child-text"` || string(comments[2]["parent_comment_id"]) != `"920000401"` {
+	if docPlainText(t, comments[2]["content"]) != "child-text" || string(comments[2]["parent_comment_id"]) != `"920000401"` {
 		t.Errorf("child %s", comments[2])
 	}
 	if string(comments[3]["in_reply_to_user"]) != `{"object":"user","id":"920000004","name":null,"avatar":null}` {

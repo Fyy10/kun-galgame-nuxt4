@@ -14,12 +14,13 @@ import (
 
 type replyExtras struct {
 	comments map[int][]repository.CommentListRow
+	docs     map[int]content.ContentDocument
 	samples  []repository.ReactionSample
 	mine     map[int]map[string]struct{}
 	likedC   map[int]bool
 }
 
-func (s *Service) loadReplyExtras(replies []model.TopicReply, viewer *middleware.UserInfo) (*replyExtras, *problem.Problem) {
+func (s *Service) loadReplyExtras(ctx context.Context, replies []model.TopicReply, viewer *middleware.UserInfo) (*replyExtras, *problem.Problem) {
 	if s.comments == nil || s.replies == nil {
 		return nil, problem.Internal(errUnconfigured)
 	}
@@ -33,9 +34,19 @@ func (s *Service) loadReplyExtras(replies []model.TopicReply, viewer *middleware
 	}
 	byReply := map[int][]repository.CommentListRow{}
 	commentIDs := make([]int, 0, len(rows))
+	bodies := make([]string, 0, len(rows))
 	for _, c := range rows {
 		byReply[c.TopicReplyID] = append(byReply[c.TopicReplyID], c)
 		commentIDs = append(commentIDs, c.ID)
+		bodies = append(bodies, c.Content)
+	}
+	commentDocs, p := s.convertCommentBodies(ctx, bodies)
+	if p != nil {
+		return nil, p
+	}
+	docs := make(map[int]content.ContentDocument, len(rows))
+	for i, id := range commentIDs {
+		docs[id] = commentDocs[i]
 	}
 	samples, err := s.replies.SampleReplyReactions(ids)
 	if err != nil {
@@ -56,7 +67,7 @@ func (s *Service) loadReplyExtras(replies []model.TopicReply, viewer *middleware
 			return nil, problem.Internal(err)
 		}
 	}
-	return &replyExtras{comments: byReply, samples: samples, mine: mine, likedC: likedC}, nil
+	return &replyExtras{comments: byReply, docs: docs, samples: samples, mine: mine, likedC: likedC}, nil
 }
 
 func collectReplyUserIDs(replies []model.TopicReply, extra *replyExtras) []int {
@@ -127,6 +138,7 @@ func (s *Service) mapReplies(
 	react := groupReactionSummaries(extra.samples, users, s.cdn, extra.mine, viewer)
 	pack := &replyPack{
 		comments: extra.comments,
+		docs:     extra.docs,
 		react:    react,
 		mine:     extra.mine,
 		likedC:   extra.likedC,
@@ -146,6 +158,7 @@ func (s *Service) mapReplies(
 
 type replyPack struct {
 	comments map[int][]repository.CommentListRow
+	docs     map[int]content.ContentDocument
 	react    map[int][]ReactionSummary
 	mine     map[int]map[string]struct{}
 	likedC   map[int]bool
@@ -181,48 +194,62 @@ func (p *replyPack) mapOne(cdn string, topic *model.Topic, row model.TopicReply,
 		Reactions:         react,
 		IsPinned:          topic != nil && topic.PinnedReplyID != nil && *topic.PinnedReplyID == row.ID,
 		IsBestAnswer:      topic != nil && topic.BestAnswerID != nil && *topic.BestAnswerID == row.ID,
-		Comments:          p.mapComments(cdn, row.ID, viewer),
+		Comments:          p.mapComments(cdn, topic, row.ID, viewer),
 		CreatedAt:         repr.Timestamp(row.CreatedAt),
 		EditedAt:          repr.TimestampPtr(row.Edited),
 		Viewer:            rv,
 	}
 }
 
-func (p *replyPack) mapComments(cdn string, replyID int, viewer *middleware.UserInfo) []Comment {
+func (p *replyPack) mapComments(cdn string, topic *model.Topic, replyID int, viewer *middleware.UserInfo) []Comment {
 	rows := p.comments[replyID]
 	out := make([]Comment, 0, len(rows))
 	for _, row := range rows {
-		u, ok := p.users[row.UserID]
-		if ok && !userclient.IsRenderable(u) {
+		mapped, ok := p.mapComment(cdn, topic, row, viewer)
+		if !ok {
 			continue
 		}
-		author := repr.DeletedUserRef(row.UserID)
-		if ok {
-			author = repr.NewUserRef(cdn, u)
-		}
-		target := repr.DeletedUserRef(row.TargetUserID)
-		if tu, tok := p.users[row.TargetUserID]; tok {
-			target = repr.NewUserRef(cdn, tu)
-		}
-		var cv *CommentViewer
-		if viewer != nil {
-			cv = &CommentViewer{HasLiked: p.likedC[row.ID]}
-		}
-		out = append(out, Comment{
-			Object:          "comment",
-			ID:              repr.ID(row.ID),
-			ReplyID:         repr.ID(row.TopicReplyID),
-			ParentCommentID: optID(row.ParentCommentID),
-			Author:          author,
-			InReplyToUser:   target,
-			Text:            row.Content,
-			LikeCount:       row.LikeCount,
-			CreatedAt:       repr.Timestamp(row.CreatedAt),
-			EditedAt:        repr.TimestampPtr(row.Edited),
-			Viewer:          cv,
-		})
+		out = append(out, mapped)
 	}
 	return out
+}
+
+func (p *replyPack) mapComment(cdn string, topic *model.Topic, row repository.CommentListRow, viewer *middleware.UserInfo) (Comment, bool) {
+	u, ok := p.users[row.UserID]
+	if ok && !userclient.IsRenderable(u) {
+		return Comment{}, false
+	}
+	author := repr.DeletedUserRef(row.UserID)
+	if ok {
+		author = repr.NewUserRef(cdn, u)
+	}
+	target := repr.DeletedUserRef(row.TargetUserID)
+	if tu, tok := p.users[row.TargetUserID]; tok {
+		target = repr.NewUserRef(cdn, tu)
+	}
+	var cv *CommentViewer
+	if viewer != nil {
+		caps := capsForComment(topic, row.UserID, viewer)
+		cv = &CommentViewer{
+			HasLiked:  p.likedC[row.ID],
+			CanEdit:   caps.Edit,
+			CanDelete: caps.Delete,
+			CanLike:   caps.Like,
+		}
+	}
+	return Comment{
+		Object:          "comment",
+		ID:              repr.ID(row.ID),
+		ReplyID:         repr.ID(row.TopicReplyID),
+		ParentCommentID: optID(row.ParentCommentID),
+		Author:          author,
+		InReplyToUser:   target,
+		Content:         p.docs[row.ID],
+		LikeCount:       row.LikeCount,
+		CreatedAt:       repr.Timestamp(row.CreatedAt),
+		EditedAt:        repr.TimestampPtr(row.Edited),
+		Viewer:          cv,
+	}, true
 }
 
 func optID(p *int) *repr.DecimalID {
