@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Reply } from '#shared/utils/api/schemas'
+import { settle } from '#shared/utils/api/problem'
 
 const props = defineProps<{
   reply: Reply
@@ -7,18 +8,15 @@ const props = defineProps<{
 
 const tempReplyStore = useTempReplyStore()
 const { id, moemoepoint } = usePersistUserStore()
-const canDeleteAnyReply = useCan('reply.delete_any')
+const api = useApiClient()
 
-const isCommonUser = !canDeleteAnyReply.value
-const isDisabled = computed(
-  () => id !== Number(props.reply.author.id) && isCommonUser
-)
+const isAuthor = computed(() => String(id) === props.reply.author.id)
 
 const handleDeleteReply = async () => {
   const moemoepointToDecrease =
     3 * (props.reply.comments.length + props.reply.like_count + 1)
 
-  if (moemoepoint < moemoepointToDecrease && isCommonUser) {
+  if (moemoepoint < moemoepointToDecrease && isAuthor.value) {
     useMessage(
       `您的萌萌点不足, 删除这个回复将会消耗您 ${moemoepointToDecrease} 萌萌点。删除消耗萌萌点计算公式为 3 × (回复下评论数 + 回复被点赞数 + 1)`,
       'warn'
@@ -27,10 +25,10 @@ const handleDeleteReply = async () => {
   }
 
   const res = await useComponentMessageStore().alert(
-    isCommonUser
+    isAuthor.value
       ? '你这个坏萝莉, 确定删除这个回复吗?'
       : '你好萝莉管理员, 要删除这个回复吗',
-    isCommonUser
+    isAuthor.value
       ? `删除这个回复将会消耗 ${moemoepointToDecrease} 萌萌点, 严重注意, 删除操作不可撤销！删除消耗萌萌点计算公式为 3 × (回复下评论数 + 回复被点赞数 + 1)`
       : '删除这个回复将会消耗发布回复者 3 萌萌点, 该操作不可撤销'
   )
@@ -38,32 +36,31 @@ const handleDeleteReply = async () => {
     return
   }
 
-  const result = await kunFetch<string>(
-    `/topic/${Number(props.reply.topic_id)}/reply`,
-    {
-      method: 'DELETE',
-      query: { replyId: Number(props.reply.id) }
-    }
-  )
-
-  if (result) {
-    tempReplyStore.setSuccessfulReply({
-      data: { id: props.reply.id, floor: props.reply.floor },
-      type: 'deleted'
+  const result = await settle(
+    api.DELETE('/replies/{reply_id}', {
+      params: { path: { reply_id: props.reply.id } }
     })
-    useMessage('删除回复成功', 'success')
+  )
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
   }
+  tempReplyStore.setSuccessfulReply({
+    data: { id: props.reply.id },
+    type: 'deleted'
+  })
+  useMessage('删除回复成功', 'success')
 }
 </script>
 
 <template>
   <KunButton
+    v-if="reply.viewer?.can_delete"
     variant="light"
     color="danger"
     size="sm"
     @click="handleDeleteReply"
     class-name="whitespace-nowrap gap-2 justify-start"
-    :disabled="isDisabled"
   >
     <KunIcon class-name="text-lg" name="lucide:trash-2" />
     删除回复

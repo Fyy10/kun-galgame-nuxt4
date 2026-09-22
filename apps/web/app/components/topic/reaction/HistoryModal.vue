@@ -1,38 +1,41 @@
 <script setup lang="ts">
 import { reactionAsset } from '~/constants/reaction'
+import { problemMessage } from '#shared/utils/api/message'
+import type { Reaction } from '#shared/utils/api/schemas'
+import { toKunUser } from '~/utils/userRef'
 
-const props = defineProps<{ topicId?: number; replyId?: number }>()
+const props = defineProps<{ topicId?: string; replyId?: string }>()
 
 const isReply = computed(() => !!props.replyId)
-const endpoint = computed(() =>
-  props.replyId
-    ? `/topic/0/reply/reaction/history?reply_id=${props.replyId}`
-    : `/topic/${props.topicId}/reaction/history`
-)
 const open = defineModel<boolean>({ required: true })
 
-interface ReactionHistoryItem {
-  user: { id: number; name: string; avatar: string }
-  reaction: string
-  created: string
-}
-
-const records = ref<ReactionHistoryItem[]>([])
-const isLoading = ref(false)
-let loaded = false
-
-watch(open, async (isOpen) => {
-  if (!isOpen || loaded) return
-  isLoading.value = true
-  const result = await kunFetch<ReactionHistoryItem[]>(endpoint.value, {
-    method: 'GET'
-  })
-  isLoading.value = false
-  if (result) {
-    records.value = result
-    loaded = true
-  }
-})
+const {
+  items: records,
+  hasMore,
+  loadMore,
+  loadingMore,
+  status,
+  problem
+} = await useCursorList<Reaction>(
+  () =>
+    props.replyId
+      ? `reply-reactions:${props.replyId}`
+      : `topic-reactions:${props.topicId}`,
+  (api, cursor) =>
+    props.replyId
+      ? api.GET('/replies/{reply_id}/reactions', {
+          params: {
+            path: { reply_id: props.replyId },
+            query: { limit: 20, ...(cursor ? { cursor } : {}) }
+          }
+        })
+      : api.GET('/topics/{topic_id}/reactions', {
+          params: {
+            path: { topic_id: props.topicId! },
+            query: { limit: 20, ...(cursor ? { cursor } : {}) }
+          }
+        })
+)
 </script>
 
 <template>
@@ -42,9 +45,14 @@ watch(open, async (isOpen) => {
         {{ isReply ? '回复回应历史' : '话题回应历史' }}
       </h3>
 
-      <div v-if="isLoading" class="flex justify-center py-8">
+      <div
+        v-if="status === 'pending' && !records.length"
+        class="flex justify-center py-8"
+      >
         <KunLoading />
       </div>
+
+      <KunNull v-else-if="problem" :description="problemMessage(problem)" />
 
       <KunNull
         v-else-if="!records.length"
@@ -53,17 +61,17 @@ watch(open, async (isOpen) => {
 
       <div v-else class="max-h-[60vh] space-y-0.5 overflow-y-auto">
         <KunLink
-          v-for="(item, index) in records"
-          :key="index"
-          :to="`/user/${item.user.id}`"
+          v-for="item in records"
+          :key="item.id"
+          :to="`/user/${item.reactor.id}`"
           underline="none"
           color="default"
           class-name="hover:bg-default-100 flex items-center gap-3 rounded-lg p-2 transition-colors"
           @click="open = false"
         >
-          <KunAvatar :user="item.user" size="sm" />
+          <KunAvatar :user="toKunUser(item.reactor)" size="sm" />
           <span class="text-foreground min-w-0 flex-1 truncate font-medium">
-            {{ item.user.name }}
+            {{ toKunUser(item.reactor).name }}
           </span>
           <img
             :src="reactionAsset(item.reaction)"
@@ -71,10 +79,20 @@ watch(open, async (isOpen) => {
             class="size-6 max-w-none shrink-0"
           />
           <KunTime
-            :time="item.created"
+            :time="item.created_at"
             class="text-default-500 shrink-0 text-xs"
           />
         </KunLink>
+        <div v-if="hasMore" class="py-2 text-center">
+          <KunButton
+            size="sm"
+            variant="flat"
+            :loading="loadingMore"
+            @click="loadMore"
+          >
+            加载更多
+          </KunButton>
+        </div>
       </div>
     </div>
   </KunModal>

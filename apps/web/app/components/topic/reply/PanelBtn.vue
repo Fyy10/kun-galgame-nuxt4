@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { createReplySchema, updateReplySchema } from '~/validations/topic'
+import { settle } from '#shared/utils/api/problem'
+import { useIdempotencyKey } from '~/composables/useIdempotencyKey'
 
 const route = useRoute()
-const topicId = computed(() => {
-  return parseInt((route.params as { id: string }).id)
-})
+const topicId = computed(() => (route.params as { id: string }).id)
 
 const tempReplyStore = useTempReplyStore()
 const { isEdit, isReplyRewriting, replyRewrite } = storeToRefs(tempReplyStore)
 
 const persistReplyStore = usePersistKUNGalgameReplyStore()
 const { replyDraft } = storeToRefs(persistReplyStore)
+const api = useApiClient()
+const createKey = useIdempotencyKey()
 
 const isPublishing = ref(false)
 
@@ -20,12 +22,11 @@ const handlePublish = async () => {
   }
 
   const body = {
-    topic_id: topicId.value,
-    content: replyDraft.value.mainContent || ''
+    content_markdown: replyDraft.value.mainContent || ''
   }
-  const result = createReplySchema.safeParse(body)
-  if (!result.success) {
-    const message = JSON.parse(result.error.message)[0]
+  const parsed = createReplySchema.safeParse(body)
+  if (!parsed.success) {
+    const message = JSON.parse(parsed.error.message)[0]
     useMessage(formatKunZodIssue(message), 'warn')
     return
   }
@@ -36,19 +37,26 @@ const handlePublish = async () => {
   }
 
   isPublishing.value = true
-
-  const reply = await kunFetch<TopicReply>(`/topic/${topicId.value}/reply`, {
-    method: 'POST',
-    body
-  })
-
-  if (reply) {
-    isEdit.value = false
-    tempReplyStore.setSuccessfulReply({ data: reply, type: 'created' })
-    persistReplyStore.resetReplyDraft()
-    useMessage(10243, 'success')
-  }
+  const result = await settle(
+    api.POST('/topics/{topic_id}/replies', {
+      params: {
+        path: { topic_id: topicId.value },
+        header: { 'Idempotency-Key': createKey.take(body) }
+      },
+      body
+    })
+  )
   isPublishing.value = false
+
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
+  }
+  createKey.clear()
+  isEdit.value = false
+  tempReplyStore.setSuccessfulReply({ data: result.data, type: 'created' })
+  persistReplyStore.resetReplyDraft()
+  useMessage(10243, 'success')
 }
 
 const handleRewrite = async () => {
@@ -56,13 +64,13 @@ const handleRewrite = async () => {
     return
   }
 
+  const replyId = replyRewrite.value!.id
   const body = {
-    reply_id: replyRewrite.value!.id,
-    content: replyRewrite.value!.mainContent || ''
+    content_markdown: replyRewrite.value!.mainContent || ''
   }
-  const result = updateReplySchema.safeParse(body)
-  if (!result.success) {
-    const message = JSON.parse(result.error.message)[0]
+  const parsed = updateReplySchema.safeParse(body)
+  if (!parsed.success) {
+    const message = JSON.parse(parsed.error.message)[0]
     useMessage(formatKunZodIssue(message), 'warn')
     return
   }
@@ -72,19 +80,22 @@ const handleRewrite = async () => {
   }
 
   isPublishing.value = true
-
-  const reply = await kunFetch<TopicReply>(`/topic/${topicId.value}/reply`, {
-    method: 'PUT',
-    body
-  })
-
-  if (reply) {
-    useMessage(10244, 'success')
-    tempReplyStore.setSuccessfulReply({ data: reply, type: 'updated' })
-    tempReplyStore.resetRewriteReplyData()
-    isEdit.value = false
-  }
+  const result = await settle(
+    api.PATCH('/replies/{reply_id}', {
+      params: { path: { reply_id: replyId } },
+      body
+    })
+  )
   isPublishing.value = false
+
+  if (!result.ok) {
+    reportProblem(result.problem)
+    return
+  }
+  useMessage(10244, 'success')
+  tempReplyStore.setSuccessfulReply({ data: result.data, type: 'updated' })
+  tempReplyStore.resetRewriteReplyData()
+  isEdit.value = false
 }
 
 const handleCancel = () => {

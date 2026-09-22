@@ -1,9 +1,13 @@
 import { createTopicSchema } from '~/validations/topic'
 import { useTopicEditorStore } from './useTopicEditorStore'
+import { coverHashFromToken } from './applyTopicSource'
+import { useIdempotencyKey } from '~/composables/useIdempotencyKey'
 import {
   TOPIC_SECTION_CONSUME_MOEMOEPOINTS,
   MOEMOEPOINT_COST_FOR_CONSUME_SECTION
 } from '~/config/moemoepoint'
+import { settle } from '#shared/utils/api/problem'
+import type { TopicCreate, TopicPatch } from '#shared/utils/api/schemas'
 
 export const useTopicSubmitter = () => {
   const {
@@ -20,6 +24,8 @@ export const useTopicSubmitter = () => {
   const tempStore = useTempEditStore()
   const persistStore = usePersistEditTopicStore()
   const { moemoepoint } = usePersistUserStore()
+  const api = useApiClient()
+  const createKey = useIdempotencyKey()
 
   const rules = reactive({
     isReadRule: false,
@@ -29,6 +35,30 @@ export const useTopicSubmitter = () => {
   })
   const isSubmitting = ref(false)
   const isRewriteMode = computed(() => tempStore.isTopicRewriting)
+
+  const writePayload = (mode: 'create' | 'rewrite') => {
+    const hashes = coverImages.value.map(coverHashFromToken)
+    const body: TopicCreate = {
+      title: title.value,
+      content_markdown: content.value,
+      category: category.value as TopicCreate['category'],
+      sections: section.value as TopicCreate['sections'],
+      is_nsfw: isNSFW.value,
+      access_scope: accessScope.value
+    }
+    if (mode === 'rewrite') {
+      body.cover_image_hashes = hashes
+    } else if (hashes.length > 0) {
+      body.cover_image_hashes = hashes
+    }
+    if (accessScope.value === 'role') {
+      body.access_roles = accessRoles.value
+    }
+    if (accessScope.value === 'users') {
+      body.access_user_ids = accessUserIds.value.map(String)
+    }
+    return body
+  }
 
   const submit = async () => {
     if (isSubmitting.value) {
@@ -41,25 +71,9 @@ export const useTopicSubmitter = () => {
       return
     }
 
-    // PUT /topic/:tid answers 400 "无效的话题访问范围" when access_scope is
-    // missing, so every submit carries it, a default-public topic included.
-    const data = {
-      title: title.value,
-      content: content.value,
-      category: category.value,
-      section: section.value,
-      is_nsfw: isNSFW.value,
-      cover_images: coverImages.value,
-      access_scope: accessScope.value,
-      access_roles: accessScope.value === 'role' ? accessRoles.value : [],
-      access_user_ids: accessScope.value === 'users' ? accessUserIds.value : []
-    }
-
-    const submitData = isRewriteMode.value
-      ? { ...data, topic_id: tempStore.id }
-      : data
-
-    const result = createTopicSchema.safeParse(submitData)
+    const mode = isRewriteMode.value ? 'rewrite' : 'create'
+    const payload = writePayload(mode)
+    const result = createTopicSchema.safeParse(payload)
     if (!result.success) {
       const error = JSON.parse(result.error.message)[0]
       useMessage(formatKunZodIssue(error), 'warn')
@@ -67,7 +81,7 @@ export const useTopicSubmitter = () => {
     }
 
     const hasConsumeSection = TOPIC_SECTION_CONSUME_MOEMOEPOINTS.some((item) =>
-      submitData.section.includes(item as 'g-seeking')
+      payload.sections.includes(item)
     )
     if (
       hasConsumeSection &&
@@ -81,27 +95,44 @@ export const useTopicSubmitter = () => {
     }
 
     isSubmitting.value = true
-    if (isRewriteMode.value) {
-      const topicId = tempStore.id
-      await kunFetch<string>(`/topic/${topicId}`, {
-        method: 'PUT',
-        body: submitData
-      })
-      useKunLoliInfo('重新编辑成功', 5)
-      tempStore.resetRewriteTopicData()
-      await navigateTo(`/topic/${topicId}`)
-    } else {
-      const tid = await kunFetch<number>('/topic', {
-        method: 'POST',
-        body: submitData
-      })
-      if (tid) {
-        useKunLoliInfo('发布成功', 5)
-        persistStore.resetTopicData()
-        await navigateTo(`/topic/${tid}`)
+    try {
+      if (mode === 'rewrite') {
+        const topicId = String(tempStore.id)
+        const patched = await settle(
+          api.PATCH('/topics/{topic_id}', {
+            params: { path: { topic_id: topicId } },
+            body: payload as TopicPatch
+          })
+        )
+        if (!patched.ok) {
+          reportProblem(patched.problem)
+          return
+        }
+        useKunLoliInfo('重新编辑成功', 5)
+        tempStore.resetRewriteTopicData()
+        await navigateTo(`/topic/${patched.data.id}`)
+        return
       }
+
+      const created = await settle(
+        api.POST('/topics', {
+          params: {
+            header: { 'Idempotency-Key': createKey.take(payload) }
+          },
+          body: payload
+        })
+      )
+      if (!created.ok) {
+        reportProblem(created.problem)
+        return
+      }
+      createKey.clear()
+      useKunLoliInfo('发布成功', 5)
+      persistStore.resetTopicData()
+      await navigateTo(`/topic/${created.data.id}`)
+    } finally {
+      isSubmitting.value = false
     }
-    isSubmitting.value = false
   }
 
   return {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Reply } from '#shared/utils/api/schemas'
+import { settle } from '#shared/utils/api/problem'
 
 const props = defineProps<{
   reply: Reply
@@ -7,25 +8,23 @@ const props = defineProps<{
 
 const { setRewriteData } = useTempReplyStore()
 const { isEdit } = storeToRefs(useTempReplyStore())
-const { id } = usePersistUserStore()
-
-const canEditAnyReply = useCan('reply.edit_any')
-const isShowRewrite = computed(
-  () => id === Number(props.reply.author.id) || canEditAnyReply.value
-)
+const api = useApiClient()
+const isShowRewrite = computed(() => props.reply.viewer?.can_edit === true)
 
 const handleClickRewrite = async () => {
-  const detail = await kunFetch<TopicReply>(
-    `/topic/${Number(props.reply.topic_id)}/reply/detail`,
-    {
-      method: 'GET',
-      query: { replyId: Number(props.reply.id) }
-    }
+  const result = await settle(
+    api.GET('/replies/{reply_id}/source', {
+      params: { path: { reply_id: props.reply.id } }
+    })
   )
-  if (!detail) {
+  if (!result.ok) {
+    reportProblem(result.problem)
     return
   }
-  setRewriteData(detail)
+  setRewriteData({
+    id: result.data.reply_id,
+    mainContent: result.data.content_markdown
+  })
   isEdit.value = true
 }
 </script>

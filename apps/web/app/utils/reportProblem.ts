@@ -1,4 +1,4 @@
-import { problemMessage } from '#shared/utils/api/message'
+import { fieldMessage, problemMessage } from '#shared/utils/api/message'
 import type { ClientProblem } from '#shared/utils/api/problem'
 
 export const reportProblem = (problem: ClientProblem) => {
@@ -6,4 +6,7 @@ export const reportProblem = (problem: ClientProblem) => {
     return
   }
   useMessage(problemMessage(problem), 'error')
+  for (const error of problem.errors) {
+    useMessage(fieldMessage(error), 'error')
+  }
 }

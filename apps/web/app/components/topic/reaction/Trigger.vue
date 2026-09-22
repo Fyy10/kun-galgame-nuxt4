@@ -35,7 +35,7 @@ const onViewHistory = () => {
   </KunPopover>
 
   <TopicReactionHistoryModal
-    v-if="subject"
+    v-if="historyOpen"
     v-model="historyOpen"
     :topic-id="topicId"
     :reply-id="replyId"

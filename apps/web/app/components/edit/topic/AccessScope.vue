@@ -9,6 +9,7 @@ import {
 } from '~/constants/topic'
 
 const { accessScope, accessRoles, accessUserIds } = useTopicEditorStore()
+const tempStore = useTempEditStore()
 
 const meta = computed(() => topicAccessScopeMeta(accessScope.value))
 </script>
@@ -47,6 +48,7 @@ const meta = computed(() => topicAccessScopeMeta(accessScope.value))
     <EditTopicAccessUserPicker
       v-if="accessScope === 'users'"
       v-model="accessUserIds"
+      :known-users="tempStore.accessUsers"
       :limit="KUN_TOPIC_ACCESS_USER_LIMIT"
     />
   </section>

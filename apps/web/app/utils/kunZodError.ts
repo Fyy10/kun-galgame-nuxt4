@@ -35,6 +35,8 @@ export const KUN_FIELD_LABELS: Record<string, string> = {
   name: '名称',
   title: '标题',
   content: '内容',
+  content_markdown: '内容',
+  sections: '分区',
   description: '描述',
   url: '链接',
   link: '链接',
