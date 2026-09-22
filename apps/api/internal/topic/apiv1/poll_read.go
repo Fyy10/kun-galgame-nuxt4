@@ -208,7 +208,7 @@ func pollResults(cdn string, poll *model.TopicPoll, options []model.TopicPollOpt
 	}
 	totals := bundle.totals[poll.ID]
 	return &PollResults{
-		TotalVotes:   totals.TotalVotes,
+		TotalVoteCount:   totals.TotalVoteCount,
 		VoterCount:   totals.VoterCount,
 		Options:      tallies,
 		SampleVoters: sample,

@@ -57,7 +57,7 @@ func TestV1CreatePollValuesAndSideEffects(t *testing.T) {
 		t.Fatalf("default bounds %+v", poll)
 	}
 	results := pollResultsOf(t, poll)
-	if asInt(results["total_votes"]) != 0 || len(results["sample_voters"].([]any)) != 0 {
+	if asInt(results["total_vote_count"]) != 0 || len(results["sample_voters"].([]any)) != 0 {
 		t.Fatalf("fresh results %+v", results)
 	}
 	author, _ := poll["author"].(map[string]any)

@@ -269,7 +269,7 @@ func (p *Polls) updatePoll(ctx context.Context, in *updatePollInput) (*pollOutpu
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	hasVotes := len(totals) > 0 && totals[0].TotalVotes > 0
+	hasVotes := len(totals) > 0 && totals[0].TotalVoteCount > 0
 
 	body := in.Body
 	fields := map[string]any{}

@@ -36,7 +36,7 @@
 | 字段 | 说明 |
 |---|---|
 | `title`、`description` | `description` 空串下发为 `""`，不是 null |
-| `type` | 封闭枚举 `single` \| `multiple` |
+| `choice_type` | 封闭枚举 `single` \| `multiple`。**不叫 `type`**：`Problem.type` 是 URI 字符串，同名不同型过不了 G8 |
 | `min_choice`、`max_choice` | 整数。`single` 时服务端强制两者为 1 |
 | `closes_at` | 旧 `deadline`。RFC 3339 秒精度 UTC，可 `null` |
 | `result_visibility` | 封闭枚举 `always` \| `after_vote` \| `after_deadline` |
@@ -46,7 +46,7 @@
 | `created_at`、`updated_at` | |
 | `viewer` | 匿名时 `null` |
 
-`PollResults`：`total_votes`、`voter_count`、`options: [{option_id, vote_count}]`、`sample_voters: [UserRef]`（至多 5 人，**`is_anonymous` 时恒为空数组**）。
+`PollResults`：`total_vote_count`、`voter_count`、`options: [{option_id, vote_count}]`、`sample_voters: [UserRef]`（至多 5 人，**`is_anonymous` 时恒为空数组**）。
 
 `PollViewer`：`has_voted`、`chosen_option_ids: [ID]`、`can_vote`、`can_change_vote`、`can_edit`、`can_delete`、`can_view_results`。
 
@@ -55,7 +55,7 @@
 ### 3.2 写面请求体
 
 - 建：`{title, description?, type, min_choice?, max_choice?, closes_at?, result_visibility, is_anonymous?, can_change_vote?, options: [{text}]}`。`topic_id` 在路径上。
-- 改：所有字段可选，只改传来的；`options` 用 `{add:[{text}], update:[{option_id, text}], remove:[option_id]}`。
+- 改：所有字段可选，只改传来的；选项增删改用 **`option_changes`** `{add:[{text}], update:[{option_id, text}], remove:[option_id]}`。**不叫 `options`**：`Poll.options` 是数组，同名不同型过不了 G8。
 - 投：`{option_ids: [ID]}`。
 
 ## 4. 逐条裁决（对普查 §1）
@@ -93,6 +93,18 @@
   - `VOTE_ALREADY_CAST`（kungal，409）——已投过且 `can_change_vote` 为假。
   其余全部复用：`NOT_FOUND`、`VALIDATION_FAILED`（含 `TOO_SHORT`/`TOO_LONG`/`TOO_FEW_ITEMS`/`TOO_MANY_ITEMS`/`UNKNOWN_REFERENCE`/`DUPLICATE_ITEM`/`INVALID_FORMAT`）、`PERMISSION_REQUIRED`、`CONTENT_REJECTED`、`SERVICE_UNAVAILABLE`、`IDEMPOTENCY_*`。**再缺就停下来报告。**
 - **`app.go` 字段：不新增。** 投票属于话题域，落 `internal/topic/apiv1/`。
+
+## 5.5 实现之后对本契约的三处修正（督查，2026-09-22 验收时）
+
+写契约时没想到的，记在这里免得下一波照抄错的：
+
+1. **`total_votes` 违反 01 §3**（「计数以 `_count` 结尾」）。普查提的 `total_vote_count` 才是对的，是我改坏的。已改回 `total_vote_count`。
+2. **`type` 与 `options` 这两个名字过不了 G8**，实现轨报上来并自行改成了 `choice_type` 与 `option_changes`。这不是它擅自改名，是契约写的名字与已有 schema 同名不同型。
+3. **`can_change_vote=false` 时重复发同一个 `PUT` 回 200，不是 409**。严格照字面读会让「响应丢失后的重试」报错，同时违反 K16 与 K12。只有**真的改变了选择**才回 `VOTE_ALREADY_CAST`。
+
+另外实现轨补了两条本契约漏掉的不可变规则（`is_anonymous` 与 `choice_type` 在已有投票后不可改），依据是普查 §10.6 把「追溯性去匿名」排在本域第六严重，而我的 §4 裁决表走漏了它。**这两条采纳。**
+
+顺带修掉一条 W2 就上线的假话：`Topic.bumped_at` 的描述写着「poll votes … set it to now」，而投票从来不顶帖——顶帖的是**建**投票、**建**抽奖和发评论。已改。
 
 ## 6. 本波不做
 

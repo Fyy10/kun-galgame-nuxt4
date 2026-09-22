@@ -132,7 +132,7 @@ func TestV1GetPollHidesResultsUntilTheViewerVotes(t *testing.T) {
 	}
 	_, poll = f.pollGet(t, w5bPollAfterVote, "sess-bob")
 	results := pollResultsOf(t, poll)
-	if asInt(results["total_votes"]) != 1 || asInt(results["voter_count"]) != 1 {
+	if asInt(results["total_vote_count"]) != 1 || asInt(results["voter_count"]) != 1 {
 		t.Fatalf("results after voting %+v", results)
 	}
 
@@ -182,7 +182,7 @@ func TestV1GetPollSampleVotersAreTheEarliestRenderable(t *testing.T) {
 	if fmt.Sprint(got) != fmt.Sprint(want) {
 		t.Fatalf("sample_voters %v\nwant the five earliest by (created, id) %v", got, want)
 	}
-	if asInt(results["total_votes"]) != 19 || asInt(results["voter_count"]) != 13 {
+	if asInt(results["total_vote_count"]) != 19 || asInt(results["voter_count"]) != 13 {
 		t.Fatalf("totals %+v", results)
 	}
 }

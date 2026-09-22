@@ -96,6 +96,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/polls/{poll_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a poll
+         * @description Returns one poll. results is null as one block whenever the caller may not see the tallies yet, and sample_voters is empty for an anonymous poll even when results are visible. NOT_FOUND when the poll does not exist, was written by a banned user, or belongs to a topic getTopic would not return to the caller.
+         */
+        get: operations["getPoll"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a poll
+         * @description Deletes the poll with its options and votes. It needs can_delete. Nothing is refunded and no counter is rolled back: the options go with the poll. NOT_FOUND under the same conditions as getPoll.
+         */
+        delete: operations["deletePoll"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a poll
+         * @description Changes the fields present in the body and returns the poll as getPoll would. Absent fields keep their value. It needs can_edit. option_changes adds, relabels and removes options; an option that already holds votes keeps its label and cannot be removed, and two options must remain. Once the poll holds a vote, an anonymous poll cannot be made public and the choice type cannot change. closes_at set to null clears the deadline; leaving the field out keeps it. Only text this request submits is checked by trust and safety again. NOT_FOUND under the same conditions as getPoll.
+         */
+        patch: operations["updatePoll"];
+        trace?: never;
+    };
+    "/polls/{poll_id}/vote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the caller's vote
+         * @description Replaces whatever the caller picked before with option_ids and returns the whole poll. It is a slot, so sending the same choice again is a 200 that moves no counter and writes no row. Every id must be an option of this poll, the same id twice is refused, and the count must sit between min_choice and max_choice. It takes no Idempotency-Key: the operation is idempotent by shape. NOT_FOUND under the same conditions as getPoll.
+         */
+        put: operations["setPollVote"];
+        post?: never;
+        /**
+         * Retract the caller's vote
+         * @description Removes the caller's vote and returns the whole poll. Retracting when the caller has not voted is a 200 that changes nothing. It needs the poll to allow changing a vote. NOT_FOUND under the same conditions as getPoll.
+         */
+        delete: operations["clearPollVote"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/polls/{poll_id}/votes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a poll's votes
+         * @description Lists who voted for what as a cursor page, newest first. A voter in a multiple-choice poll has one entry per option. Votes by banned users are left out; the server reads on to fill the page, so continue while next_cursor is present. There is no total. NOT_FOUND under the same conditions as getPoll.
+         */
+        get: operations["listPollVotes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/problems": {
         parameters: {
             query?: never;
@@ -363,6 +435,30 @@ export interface paths {
          * @description Unpins the pinned reply and returns the topic. It needs can_pin_reply. Unpinning when none is pinned changes nothing. NOT_FOUND when the topic is hidden or getTopic would not return it to the caller.
          */
         delete: operations["unpinReply"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/topics/{topic_id}/polls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a topic's polls
+         * @description Lists every poll of the topic, newest first. It is not paginated: a topic holds at most 30 polls. Polls by banned authors are left out. NOT_FOUND under the same conditions as getTopic.
+         */
+        get: operations["listTopicPolls"];
+        put?: never;
+        /**
+         * Create a poll
+         * @description Creates a poll on the topic and returns it as getPoll would to its author. It needs the topic's author or staff holding the create permission, and the topic must be one the caller can read. A single-choice poll stores min_choice and max_choice as 1 whatever the body asks for; a multiple-choice poll defaults them to 1 and to the number of options. closes_at is stored exactly as sent. Creating a poll bumps the topic. NOT_FOUND under the same conditions as getTopic.
+         */
+        post: operations["createPoll"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -815,6 +911,28 @@ export interface components {
              */
             start: number | null;
         };
+        ListPoll: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["Poll"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
+        ListPollVote: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["PollVote"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
         ListProblemReason: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["ProblemReason"][];
@@ -965,6 +1083,236 @@ export interface components {
              * @enum {string}
              */
             object: "paragraph";
+        };
+        Poll: {
+            /** @description The user who created the poll. */
+            author: components["schemas"]["UserRef"];
+            /** @description Whether a voter may replace or retract their vote. */
+            can_change_vote: boolean;
+            /**
+             * @description Whether a voter picks exactly one option or several.
+             * @enum {string}
+             */
+            choice_type: "single" | "multiple";
+            /**
+             * Format: date-time
+             * @description When the poll stops accepting votes. null when it never closes.
+             */
+            closes_at: string | null;
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /** @description Longer explanation as stored. Empty string when there is none, never null. Free text; never use it as a decision input. */
+            description: string;
+            /** @description Poll id. JSON string of a decimal integer. */
+            id: string;
+            /** @description Whether who voted for what is hidden. An anonymous poll never lists voters and has no vote log. */
+            is_anonymous: boolean;
+            /**
+             * Format: int64
+             * @description Most options a vote may hold. Always 1 when choice_type is single.
+             */
+            max_choice: number;
+            /**
+             * Format: int64
+             * @description Fewest options a vote may hold. Always 1 when choice_type is single.
+             */
+            min_choice: number;
+            /**
+             * @description Type discriminant. Always poll.
+             * @enum {string}
+             */
+            object: "poll";
+            /** @description The options, oldest first. Tallies are not here; they are in results. */
+            options: {
+                /** @description Option id. JSON string of a decimal integer. */
+                id: string;
+                /**
+                 * @description Type discriminant. Always poll_option.
+                 * @enum {string}
+                 */
+                object: "poll_option";
+                /** @description Option label as stored. Free text; never use it as a decision input. */
+                text: string;
+            }[];
+            /**
+             * @description Who may see the tallies.
+             * @enum {string}
+             */
+            result_visibility: "always" | "after_vote" | "after_deadline";
+            /** @description The tallies. null as one block when the caller may not see them yet, never a scattering of null counts. */
+            results: components["schemas"]["PollResults"] | null;
+            /** @description Poll question as stored. Free text; never use it as a decision input. */
+            title: string;
+            /** @description Id of the topic the poll belongs to. */
+            topic_id: string;
+            /**
+             * Format: date-time
+             * @description Time of the latest change to the poll or its options.
+             */
+            updated_at: string;
+            /** @description The caller's own state on this poll. null for an anonymous caller. */
+            viewer: components["schemas"]["PollViewer"] | null;
+        };
+        PollCreate: {
+            /** @description Whether a voter may replace or retract their vote. Absent means true. */
+            can_change_vote?: boolean;
+            /**
+             * @description Whether a voter picks exactly one option or several.
+             * @enum {string}
+             */
+            choice_type: "single" | "multiple";
+            /**
+             * Format: date-time
+             * @description When the poll stops accepting votes. Absent or null means it never closes. It is stored as sent, never rounded.
+             */
+            closes_at?: string | null;
+            /** @description Longer explanation. Absent means none. Free text; never use it as a decision input. */
+            description?: string;
+            /** @description Whether who voted for what is hidden. Absent means false. It cannot be turned off once the poll holds a vote. */
+            is_anonymous?: boolean;
+            /**
+             * Format: int64
+             * @description Most options a vote may hold, at most the number of options. Ignored when choice_type is single, which forces 1. Absent means every option.
+             */
+            max_choice?: number;
+            /**
+             * Format: int64
+             * @description Fewest options a vote may hold. Ignored when choice_type is single, which forces 1. Absent means 1.
+             */
+            min_choice?: number;
+            /** @description The options, in display order. Between 2 and 20. */
+            options: {
+                /** @description Option label, stored as sent. A label of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
+                text: string;
+            }[];
+            /**
+             * @description Who may see the tallies.
+             * @enum {string}
+             */
+            result_visibility: "always" | "after_vote" | "after_deadline";
+            /** @description Poll question, stored as sent. A question of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
+            title: string;
+        };
+        PollOptionChanges: {
+            /** @description Options to append, in order. */
+            add?: {
+                /** @description Option label, stored as sent. A label of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input. */
+                text: string;
+            }[];
+            /** @description Options to delete. An option that already holds votes cannot be deleted, and at least two options must remain. */
+            remove?: string[];
+            /** @description Labels to change. An option that already holds votes cannot be relabelled. */
+            update?: components["schemas"]["PollOptionUpdate"][];
+        };
+        PollOptionUpdate: {
+            /** @description Id of an option of this poll. An id of another poll's option is refused as UNKNOWN_REFERENCE. */
+            option_id: string;
+            /** @description New label, checked as in createPoll. Free text; never use it as a decision input. */
+            text: string;
+        };
+        PollPatch: {
+            /** @description New can_change_vote. */
+            can_change_vote?: boolean;
+            /**
+             * @description New choice type. It cannot change once the poll holds a vote.
+             * @enum {string}
+             */
+            choice_type?: "single" | "multiple";
+            /**
+             * Format: date-time
+             * @description New deadline. null clears it; leaving the field out keeps the stored one.
+             */
+            closes_at?: string | null;
+            /** @description New explanation. An empty string removes it. Free text; never use it as a decision input. */
+            description?: string;
+            /** @description New anonymity. Turning it off is refused once the poll holds a vote: those votes were cast under a promise of anonymity. */
+            is_anonymous?: boolean;
+            /**
+             * Format: int64
+             * @description New upper bound. Forced to 1 when the resulting choice_type is single.
+             */
+            max_choice?: number;
+            /**
+             * Format: int64
+             * @description New lower bound. Forced to 1 when the resulting choice_type is single.
+             */
+            min_choice?: number;
+            /** @description Options to add, relabel or delete. The stored options are otherwise left alone. */
+            option_changes?: components["schemas"]["PollOptionChanges"];
+            /**
+             * @description New result visibility.
+             * @enum {string}
+             */
+            result_visibility?: "always" | "after_vote" | "after_deadline";
+            /** @description New question, checked as in createPoll. Free text; never use it as a decision input. */
+            title?: string;
+        };
+        PollResults: {
+            /** @description One entry per option of this poll, in the same order as options. Empty array if the poll has no options. */
+            options: {
+                /** @description Id of the option these votes are for. */
+                option_id: string;
+                /**
+                 * Format: int64
+                 * @description Number of votes this option holds.
+                 */
+                vote_count: number;
+            }[];
+            /** @description Up to five of the earliest voters, oldest first. Empty array when the poll is anonymous, and banned users are left out, so it can hold fewer than min(voter_count, 5). */
+            sample_voters: components["schemas"]["UserRef"][];
+            /**
+             * Format: int64
+             * @description Number of votes cast, counting every option a voter picked.
+             */
+            total_vote_count: number;
+            /**
+             * Format: int64
+             * @description Number of distinct users who have voted.
+             */
+            voter_count: number;
+        };
+        PollViewer: {
+            /** @description Whether the caller may replace or retract a vote they already cast. It is the poll's can_change_vote. */
+            can_change_vote: boolean;
+            /** @description Whether the caller may delete the poll: the poll's author, the topic's author, or staff holding the delete permission. */
+            can_delete: boolean;
+            /** @description Whether the caller may edit the poll: the poll's author, the topic's author, or staff holding the edit permission. Requests authenticated with a Bearer token never carry staff powers. */
+            can_edit: boolean;
+            /** @description Whether the caller may see results now. It says the same thing as results being non-null. */
+            can_view_results: boolean;
+            /** @description Whether setPollVote would be accepted now: the poll is open, and either the caller has not voted or the poll allows changing a vote. */
+            can_vote: boolean;
+            /** @description Ids of the options the caller picked, in option order. Empty array when the caller has not voted. */
+            chosen_option_ids: string[];
+            /** @description Whether the caller has voted in this poll. */
+            has_voted: boolean;
+        };
+        PollVote: {
+            /**
+             * Format: date-time
+             * @description When it was cast.
+             */
+            created_at: string;
+            /** @description Vote id. JSON string of a decimal integer. */
+            id: string;
+            /**
+             * @description Type discriminant. Always poll_vote.
+             * @enum {string}
+             */
+            object: "poll_vote";
+            /** @description Id of the option that was picked. A voter in a multiple-choice poll has one entry per option they picked. */
+            option_id: string;
+            /** @description Id of the poll this vote belongs to. */
+            poll_id: string;
+            /** @description The user who cast it. */
+            voter: components["schemas"]["UserRef"];
+        };
+        PollVoteSet: {
+            /** @description The options the caller picks, replacing whatever they picked before. Every id must belong to this poll, and the same id twice is refused as DUPLICATE_ITEM. */
+            option_ids: string[];
         };
         Problem: {
             /** @description Top-level error code. UPPER_SNAKE. */
@@ -1289,7 +1637,7 @@ export interface components {
             best_answer: components["schemas"]["Reply"] | null;
             /**
              * Format: date-time
-             * @description Bump time. Replies, comments, upvotes, a new best answer, edits of the title or body, poll votes and lottery events set it to now, but only for topics created within the last 3 months. It is not a last-activity time.
+             * @description Bump time. A reply, a comment, an upvote, a new best answer, an edit of the title or body, and creating a poll or a lottery set it to now, but only for topics created within the last 3 months. Casting a vote and entering a lottery do not. It is not a last-activity time.
              */
             bumped_at: string;
             /**
@@ -1514,7 +1862,7 @@ export interface components {
             author: components["schemas"]["UserRef"];
             /**
              * Format: date-time
-             * @description Bump time. Replies, comments, upvotes, a new best answer, edits of the title or body, poll votes and lottery events set it to now, but only for topics created within the last 3 months. It is not a last-activity time.
+             * @description Bump time. A reply, a comment, an upvote, a new best answer, an edit of the title or body, and creating a poll or a lottery set it to now, but only for topics created within the last 3 months. Casting a vote and entering a lottery do not. It is not a last-activity time.
              */
             bumped_at: string;
             /**
@@ -2190,6 +2538,533 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE: www.moyu.moe, the catalog or the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getPoll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Poll id. */
+                poll_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Poll"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deletePoll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Poll id. */
+                poll_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller may read but not delete the poll; SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updatePoll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Poll id. */
+                poll_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PollPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Poll"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller may read but not edit the poll; SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED, or CONTENT_REJECTED when the trust-and-safety check refuses the text. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    setPollVote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Poll id. */
+                poll_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PollVoteSet"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Poll"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description POLL_CLOSED when the poll is past closes_at, or VOTE_ALREADY_CAST when the caller has voted and the poll does not allow changing a vote. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when an id is not an option of this poll, an id repeats, or the number of ids is outside the poll's bounds. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    clearPollVote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Poll id. */
+                poll_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Poll"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description POLL_CLOSED when the poll is past closes_at, or VOTE_ALREADY_CAST when the caller has voted and the poll does not allow changing a vote. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listPollVotes: {
+        parameters: {
+            query?: {
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Poll id. */
+                poll_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListPollVote"];
+                };
+            };
+            /** @description INVALID_PARAMETER, LIMIT_TOO_LARGE, or INVALID_CURSOR. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the poll is anonymous or the caller may not see its results yet. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -3778,6 +4653,195 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listTopicPolls: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListPoll"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createPoll: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                /** @description Topic id. */
+                topic_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PollCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Poll"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED when the caller is neither the topic's author nor staff; SCOPE_REQUIRED or ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED when a label is blank, closes_at is not a real instant, the choice bounds contradict each other, or the topic already holds 30 polls; CONTENT_REJECTED when the trust-and-safety check refuses the text. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

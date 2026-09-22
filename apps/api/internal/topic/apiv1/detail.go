@@ -43,7 +43,7 @@ type Topic struct {
 	BestAnswer        *Reply                  `json:"best_answer" doc:"The reply marked as the best answer. null when none is marked or it is not visible. It also appears in the replies collection at its floor."`
 	CreatedAt         repr.DateTime           `json:"created_at" doc:"Creation time."`
 	EditedAt          *repr.DateTime          `json:"edited_at" doc:"Time of the latest edit of the title or body. null when never edited."`
-	BumpedAt          repr.DateTime           `json:"bumped_at" doc:"Bump time. Replies, comments, upvotes, a new best answer, edits of the title or body, poll votes and lottery events set it to now, but only for topics created within the last 3 months. It is not a last-activity time."`
+	BumpedAt          repr.DateTime           `json:"bumped_at" doc:"Bump time. A reply, a comment, an upvote, a new best answer, an edit of the title or body, and creating a poll or a lottery set it to now, but only for topics created within the last 3 months. Casting a vote and entering a lottery do not. It is not a last-activity time."`
 	UpvotedAt         *repr.DateTime          `json:"upvoted_at" doc:"Time of the latest upvote. null when the topic has never been upvoted."`
 	Viewer            *TopicViewer            `json:"viewer" doc:"The caller's own state on this topic. null for an anonymous caller."`
 }

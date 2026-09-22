@@ -65,7 +65,7 @@ type TopicSummary struct {
 	HasBestAnswer bool           `json:"has_best_answer" doc:"Whether a best-answer reply is set."`
 	MiniApps      []MiniAppKind  `json:"mini_apps" maxItems:"2" doc:"Mini-apps attached to the topic, in registry order. Empty array if none."`
 	IsNSFW        bool           `json:"is_nsfw" doc:"Whether the topic is marked NSFW."`
-	BumpedAt      repr.DateTime  `json:"bumped_at" doc:"Bump time. Replies, comments, upvotes, a new best answer, edits of the title or body, poll votes and lottery events set it to now, but only for topics created within the last 3 months. It is not a last-activity time."`
+	BumpedAt      repr.DateTime  `json:"bumped_at" doc:"Bump time. A reply, a comment, an upvote, a new best answer, an edit of the title or body, and creating a poll or a lottery set it to now, but only for topics created within the last 3 months. Casting a vote and entering a lottery do not. It is not a last-activity time."`
 	CreatedAt     repr.DateTime  `json:"created_at" doc:"Creation time."`
 	UpvotedAt     *repr.DateTime `json:"upvoted_at" doc:"Time of the latest upvote. null when the topic has never been upvoted."`
 }
