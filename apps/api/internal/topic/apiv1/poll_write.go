@@ -203,7 +203,7 @@ type pollOptionPlan struct {
 	count  int
 }
 
-func (p *Polls) planOptionChanges(poll *model.TopicPoll, stored []model.TopicPollOption, changes *PollOptionChanges) (pollOptionPlan, *problem.Problem) {
+func (p *Polls) planOptionChanges(stored []model.TopicPollOption, changes *PollOptionChanges) (pollOptionPlan, *problem.Problem) {
 	plan := pollOptionPlan{rename: map[int]string{}, count: len(stored)}
 	if changes == nil {
 		return plan, nil
@@ -320,7 +320,7 @@ func (p *Polls) updatePoll(ctx context.Context, in *updatePollInput) (*pollOutpu
 		fields["deadline"] = deadline
 	}
 
-	plan, prob := p.planOptionChanges(poll, stored, body.OptionChanges)
+	plan, prob := p.planOptionChanges(stored, body.OptionChanges)
 	if prob != nil {
 		return nil, prob
 	}

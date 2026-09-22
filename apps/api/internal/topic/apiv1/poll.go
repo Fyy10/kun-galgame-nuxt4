@@ -159,10 +159,6 @@ func (d *PollDeadline) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func (d PollDeadline) MarshalJSON() ([]byte, error) {
-	return json.Marshal(d.Value)
-}
-
 func (PollDeadline) Schema(r huma.Registry) *huma.Schema {
 	s := repr.DateTime("").Schema(r)
 	s.Nullable = true
