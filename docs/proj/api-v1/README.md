@@ -42,6 +42,7 @@ infra `refs/api-v2/`（01 公理与黑名单 · 02 协议 · 04 表示 · 05 集
 |---|---|
 | [01-standard.md](01-standard.md) | 面与凭证、错误与 i18n、表示层、集合、写面、正文文档、命名表 |
 | [02-governance.md](02-governance.md) | 契约单一来源、代码生成、CI 门、演进与退役、App 兼容、逐端点迁移清单 |
+| [04-parallel-tracks.md](04-parallel-tracks.md) | 并行轨协议：五条车道、共享面预分配、九条测试闸、合并策略 |
 | [03-content-doc.md](03-content-doc.md) | 正文节点树：形状、普查、Markdown 转换规则、客户端渲染 |
 | [waves/](waves/) | 每一波的任务书与验收记录 |
 
@@ -53,8 +54,8 @@ infra `refs/api-v2/`（01 公理与黑名单 · 02 协议 · 04 表示 · 05 集
 | W0b | 前端地基（生成类型、类型化客户端、错误本地化目录）+ 话题列表切到 v1、删旧路由（[记录](waves/w0b-frontend-foundation.md)） | ✅ 2026-09-19 上线，旧路由已删 |
 | W1 | 结构化正文文档（Go 序列化 + Vue 渲染器 + 数据普查，[规格](03-content-doc.md)） | ✅ 2026-09-19（[验收](waves/w1-content-doc.md)） |
 | W2 | 话题详情 + 回复读面（[记录](waves/w2-topic-detail.md)） | ✅ 2026-09-19（未上线） |
-| W3 | 话题 / 回复写面（[记录](waves/w3-topic-writes.md)） | 🚧 契约 2026-09-19 |
-| W4 | 互动（点赞、收藏、推、表情、最佳答案、置顶；隐藏并进 W3 的 PATCH）（[记录](waves/w4-interactions.md)） | 🚧 契约 2026-09-19 |
+| W3 | 话题 / 回复写面（[记录](waves/w3-topic-writes.md)） | ✅ 2026-09-22 合入（未上线） |
+| W4 | 互动（点赞、收藏、推、表情、最佳答案、置顶；隐藏并进 W3 的 PATCH）（[记录](waves/w4-interactions.md)） | ✅ 2026-09-22 Go 侧合入；网页侧派发中 |
 | W5 | 评论（含评论点赞与按评论定位）、投票、抽奖、草稿、图片上传、其余话题读面 | ⏳ |
 
 执行方式：按 `.claude/skills/dispatch-cursor/` 派发 cursor-agent（Grok 4.6 Extra High），在独立 worktree 的沙箱里实现；Claude 负责裁决、写英文任务书、跑 DB 测试与运行时实测、提交并合入 master。

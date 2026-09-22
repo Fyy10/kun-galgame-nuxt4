@@ -13,6 +13,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -41,7 +42,11 @@ const (
 	v1SectionID  = 910000001
 )
 
+// The compiler and its cache are shared, and the concurrency tests call
+// checkPath from several goroutines: without this lock jsonschema's compiler
+// crashed the run with a concurrent map write.
 type specConformance struct {
+	mu       sync.Mutex
 	compiler *jsonschema.Compiler
 	doc      map[string]any
 	schemas  map[string]*jsonschema.Schema

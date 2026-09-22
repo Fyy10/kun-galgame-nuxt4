@@ -271,14 +271,23 @@ type interactionDelete struct {
 }
 
 var interactionDeletes = []interactionDelete{
-	{table: "topic_like", recounts: []recountSpec{{"topic", "like_count", "topic_id", ""}}},
-	{table: "topic_dislike", recounts: []recountSpec{{"topic", "dislike_count", "topic_id", ""}}},
+	// Purge used to recount like_count from topic_like and then delete
+	// topic_reaction without recounting, so remaining reaction rows left the
+	// cached count high.
+	{table: "topic_like"},
+	{table: "topic_dislike"},
 	{table: "topic_favorite", recounts: []recountSpec{{"topic", "favorite_count", "topic_id", ""}}},
 	{table: "topic_upvote", recounts: []recountSpec{{"topic", "upvote_count", "topic_id", ""}}},
-	{table: "topic_reaction"},
-	{table: "topic_reply_reaction"},
-	{table: "topic_reply_like", recounts: []recountSpec{{"topic_reply", "like_count", "topic_reply_id", ""}}},
-	{table: "topic_reply_dislike", recounts: []recountSpec{{"topic_reply", "dislike_count", "topic_reply_id", ""}}},
+	{table: "topic_reaction", recounts: []recountSpec{
+		{"topic", "like_count", "topic_id", "COUNT(*) FILTER (WHERE reaction = 'like')"},
+		{"topic", "dislike_count", "topic_id", "COUNT(*) FILTER (WHERE reaction = 'dislike')"},
+	}},
+	{table: "topic_reply_reaction", recounts: []recountSpec{
+		{"topic_reply", "like_count", "topic_reply_id", "COUNT(*) FILTER (WHERE reaction = 'like')"},
+		{"topic_reply", "dislike_count", "topic_reply_id", "COUNT(*) FILTER (WHERE reaction = 'dislike')"},
+	}},
+	{table: "topic_reply_like"},
+	{table: "topic_reply_dislike"},
 	{table: "topic_comment_like"},
 	{table: "topic_poll_vote", recounts: []recountSpec{{"topic_poll_option", "vote_count", "option_id", ""}}},
 	{table: "topic_lottery_entry", recounts: []recountSpec{{"topic_lottery", "entry_count", "lottery_id", ""}}},

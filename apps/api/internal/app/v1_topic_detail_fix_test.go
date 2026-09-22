@@ -366,6 +366,8 @@ func (f *detailFix) do(t *testing.T, method, rawURL, session, specPath string, h
 }
 
 func (s *specConformance) checkPath(t *testing.T, method, specPath string, resp *http.Response, body []byte) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	t.Helper()
 	status := strconv.Itoa(resp.StatusCode)
 	paths, _ := s.doc["paths"].(map[string]any)

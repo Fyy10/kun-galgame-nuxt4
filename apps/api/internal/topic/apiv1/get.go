@@ -91,28 +91,9 @@ func (s *Service) buildTopic(ctx context.Context, topic *model.Topic, viewer *mi
 		return nil, problem.Internal(err)
 	}
 
-	var mine map[string]struct{}
-	var tv *TopicViewer
-	if viewer != nil {
-		toks, err := s.topics.GetUserTopicReactions(topic.ID, viewer.ID)
-		if err != nil {
-			return nil, problem.Internal(err)
-		}
-		mine = tokenSet(toks)
-		fav, err := s.topics.HasUserFavorited(viewer.ID, topic.ID)
-		if err != nil {
-			return nil, problem.Internal(err)
-		}
-		up, err := s.topics.HasUserUpvoted(viewer.ID, topic.ID)
-		if err != nil {
-			return nil, problem.Internal(err)
-		}
-		tv = &TopicViewer{
-			HasLiked:     hasToken(mine, "like"),
-			HasDisliked:  hasToken(mine, "dislike"),
-			HasFavorited: fav,
-			HasUpvoted:   up,
-		}
+	tv, mine, p := s.loadTopicViewer(topic, viewer)
+	if p != nil {
+		return nil, p
 	}
 
 	coverMeta := map[string]imageclient.ImageMeta{}

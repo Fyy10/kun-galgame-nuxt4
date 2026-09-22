@@ -123,3 +123,25 @@
 - 评论点赞：随评论域进 W5。
 - `GET /api/topic/interactions/mine`：只有动态卡片在用，随动态流迁移。
 - 旧的 `topic_like` 等四张废弃表的删除：删号清理改完之后就没有读者了，另起 deploy-then-drop 迁移。
+
+## 3. 验收（2026-09-22）
+
+两条派发：`w4-go`（实现，会话中断时被杀）与 `w4-tests`（补测试，正常跑完，980s）。
+
+**交付时的状态**：`w4-go` 的代码编译不过（`engage_upvote.go` 缺 gorm import、`f.Fiber.Test` 第二参数用了 Fiber v2 的写法），而且只有表情一族有测试；收藏、推、三个历史列表、最佳答案、置顶、迁移 099 一条测试都没有。`w4-tests` 把这六组补齐，自己跑过 lint 与非 DB 套件（它没有数据库）。
+
+**验收发现的 bug**：
+
+- **收藏和推每一次都 500**。`topic_favorite.updated` 与 `topic_upvote.updated` 是 `NOT NULL` 且**没有默认值**，而 v1 的 raw INSERT 不写这两列 → `null value in column "updated" … violates not-null constraint (SQLSTATE 23502)`。`topic_reaction` 根本没有这个列，所以表情一族是好的，把问题盖住了。执行者在报告里写出了这个风险，但它没有数据库、证实不了；第一次真跑就是 6 条红。
+- **测试连接池泄漏**。`testdb.Open` 每个测试新建一个 GORM 池并且从不关闭。W3 与 W4 的套件合进同一个包之后，postgres 跑到一半开始回 `sorry, too many clients already (SQLSTATE 53300)`。现在限池 4 并在 `t.Cleanup` 里关闭——清理是后进先出，所以它排在夹具自己的清理之后。
+- **迁移测试自带了一个 SQL 切分器**，按 `;` 切，把 9 条语句的文件数成 11 条，于是断言语句条数直接失败。改成和 `cmd/migrate` 一样、把整个文件交给一次 `database/sql` Exec：测的是生产真正走的那条路径，而不是文件的形状。
+- **W3 与 W4 各自写了一份同名辅助**（`pendingAward`、`AwardFunc`、`permissionRequired`、`awardCall`、`strID`），一合并就重复声明。前三个两边定义一致，留 W3 的；互动的记录器改用自己的类型名。
+- 发分函数仍是包级全局变量，改成 `App.TopicAward` 字段，与 W3 一致。
+- **W4 缺「奖励必须等提交成功之后才发」的覆盖**（W3 有）。补了一条：让 message 插入失败，断言没有发分、没有表情行、计数没动。
+
+**变异**：15 个里 15 个被杀。两条是先修了测试才杀得掉的：
+
+- 「历史列表不再跳过封禁用户」第一版直接删掉整个 `if`，`authors` 变成未使用、编译不过——无效变异，改成保留查表但恒不跳过。
+- **「键集丢掉 id 决胜键」一开始存活**。种子给每个用户一个各不相同的秒，数据里没有并列，所以总序根本没被测到，去掉 `ORDER BY … id DESC` 三处也照样通过。加了三条共享同一时刻、正好跨 `limit=2` 页边界的行，再跑就杀掉了。
+
+**尚未完成**：网页侧（话题页的写与互动切到 v1）在 `w34-web` 派发中；浏览器实测随网页一起做。
