@@ -87,6 +87,34 @@ func (s *Service) visibleReply(ctx context.Context, idStr string) (*model.Topic,
 	return topic, row, user, nil
 }
 
+func (s *Service) visibleComment(ctx context.Context, idStr string) (*model.Topic, *model.TopicReply, *model.TopicComment, *middleware.UserInfo, *problem.Problem) {
+	if s == nil || s.comments == nil {
+		return nil, nil, nil, nil, problem.Internal(errUnconfigured)
+	}
+	id, ok := parsePositiveID(idStr)
+	if !ok {
+		return nil, nil, nil, nil, notFound()
+	}
+	comment, err := s.comments.FindCommentByID(id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil, nil, nil, notFound()
+		}
+		return nil, nil, nil, nil, problem.Internal(err)
+	}
+	if comment.Status != 0 {
+		return nil, nil, nil, nil, notFound()
+	}
+	topic, reply, user, p := s.visibleReply(ctx, strconv.Itoa(comment.TopicReplyID))
+	if p != nil {
+		return nil, nil, nil, nil, p
+	}
+	if p := s.rejectUnrenderableAuthor(ctx, comment.UserID); p != nil {
+		return nil, nil, nil, nil, p
+	}
+	return topic, reply, comment, user, nil
+}
+
 func (s *Service) rejectUnrenderableAuthor(ctx context.Context, userID int) *problem.Problem {
 	users, p := s.lookupUsers(ctx, []int{userID})
 	if p != nil {

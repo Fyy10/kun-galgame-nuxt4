@@ -78,6 +78,17 @@ func Register(svc *Service) func(huma.API) {
 		}), svc.getReply)
 
 		huma.Register(api, v1.Optional(huma.Operation{
+			OperationID: "getComment",
+			Method:      http.MethodGet,
+			Path:        "/comments/{comment_id}",
+			Summary:     "Get a comment",
+			Description: "Returns one comment, for a permalink. " +
+				"NOT_FOUND when the comment does not exist, is hidden, was written by a banned user, " +
+				"or sits under a reply getReply would not return to the caller.",
+			Tags: []string{"topics"},
+		}), svc.getComment)
+
+		huma.Register(api, v1.Optional(huma.Operation{
 			OperationID: "recordTopicView",
 			Method:      http.MethodPost,
 			Path:        "/topics/{topic_id}/views",

@@ -56,6 +56,31 @@ func RegisterInteractions(x *Interactions) func(huma.API) {
 			Tags: []string{"topics"},
 		}), x.unfavoriteTopic)
 
+		huma.Register(api, v1.Required(huma.Operation{
+			OperationID: "likeComment",
+			Method:      http.MethodPut,
+			Path:        "/comments/{comment_id}/like",
+			Summary:     "Like a comment",
+			Description: "Adds the caller's like and returns the comment. Liking one already liked changes nothing. " +
+				"It earns the comment's author 1 moemoepoint and notifies them once. " +
+				"NOT_FOUND when getComment would not return the comment to the caller.",
+			Tags: []string{"topics"},
+			Responses: problemResponses(map[int]string{
+				403: "SELF_LIKE_FORBIDDEN when the caller likes their own comment; SCOPE_REQUIRED or ACCOUNT_BANNED.",
+			}),
+		}), x.likeComment)
+
+		huma.Register(api, v1.Required(huma.Operation{
+			OperationID: "unlikeComment",
+			Method:      http.MethodDelete,
+			Path:        "/comments/{comment_id}/like",
+			Summary:     "Remove a like from a comment",
+			Description: "Removes the caller's like and returns the comment. Removing one not set changes nothing. " +
+				"It takes back the moemoepoint the like earned, but not the notification it sent. " +
+				"NOT_FOUND when getComment would not return the comment to the caller.",
+			Tags: []string{"topics"},
+		}), x.unlikeComment)
+
 		huma.Register(api, v1.IdempotencyRequired(v1.Required(huma.Operation{
 			OperationID:   "upvoteTopic",
 			Method:        http.MethodPost,
