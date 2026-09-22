@@ -74,13 +74,13 @@ git ls-remote --heads origin 'api-v1/*'
 
 ### 待认领
 
-旧 `/api/*` 路由 **299 条**。`legacy_route_baseline` = 300，因为它数的是「所有非 `/api/v1` 的路由」，`/healthz` 也在里面——**基线的地板是 1，不是 0**。一行一个可独立执行的域。
+旧 `/api/*` 路由 **299 条**。T1–T3 是话题轨（`/api/topic/**` 的残余 27 条），W6 起按域切。`legacy_route_baseline` = 300，因为它数的是「所有非 `/api/v1` 的路由」，`/healthz` 也在里面——**基线的地板是 1，不是 0**。一行一个可独立执行的域。
 
 | 波 | 域 | 旧路由 | 迁移号段 | 备注 |
 |---|---|---|---|---|
-| W5c | 话题草稿 `/topic/draft*` | 4 | 110–114 | 生产 69 条 / 57 人 |
-| W5d | 话题抽奖 `/topic/:tid/lottery*` | 11 | 115–119 | 生产只有 2 个抽奖、0 个兑换码；**排在最后** |
-| W5e | 旧评论 + 旧投票路由清理 | 10 | — | W5a/W5b 已取代，只删不写；顺带降基线 |
+| T1 | 清理：旧评论 `/topic/:tid/comment*` + 旧投票 `/topic/:tid/poll*` | 10 | — | W5a/W5b 已取代，**只删不写**；顺带降基线；`topic_poll.status` 的 drop 在它之后另起一轮 deploy-then-drop |
+| T2 | 话题草稿 `/topic/draft*` + 两条零散读面 `/topic/interactions/mine`、`/topic/:tid/reply/locate` | 6 | 110–114 | 草稿生产 69 条 / 57 人 |
+| T3 | 话题抽奖 `/topic/:tid/lottery*` | 11 | 115–119 | 一个完整状态机，**不要拆成两个 session**；生产只有 2 个抽奖、0 个兑换码，价值最低但端点最多 |
 | W6 | 用户 `/user/**` | 25 | 120–129 | 资料、签到、偏好、创作者、各种「我的 X」列表 |
 | W7 | 消息 `/message/**` | 11 | 130–134 | 私信 + 系统通知 + 红点 |
 | W8 | galgame 主域 `/galgame/**` | 50 | 135–149 | 最大的一块，可再拆读面 / 写面两波 |
@@ -90,6 +90,6 @@ git ls-remote --heads origin 'api-v1/*'
 | W12 | 工具箱 `/toolset/**` | 18 | 175–179 | |
 | W13 | 管理面 `/admin/**` + `/perm` `/trust` `/report` | 29 | 180–184 | 权限最敏感，普查要最细 |
 | W14 | 更新日志 `/update/**` | 11 | 185–189 | |
-| W15 | 零散：`/search` `/news` `/image` `/ranking` `/community` `/auth` `/activity` `/rss` `/section` `/resource` `/home` `/friend-link` `/category` `/app`，外加两条漏网的话题读面 `/topic/interactions/mine`、`/topic/:tid/reply/locate` | 36 | 190–199 | 可按需拆成几个小 PR |
+| W15 | 零散：`/search` `/news` `/image` `/ranking` `/community` `/auth` `/activity` `/rss` `/section` `/resource` `/home` `/friend-link` `/category` `/app` | 34 | 190–199 | 可按需拆成几个小 PR。其中 `/section` `/ranking/topic` `/rss/topic` `/home` `/image/topic` `/search` 的话题部分**属于话题轨的邻接面**：它们和别的域共用实现，**整条端点归 W15 一个人写**，话题轨只提需求，不半途接手 |
 
 执行方式：**每个域一个独立会话**，在自己的 worktree 里按 [05-session-sop.md](05-session-sop.md) 从普查做到 PR；合并即上线。2026-09-22 之前是「督查派发 cursor-agent + 直接落 master」，已由 PR 流程取代——原因见 [04 §8](04-parallel-tracks.md)。
