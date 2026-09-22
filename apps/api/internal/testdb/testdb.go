@@ -30,6 +30,17 @@ func Open(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("open test database: %v", redact(err.Error(), dsn))
 	}
+	// Every call used to leave its pool open. Once the topic write and
+	// interaction suites landed in one package, postgres answered
+	// "sorry, too many clients already (SQLSTATE 53300)" partway through the
+	// run. Cleanups are LIFO, so this Close runs after the fixture's own.
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatalf("open test database: %v", redact(err.Error(), dsn))
+	}
+	sqlDB.SetMaxOpenConns(4)
+	sqlDB.SetMaxIdleConns(2)
+	t.Cleanup(func() { _ = sqlDB.Close() })
 	return db
 }
 

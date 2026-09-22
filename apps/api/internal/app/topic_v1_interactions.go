@@ -9,23 +9,22 @@ import (
 	"gorm.io/gorm"
 )
 
-var engageTestAward topicapiv1.AwardFunc
-
 func (a *App) newTopicV1Interactions(reads *topicapiv1.Service) *topicapiv1.Interactions {
 	var (
 		notify msgService.Notifier
 		db     *gorm.DB
+		award  topicapiv1.AwardFunc
 	)
 	if a != nil {
 		db = a.DB
 		notify = a.Notifier
+		award = a.TopicAward
 		if notify == nil && db != nil {
 			notify = msgService.NewNotifier(msgRepo.NewMessageRepository(db))
 		}
 	}
-	award := moemoepoint.Award
-	if engageTestAward != nil {
-		award = engageTestAward
+	if award == nil {
+		award = moemoepoint.Award
 	}
 	return topicapiv1.NewInteractions(reads, db, notify, award)
 }

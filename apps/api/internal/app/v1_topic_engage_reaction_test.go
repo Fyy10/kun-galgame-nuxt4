@@ -2,12 +2,15 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"sync"
 	"testing"
 
 	"kun-galgame-api/internal/moemoepoint"
 	"kun-galgame-api/pkg/problem"
+
+	"gorm.io/gorm"
 )
 
 func TestV1TopicLikeSetRepeatRemove(t *testing.T) {
@@ -36,7 +39,7 @@ func TestV1TopicLikeSetRepeatRemove(t *testing.T) {
 		t.Fatalf("awards %d: %+v", len(calls), calls)
 	}
 	wantKey := moemoepoint.Key("liked", "topic_reaction_"+strID(rowID))
-	if calls[0] != (awardCall{e1UserAlice, 1, moemoepoint.ReasonLiked, moemoepoint.Ref("topic", e1TopicPublic), wantKey}) {
+	if calls[0] != (engageAward{e1UserAlice, 1, moemoepoint.ReasonLiked, moemoepoint.Ref("topic", e1TopicPublic), wantKey}) {
 		t.Fatalf("award %+v", calls[0])
 	}
 	msgs := f.messages(t, e1UserAlice, "liked")
@@ -270,4 +273,34 @@ func jsonEqual(a, b any) bool {
 	ab, _ := json.Marshal(a)
 	bb, _ := json.Marshal(b)
 	return string(ab) == string(bb)
+}
+
+func TestV1EngageAwardsWaitForTheCommit(t *testing.T) {
+	f := newEngageFix(t)
+	sess := f.asBob(t)
+
+	const cb = "engage_award_commit_test"
+	_ = f.db.Callback().Create().Before("gorm:create").Register(cb, func(tx *gorm.DB) {
+		if tx.Statement == nil || tx.Statement.Table != "message" {
+			return
+		}
+		_ = tx.AddError(errors.New("message insert refused by the test"))
+	})
+	t.Cleanup(func() { _ = f.db.Callback().Create().Remove(cb) })
+
+	resp, body := f.do(t, http.MethodPut,
+		"/api/v1/topics/"+strID(e1TopicPublic)+"/reactions/like", sess,
+		"/topics/{topic_id}/reactions/{reaction}", nil, nil)
+	if resp.StatusCode != 500 {
+		t.Fatalf("like with a failing message insert %d %s", resp.StatusCode, body)
+	}
+	if calls := f.awards.snapshot(); len(calls) != 0 {
+		t.Fatalf("awards escaped a rolled-back transaction: %+v", calls)
+	}
+	if f.count(t, `SELECT COUNT(*) FROM topic_reaction WHERE topic_id = ? AND user_id = ?`, e1TopicPublic, e1UserBob) != 0 {
+		t.Fatal("reaction row survived the rollback")
+	}
+	if f.topicInt(t, e1TopicPublic, "like_count") != 0 {
+		t.Fatalf("like_count %d after a rolled-back like", f.topicInt(t, e1TopicPublic, "like_count"))
+	}
 }

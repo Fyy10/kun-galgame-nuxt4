@@ -35,7 +35,7 @@ func TestV1ReplyLikeSetRepeatRemove(t *testing.T) {
 		t.Fatalf("awards %d: %+v", len(calls), calls)
 	}
 	wantKey := moemoepoint.Key("liked", "topic_reply_reaction_"+strID(rowID))
-	if calls[0] != (awardCall{e1UserDave, 1, moemoepoint.ReasonLiked, moemoepoint.Ref("topic_reply", e1ReplyDave), wantKey}) {
+	if calls[0] != (engageAward{e1UserDave, 1, moemoepoint.ReasonLiked, moemoepoint.Ref("topic_reply", e1ReplyDave), wantKey}) {
 		t.Fatalf("award %+v", calls[0])
 	}
 	msgs := f.messages(t, e1UserDave, "liked")
@@ -66,7 +66,7 @@ func TestV1ReplyLikeSetRepeatRemove(t *testing.T) {
 		t.Fatalf("unliked awards %d %+v", len(calls), calls)
 	}
 	unliked := moemoepoint.Key("unliked", "topic_reply_reaction_"+strID(rowID))
-	if calls[1] != (awardCall{e1UserDave, -1, moemoepoint.ReasonLiked, moemoepoint.Ref("topic_reply", e1ReplyDave), unliked}) {
+	if calls[1] != (engageAward{e1UserDave, -1, moemoepoint.ReasonLiked, moemoepoint.Ref("topic_reply", e1ReplyDave), unliked}) {
 		t.Fatalf("unliked %+v want key %s", calls[1], unliked)
 	}
 	if f.count(t, `SELECT COUNT(*) FROM topic_reply_reaction WHERE topic_reply_id = ? AND user_id = ? AND reaction = 'like'`, e1ReplyDave, e1UserBob) != 0 {

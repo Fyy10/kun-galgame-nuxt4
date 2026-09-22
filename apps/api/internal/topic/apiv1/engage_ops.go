@@ -16,8 +16,6 @@ import (
 	"gorm.io/gorm"
 )
 
-type AwardFunc func(userID, delta int, reason, ref, key string)
-
 type Interactions struct {
 	reads  *Service
 	db     *gorm.DB
@@ -102,14 +100,6 @@ type listReplyReactionsInput struct {
 	collect.Page
 }
 
-type pendingAward struct {
-	userID int
-	delta  int
-	reason string
-	ref    string
-	key    string
-}
-
 type engageError struct {
 	p *problem.Problem
 }
@@ -187,10 +177,6 @@ func selfLikeForbidden() *problem.Problem {
 
 func selfUpvoteForbidden() *problem.Problem {
 	return problem.New(problem.CodeSelfUpvoteForbidden, "Users cannot upvote their own topics.")
-}
-
-func permissionRequired() *problem.Problem {
-	return problem.New(problem.CodePermissionRequired, "The token lacks the permission this decision needs.")
 }
 
 func unknownReply() *problem.Problem {

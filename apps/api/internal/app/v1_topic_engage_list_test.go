@@ -40,6 +40,20 @@ func (f *engageFix) seedListHistory(t *testing.T) {
 		f.runSQL(t, `INSERT INTO topic_reply_reaction (topic_reply_id, user_id, reaction, created) VALUES (?, ?, ?, ?)`,
 			e1ReplyReact, u, toks[i], at)
 	}
+
+	// Three rows sharing one instant, straddling a limit=2 page boundary: with
+	// distinct timestamps the walk passes even when the keyset drops its id
+	// tie-breaker, so the total order goes untested.
+	tie := base.Add(3500 * time.Millisecond)
+	tieToks := []string{"tie_a", "tie_b", "tie_c"}
+	for i, u := range []int{e1UserBob, e1UserCarol, e1UserDave} {
+		f.runSQL(t, `INSERT INTO topic_upvote (topic_id, user_id, description, created, updated) VALUES (?, ?, ?, ?, ?)`,
+			e1TopicLists, u, tieToks[i], tie, tie)
+		f.runSQL(t, `INSERT INTO topic_reaction (topic_id, user_id, reaction, created) VALUES (?, ?, ?, ?)`,
+			e1TopicLists, u, tieToks[i], tie)
+		f.runSQL(t, `INSERT INTO topic_reply_reaction (topic_reply_id, user_id, reaction, created) VALUES (?, ?, ?, ?)`,
+			e1ReplyReact, u, tieToks[i], tie)
+	}
 }
 
 func (f *engageFix) walkListIDs(t *testing.T, rawURL, session, spec string) []string {

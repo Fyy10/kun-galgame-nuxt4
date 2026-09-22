@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -86,7 +85,7 @@ func (engageVerifier) Verify(_ context.Context, raw string) (*oauth.AccessClaims
 	}
 }
 
-type awardCall struct {
+type engageAward struct {
 	UserID int
 	Delta  int
 	Reason string
@@ -96,19 +95,19 @@ type awardCall struct {
 
 type awardRecorder struct {
 	mu    sync.Mutex
-	calls []awardCall
+	calls []engageAward
 }
 
 func (r *awardRecorder) Award(userID, delta int, reason, ref, key string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.calls = append(r.calls, awardCall{userID, delta, reason, ref, key})
+	r.calls = append(r.calls, engageAward{userID, delta, reason, ref, key})
 }
 
-func (r *awardRecorder) snapshot() []awardCall {
+func (r *awardRecorder) snapshot() []engageAward {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	out := make([]awardCall, len(r.calls))
+	out := make([]engageAward, len(r.calls))
 	copy(out, r.calls)
 	return out
 }
@@ -130,8 +129,6 @@ func newEngageFix(t *testing.T) *engageFix {
 	t.Cleanup(func() { _ = rdb.Close() })
 
 	rec := &awardRecorder{}
-	engageTestAward = rec.Award
-	t.Cleanup(func() { engageTestAward = nil })
 
 	f := &engageFix{db: db, rdb: rdb, awards: rec}
 	mux := http.NewServeMux()
@@ -169,6 +166,7 @@ func newEngageFix(t *testing.T) *engageFix {
 		Redis:      rdb,
 		UserClient: uc,
 		Authn:      middleware.NewAuthenticator(rdb, nil, middleware.NewBearer(engageVerifier{}, rdb, nil)),
+		TopicAward: rec.Award,
 	}
 	f.setupRoutes()
 	f.spec = newSpecConformance(t)
@@ -482,8 +480,6 @@ func jsonObj(t *testing.T, body []byte) map[string]any {
 	}
 	return m
 }
-
-func strID(id int) string { return strconv.Itoa(id) }
 
 func authBearer(token string) http.Header {
 	h := http.Header{}

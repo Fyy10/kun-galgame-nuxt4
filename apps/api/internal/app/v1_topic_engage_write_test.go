@@ -76,7 +76,7 @@ func TestV1TopicFavoriteSetRepeatRemove(t *testing.T) {
 		t.Fatalf("awards %d %+v", len(calls), calls)
 	}
 	wantKey := moemoepoint.Key("favorited", "topic_favorite_"+strID(rowID))
-	if calls[0] != (awardCall{e1UserAlice, 1, moemoepoint.ReasonLiked, moemoepoint.Ref("topic", e1TopicPublic), wantKey}) {
+	if calls[0] != (engageAward{e1UserAlice, 1, moemoepoint.ReasonLiked, moemoepoint.Ref("topic", e1TopicPublic), wantKey}) {
 		t.Fatalf("award %+v", calls[0])
 	}
 	msgs := f.messages(t, e1UserAlice, "favorite")
@@ -107,7 +107,7 @@ func TestV1TopicFavoriteSetRepeatRemove(t *testing.T) {
 		t.Fatalf("unfavorited awards %d %+v", len(calls), calls)
 	}
 	unfav := moemoepoint.Key("unfavorited", "topic_favorite_"+strID(rowID))
-	if calls[1] != (awardCall{e1UserAlice, -1, moemoepoint.ReasonLiked, moemoepoint.Ref("topic", e1TopicPublic), unfav}) {
+	if calls[1] != (engageAward{e1UserAlice, -1, moemoepoint.ReasonLiked, moemoepoint.Ref("topic", e1TopicPublic), unfav}) {
 		t.Fatalf("unfavorited %+v", calls[1])
 	}
 	if f.topicInt(t, e1TopicPublic, "favorite_count") != 0 {
@@ -233,10 +233,10 @@ func TestV1TopicUpvoteCreatesRowAwardsAndMessage(t *testing.T) {
 	ref := moemoepoint.Ref("topic_upvote", rowID)
 	sent := moemoepoint.Key("upvote_sent", "topic_upvote_"+strID(rowID))
 	recv := moemoepoint.Key("upvote_received", "topic_upvote_"+strID(rowID))
-	if calls[0] != (awardCall{e1UserBob, -constants.CostUpvoteSender, moemoepoint.ReasonContentRemoved, ref, sent}) {
+	if calls[0] != (engageAward{e1UserBob, -constants.CostUpvoteSender, moemoepoint.ReasonContentRemoved, ref, sent}) {
 		t.Fatalf("sent %+v", calls[0])
 	}
-	if calls[1] != (awardCall{e1UserAlice, constants.RewardUpvoteOwner, moemoepoint.ReasonContentApproved, ref, recv}) {
+	if calls[1] != (engageAward{e1UserAlice, constants.RewardUpvoteOwner, moemoepoint.ReasonContentApproved, ref, recv}) {
 		t.Fatalf("received %+v", calls[1])
 	}
 	msgs := f.messages(t, e1UserAlice, "upvoted")

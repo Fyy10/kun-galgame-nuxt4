@@ -41,9 +41,12 @@ func (r *TopicRepository) DeleteTopicReaction(tx *gorm.DB, topicID, userID int, 
 }
 
 func (r *TopicRepository) InsertTopicFavorite(tx *gorm.DB, topicID, userID int) (int, bool, error) {
+	// topic_favorite.updated and topic_upvote.updated are NOT NULL with no
+	// default, unlike topic_reaction which has no such column: omitting them
+	// made every v1 favorite and upvote answer 500 with SQLSTATE 23502.
 	return returningID(tx, `
-		INSERT INTO topic_favorite (topic_id, user_id)
-		VALUES (?, ?)
+		INSERT INTO topic_favorite (topic_id, user_id, updated)
+		VALUES (?, ?, now())
 		ON CONFLICT (topic_id, user_id) DO NOTHING
 		RETURNING id`, topicID, userID)
 }
@@ -57,8 +60,8 @@ func (r *TopicRepository) DeleteTopicFavoriteRow(tx *gorm.DB, topicID, userID in
 
 func (r *TopicRepository) InsertTopicUpvote(tx *gorm.DB, topicID, userID int, note string) (int, time.Time, error) {
 	rows, err := tx.Raw(`
-		INSERT INTO topic_upvote (topic_id, user_id, description)
-		VALUES (?, ?, ?)
+		INSERT INTO topic_upvote (topic_id, user_id, description, updated)
+		VALUES (?, ?, ?, now())
 		RETURNING id, created`, topicID, userID, note).Rows()
 	if err != nil {
 		return 0, time.Time{}, err

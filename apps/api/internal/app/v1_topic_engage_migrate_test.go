@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
 	"time"
 )
@@ -16,25 +15,6 @@ func migration099Path(t *testing.T) string {
 		t.Fatal("caller")
 	}
 	return filepath.Join(filepath.Dir(file), "..", "..", "migrations", "099_topic_engagement_recount.up.sql")
-}
-
-func splitSQLStatements(raw string) []string {
-	var out []string
-	for _, part := range strings.Split(raw, ";") {
-		var kept []string
-		for _, ln := range strings.Split(part, "\n") {
-			trim := strings.TrimSpace(ln)
-			if trim == "" || strings.HasPrefix(trim, "--") {
-				continue
-			}
-			kept = append(kept, ln)
-		}
-		s := strings.TrimSpace(strings.Join(kept, "\n"))
-		if s != "" {
-			out = append(out, s)
-		}
-	}
-	return out
 }
 
 func TestV1TopicEngagementRecountMigration099(t *testing.T) {
@@ -74,12 +54,15 @@ func TestV1TopicEngagementRecountMigration099(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	stmts := splitSQLStatements(string(raw))
-	if len(stmts) != 9 {
-		t.Fatalf("099 statements %d, want 6 updates + 3 indexes", len(stmts))
+	// cmd/migrate hands the whole file to a single database/sql Exec. Splitting
+	// it on ';' here counted 11 statements for a 9-statement file and tested the
+	// file's shape instead of the migration's effect.
+	sqlDB, err := f.db.DB()
+	if err != nil {
+		t.Fatal(err)
 	}
-	for _, stmt := range stmts {
-		f.runSQL(t, stmt)
+	if _, err := sqlDB.Exec(string(raw)); err != nil {
+		t.Fatalf("run 099: %v", err)
 	}
 
 	if f.topicInt(t, e1TopicMigrateA, "like_count") != 2 {
