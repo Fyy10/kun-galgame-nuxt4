@@ -15,7 +15,7 @@
 | `topic_comment_like` | 1106；孤儿 0；自赞 0 | |
 | 跨话题评论（A2） | **0** | 服务端推导 `reply_id→topic_id` 是修 bug，不是改行为 |
 | 父子跨楼 | 0 | |
-| 顶层 target 指错人（A1） | **6**；子评论指错 0；指向不存在的人 0 | 服务端推导 target 是修 bug；6 条历史行由迁移 101 校正 |
+| 顶层 target 指错人（A1） | **6**；子评论指错 0；指向不存在的人 0 | 逐行看过：6 行**全部**是「评论者就是楼层作者、target 指向第三人」，正文印证（「感谢分享」「请问是谁允许你上传到别的论坛的?」）。这是已退役的「评论给 xxx」功能留下的真实数据，**不是脏数据，不得改写** |
 | `target_user_id = user_id` | 252 | 自评自，现行逻辑跳过发分，保留 |
 | `topic.comment_count` 漂移 | 0 | |
 | `topic_reply.comment_count` | 1281 非零（1263 正确 / 18 错），420 该有值却是 0 | 见 §4 A10 |
@@ -53,7 +53,7 @@
 |---|---|---|
 | `text` | `string`，doc 称纯文本 | **删除**，换成 `content: ContentDocument` |
 | `content` | — | 新增。**受限文档**，按 K20：只产出 `paragraph` / `text` / `break` / `image` / `mention` / `reply_reference`，不跑 Markdown 解析 |
-| `in_reply_to_user` | 原样回显客户端传的 `target_user_id`（A15 的契约谎言） | 由服务端推导：有父评论则取父评论作者，否则取所在回复的作者 |
+| `in_reply_to_user` | 原样回显客户端传的 `target_user_id`（A15 的契约谎言） | **写入时**由服务端推导（有父评论取父评论作者，否则取所在回复的作者），请求体里没有这个字段；**读取时原样下发存储列**。两件事分开做才既堵住伪造、又不毁掉那 6 行历史数据 |
 | `viewer` | 只有 `has_liked` | 加 `can_edit` / `can_delete` / `can_like` |
 
 `id` / `reply_id` / `parent_comment_id` / `author` / `like_count` / `created_at` / `edited_at` 不变。
@@ -76,7 +76,7 @@
 
 | 普查 | 裁决 |
 |---|---|
-| A1 target 客户端指定 | 服务端推导。旧面已于 2026-09-22 修掉；v1 请求体里根本没有这个字段。6 条历史行由迁移 101 校正 |
+| A1 target 客户端指定 | **写面**由服务端推导（旧面已于 2026-09-22 修掉；v1 请求体里根本没有这个字段）。**读面照旧下发存储列**，见 §3.1 |
 | A2 `reply_id` 与 `topic_id` 不互校 | 统一走 `visibleReply`，它一并查 reply status、reply↔topic 一致性、作者可渲染性。**不得另写一套 `requireTopicRead`** |
 | A3 删评论的扣分门槛 | **用户拍板（2026-09-22）：扣分永不阻断删除。** 删除照常发生，扣分尽力而为、扣到 0 为止，不再因余额不足回滚。作者自删与版主删都适用 |
 | A4 发分在提交前 | 收成 `pendingAward`，提交后 `flushAwards`，复用 `App.TopicAward`（W3/W4 那一套）。**不得再用 `InteractionHelpers.AdjustMoemoepoint`** |
@@ -90,14 +90,14 @@
 | A12 旧读面缺决胜键 | v1 的 `ListByReplyIDs` 已有 `created ASC, id ASC`，不动 |
 | A13 `updated` NOT NULL 无默认 | **两张表都有这个坑**。裸 SQL 插入必须显式写 `created, updated`——这正是 W4 让收藏和推每次 500 的那个坑 |
 | A14 `text` 纯文本承诺与实际不符 | **用户拍板（2026-09-22）：承认 token 并结构化解析。** 即 K20 |
-| A15 `in_reply_to_user` 是契约谎言 | 服务端推导，见 §3.1 |
+| A15 `in_reply_to_user` 是契约谎言 | 改 doc 而不是改数据：这个字段是「这条评论回应的人」，**写入时**由服务端从父评论或所在回复推导，且 2026-09-22 之前写下的行可能指向作者在已退役 UI 里手选的第三人。doc 必须把这句话写全，否则它对那 6 行仍然是假话 |
 | A16 通知去重不一致 | **本波不改**。`createDedupMessage` 是全站共用件，改它是跨域行为变更。照现状实现，在此记下 |
 | A17 `locate` 的 `page` 算错 | 不搬进 v1。locate 归读面轨，届时只发 `floor` |
 | A18 trust 检查在可见性之前 | 调序：先判可见性与权限，再跑内容检查。按 K18，编辑时正文未变则完全不跑 |
 
 ## 5. 预分配（轨只填，不得自行挑号）
 
-- **迁移号：101**，且只有 101。内容：(a) 校正 6 条 `target_user_id` 指错的顶层评论；(b) 加 `idx_topic_comment_reply_created_id`；(c) 不动 `topic_reply.comment_count`。
+- **迁移号：101**，且只有 101。内容：加 `idx_topic_comment_reply_created_id`；不动 `topic_reply.comment_count`；**不改任何 `target_user_id`**。
 - **102 由督查在上线后手动跑**（deploy-then-drop 删 `topic_reply.comment_count`），不在本轨交付物里。
 - **错误码：一个都不新增。** 需要的全都已注册：`NOT_FOUND`、`VALIDATION_FAILED`、`PERMISSION_REQUIRED`、`CONTENT_REJECTED`、`SELF_LIKE_FORBIDDEN`、`ACCOUNT_BANNED`、`SERVICE_UNAVAILABLE`、`IDEMPOTENCY_*`。`SELF_LIKE_FORBIDDEN` 的注册描述原文已含 "or comments"。**若发现确实缺，停下来报告，不要自己往 `registry.go` 或 `zh-CN/problem.json` 加。**
 - **`app.go` 字段：不新增。** 评论属于话题域，落在 `internal/topic/apiv1/`，复用现有 `App.TopicAward`。
@@ -117,7 +117,7 @@
 | # | 改动 | 应当杀死它的断言 |
 |---|---|---|
 | M1 | `visibleReply` 里去掉 reply↔topic 一致性检查（改成恒真） | 往读不到的话题里写评论应得 404 |
-| M2 | 把 `in_reply_to_user` 改回读库里的 `target_user_id` 列 | 6 条历史行之一的推导值断言 |
+| M2 | 发表评论时，把推导出来的 target 改成评论者自己（`user.ID`） | 新建评论的 `in_reply_to_user` 必须是父评论作者 / 楼层作者，不是评论者 |
 | M3 | 发表时父评论不属于本楼也放行 | `422` + `errors[]` 指向 `parent_comment_id` |
 | M4 | 删除时把「扣分不阻断」改回「余额不足则回滚」 | 作者余额 0 时版主删除仍须 204 |
 | M5 | `flushAwards` 挪到 commit 之前 | 事务失败时不得发分（照 W4 的 `TestV1EngageAwardsWaitForTheCommit` 写法） |
