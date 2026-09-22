@@ -112,6 +112,7 @@ type writeFix struct {
 	awards []awardCall
 	mu     sync.Mutex
 	nBatch atomic.Int32
+	failOA atomic.Bool
 }
 
 func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
@@ -125,6 +126,10 @@ func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/users/batch", func(w http.ResponseWriter, _ *http.Request) {
 		f.nBatch.Add(1)
+		if f.failOA.Load() {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 		users := []map[string]any{
 			{"id": w3UserAlice, "name": "alice", "status": 0, "roles": []string{"user"}},

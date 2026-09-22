@@ -51,3 +51,21 @@ func capsForReply(topic *model.Topic, reply *model.TopicReply, user *middleware.
 		Like:   topic.Status == 0 && !author,
 	}
 }
+
+type commentCaps struct {
+	Edit   bool
+	Delete bool
+	Like   bool
+}
+
+func capsForComment(topic *model.Topic, commentAuthorID int, user *middleware.UserInfo) commentCaps {
+	if topic == nil || user == nil {
+		return commentCaps{}
+	}
+	author := user.ID == commentAuthorID
+	return commentCaps{
+		Edit:   topic.Status == 0 && (author || user.Can(perm.CommentTopicEdit)),
+		Delete: author || user.Can(perm.CommentTopicDelete),
+		Like:   !author,
+	}
+}

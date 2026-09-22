@@ -105,6 +105,69 @@ func RegisterWrites(w *Writes) func(huma.API) {
 			}),
 		}), w.deleteReply)
 
+		huma.Register(api, v1.IdempotencyRequired(v1.Required(huma.Operation{
+			OperationID:   "createComment",
+			Method:        http.MethodPost,
+			Path:          "/replies/{reply_id}/comments",
+			Summary:       "Comment on a reply",
+			DefaultStatus: http.StatusCreated,
+			Description: "Creates a comment under the reply and returns it as getComment would to its author. " +
+				"The body is plain text and is never parsed as Markdown; /image/{hash} tokens in it become image nodes. " +
+				"in_reply_to_user is derived here, not sent: the parent comment's author, or the reply's author without a parent. " +
+				"That user earns 1 moemoepoint and is notified, unless they are the caller. " +
+				"NOT_FOUND under the same conditions as getReply.",
+			Tags: []string{"topics"},
+			Responses: problemResponses(map[int]string{
+				422: "VALIDATION_FAILED when the body is blank or parent_comment_id is not a visible comment of this reply, " +
+					"or CONTENT_REJECTED when the trust-and-safety check refuses the body.",
+			}),
+		})), w.createComment)
+
+		huma.Register(api, v1.Required(huma.Operation{
+			OperationID: "updateComment",
+			Method:      http.MethodPatch,
+			Path:        "/comments/{comment_id}",
+			Summary:     "Update a comment",
+			Description: "Changes the comment body and returns the comment as getComment would. It needs can_edit. " +
+				"A changed body sets edited_at; the topic is not bumped and nobody is notified again. " +
+				"An unchanged body is not checked again. " +
+				"NOT_FOUND under the same conditions as getComment.",
+			Tags: []string{"topics"},
+			Responses: problemResponses(map[int]string{
+				403: "PERMISSION_REQUIRED when the caller may read but not edit the comment; SCOPE_REQUIRED or ACCOUNT_BANNED.",
+				422: "VALIDATION_FAILED, or CONTENT_REJECTED when the trust-and-safety check refuses the body.",
+			}),
+		}), w.updateComment)
+
+		huma.Register(api, v1.Required(huma.Operation{
+			OperationID:   "deleteComment",
+			Method:        http.MethodDelete,
+			Path:          "/comments/{comment_id}",
+			Summary:       "Delete a comment",
+			DefaultStatus: http.StatusNoContent,
+			Description: "Deletes the comment with its likes. It needs can_delete. Its own replies stay and become top-level comments. " +
+				"An author deleting their own comment is charged 3 moemoepoint times one plus its likes; staff deleting it charges the author 3. " +
+				"The charge never blocks the deletion: it is capped at the author's cached balance, so an author with nothing left pays nothing. " +
+				"NOT_FOUND under the same conditions as getComment.",
+			Tags: []string{"topics"},
+			Responses: problemResponses(map[int]string{
+				403: "PERMISSION_REQUIRED when the caller may read but not delete the comment; SCOPE_REQUIRED or ACCOUNT_BANNED.",
+			}),
+		}), w.deleteComment)
+
+		huma.Register(api, v1.Required(huma.Operation{
+			OperationID: "getCommentSource",
+			Method:      http.MethodGet,
+			Path:        "/comments/{comment_id}/source",
+			Summary:     "Get a comment's editable source",
+			Description: "Returns the stored plain text of the comment, to fill an edit form. It needs can_edit. " +
+				"NOT_FOUND under the same conditions as getComment.",
+			Tags: []string{"topics"},
+			Responses: problemResponses(map[int]string{
+				403: "PERMISSION_REQUIRED when the caller may read but not edit the comment; SCOPE_REQUIRED or ACCOUNT_BANNED.",
+			}),
+		}), w.getCommentSource)
+
 		huma.Register(api, v1.Required(huma.Operation{
 			OperationID: "getReplySource",
 			Method:      http.MethodGet,

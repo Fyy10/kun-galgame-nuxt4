@@ -45,7 +45,7 @@ func (s *Service) listTopicReplies(ctx context.Context, in *listTopicRepliesInpu
 	}
 	selected := pg.rows
 
-	extra, p := s.loadReplyExtras(selected, user)
+	extra, p := s.loadReplyExtras(ctx, selected, user)
 	if p != nil {
 		return nil, p
 	}
@@ -151,7 +151,7 @@ func (s *Service) getReply(ctx context.Context, in *getReplyInput) (*getReplyOut
 
 func (s *Service) buildOneReply(ctx context.Context, topic *model.Topic, row model.TopicReply, viewer *middleware.UserInfo) (*Reply, *problem.Problem) {
 	replies := []model.TopicReply{row}
-	extra, p := s.loadReplyExtras(replies, viewer)
+	extra, p := s.loadReplyExtras(ctx, replies, viewer)
 	if p != nil {
 		return nil, p
 	}

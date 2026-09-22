@@ -94,3 +94,30 @@ type getReplySourceInput struct {
 type getReplySourceOutput struct {
 	Body ReplySource
 }
+
+type createCommentInput struct {
+	ReplyID string `path:"reply_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Reply id."`
+	Body    CommentCreate
+}
+
+type createCommentOutput struct {
+	Location string `header:"Location" format:"uri-reference" maxLength:"64" doc:"Absolute path of the new comment, such as /api/v1/comments/2087."`
+	Body     Comment
+}
+
+type commentInput struct {
+	CommentID string `path:"comment_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Comment id."`
+}
+
+type updateCommentInput struct {
+	CommentID string `path:"comment_id" pattern:"^[1-9][0-9]{0,18}$" maxLength:"19" doc:"Comment id."`
+	Body      CommentPatch
+}
+
+type commentOutput struct {
+	Body Comment
+}
+
+type getCommentSourceOutput struct {
+	Body CommentSource
+}

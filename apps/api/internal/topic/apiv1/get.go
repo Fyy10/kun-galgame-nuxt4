@@ -54,7 +54,7 @@ func (s *Service) buildTopic(ctx context.Context, topic *model.Topic, viewer *mi
 	if p != nil {
 		return nil, p
 	}
-	extra, p := s.loadReplyExtras(specials, viewer)
+	extra, p := s.loadReplyExtras(ctx, specials, viewer)
 	if p != nil {
 		return nil, p
 	}
