@@ -163,10 +163,7 @@ func (p *replyPack) mapOne(cdn string, topic *model.Topic, row model.TopicReply,
 		author = repr.NewUserRef(cdn, u)
 	}
 	mine := p.mine[row.ID]
-	var rv *ReplyViewer
-	if viewer != nil {
-		rv = &ReplyViewer{HasLiked: hasToken(mine, "like"), HasDisliked: hasToken(mine, "dislike")}
-	}
+	rv := replyViewer(topic, &row, viewer, mine)
 	react := p.react[row.ID]
 	if react == nil {
 		react = []ReactionSummary{}
