@@ -95,10 +95,25 @@ run_migrate -only 069
 run_migrate -only 079
 run_migrate -only 092
 
+# The newest migration is the freshness check below, but a deploy-then-drop
+# migration is deliberately applied nowhere until its own moment, so it would
+# fail that check forever. Read the runner's own exclude list rather than
+# keeping a second copy here: when a number leaves that list, this follows.
+excluded="$(sed -n 's/.*flag\.String("exclude", "\([^"]*\)".*/\1/p' cmd/migrate/main.go | head -1)"
+is_excluded() {
+	local prefix="${1%%_*}"
+	case ",${excluded}," in
+	*",${prefix},"*) return 0 ;;
+	*) return 1 ;;
+	esac
+}
+
 shopt -s nullglob
 newest=""
 for f in migrations/*.up.sql; do
-	newest="$(basename "${f}" .up.sql)"
+	name="$(basename "${f}" .up.sql)"
+	is_excluded "${name}" && continue
+	newest="${name}"
 done
 shopt -u nullglob
 if [[ -z "${newest}" ]]; then
