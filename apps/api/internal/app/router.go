@@ -31,6 +31,7 @@ func (a *App) setupRoutes() {
 		topicapiv1.Register(topicReads),
 		topicapiv1.RegisterWrites(a.newTopicV1Writes(topicReads)),
 		topicapiv1.RegisterInteractions(a.newTopicV1Interactions(topicReads)),
+		topicapiv1.RegisterPolls(a.newTopicV1Polls(topicReads)),
 		galgameapiv1.Register(a.GalgameV1),
 	)
 
