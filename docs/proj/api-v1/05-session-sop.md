@@ -208,7 +208,7 @@ PR 上自动跑三个作业，它们是闸 1/3/4/8 的机械复核：
 
 ### 6.3 合
 
-- **合并 = 上线。** 推进 master 就构建镜像并 curl Dokploy webhook。
+- **合并 = 上线。** 推进 master 就构建镜像并 curl Dokploy webhook。`build-and-push` **没有路径过滤**——改一行文档合进 master 也会重建镜像并重新部署，所以文档 PR 一样占用部署档期。
 - **一次只合一个。** 合之前 `gh pr list` + `gh run list --branch master --limit 5`，确认上一次部署已经完成。master 的构建 concurrency 是 cancel-in-progress，两个 PR 连着合会让前一个的构建被取消。
 - 用 squash 合并，保持 master 线性。
 - 合完自己盯部署（§7），不要合了就走。

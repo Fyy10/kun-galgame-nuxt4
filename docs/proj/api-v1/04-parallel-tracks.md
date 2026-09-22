@@ -87,7 +87,7 @@
 规矩：
 
 - **一个域一个 PR**，squash 合并，master 保持线性。
-- **合并即上线**（master 一推就构建部署）。所以**一次只合一个**，合之前 `gh pr list` + `gh run list --branch master` 确认上一次部署完成——master 的构建 concurrency 是 cancel-in-progress，连着合会取消前一个。
+- **合并即上线**（master 一推就构建部署，`build-and-push` 没有路径过滤，纯文档 PR 也会重新部署）。所以**一次只合一个**，合之前 `gh pr list` + `gh run list --branch master` 确认上一次部署完成——master 的构建 concurrency 是 cancel-in-progress，连着合会取消前一个。
 - **合完自己盯部署**，Dokploy webhook 回 2xx 不代表真的部署了。
 - 后合的 PR rebase 到 master，不 merge commit。
 - 金文件（`routes.golden`、`legacy_route_baseline`）冲突一律**重新生成**。
