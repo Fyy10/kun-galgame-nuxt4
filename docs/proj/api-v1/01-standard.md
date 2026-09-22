@@ -282,7 +282,7 @@ infra 的 `errors[]` 只有英文 `detail`。客户端要本地化「标题最�
 **K20 · 评论正文是「受限」的内容文档：字段叫 `content`，但不跑 Markdown 解析**（2026-09-22 定）。K13 早就把评论算进正文文档的适用范围（03 §1 原文「话题、回复（以后还有评论）」），W2 把评论发成 `text: string` 是偏离；W5 归位成 `content: ContentDocument`。
 
 - 但评论**不是 Markdown**，历史数据也从不是：生产 3162 条里 40 条含 `*`/`_`、3 条含 `**`、0 条列表、1 条行首 `#`。套完整 Markdown 管线会把这些当标记吃掉，是一次静默的改写。
-- 所以评论的文档由**纯文本管线**产出，只可能出现这五种节点：`paragraph`、`text`、`break`（544 条评论有换行，必须保真）、`image`（`/image/<hash>` token 解析而来）、`mention` 与 `reply_reference`（行内 token）。不产出 `emphasis` / `strong` / `heading` / `list` / `code` / `link`。
+- 所以评论的文档由**纯文本管线**产出，只可能出现这六种节点：`paragraph`、`text`、`break`（544 条评论有换行，必须保真）、`image`（`/image/<hash>` token 解析而来）、`mention` 与 `reply_reference`（行内 token）。不产出 `emphasis` / `strong` / `heading` / `list` / `code` / `link`。
 - 节点词表与话题、回复**共用同一个封闭联合**，客户端不需要第二个渲染器；评论只是从不使用其中大部分成员。
 - 写面收的是纯文本源，字段叫 `text`（不叫 `content_markdown`，因为它不是 Markdown）；`GET /comments/{id}/source` 回同一个 `text`。
 - 理由：token 本来就在库里可能出现，而图片 GC 的 reference-ping 正是靠扫这些 token 存活；把它当纯字符串下发，界面上就是一行 `/image/9f3c…` 的路径。语义正确的做法是解析它，而不是承认这个洞。
