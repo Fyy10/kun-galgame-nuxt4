@@ -42,6 +42,7 @@ infra `refs/api-v2/`（01 公理与黑名单 · 02 协议 · 04 表示 · 05 集
 |---|---|
 | [01-standard.md](01-standard.md) | 面与凭证、错误与 i18n、表示层、集合、写面、正文文档、命名表 |
 | [02-governance.md](02-governance.md) | 契约单一来源、代码生成、CI 门、演进与退役、App 兼容、逐端点迁移清单 |
+| [04-parallel-tracks.md](04-parallel-tracks.md) | 并行轨协议：五条车道、共享面预分配、九条测试闸、合并策略 |
 | [03-content-doc.md](03-content-doc.md) | 正文节点树：形状、普查、Markdown 转换规则、客户端渲染 |
 | [waves/](waves/) | 每一波的任务书与验收记录 |
 
