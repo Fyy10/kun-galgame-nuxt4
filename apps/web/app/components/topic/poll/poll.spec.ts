@@ -188,6 +188,47 @@ describe('a poll with no results block says so', () => {
     expect(text).toContain('66.7%')
     expect(text).not.toContain('投票后可以看到结果')
   })
+
+  it('does not call an anonymous poll empty while it holds votes', async () => {
+    usePersistUserStore().id = 1
+    const anonymous = poll({
+      is_anonymous: true,
+      results: {
+        total_vote_count: 3,
+        voter_count: 3,
+        options: [
+          { option_id: '11', vote_count: 2 },
+          { option_id: '12', vote_count: 1 }
+        ],
+        sample_voters: []
+      }
+    })
+    captureFetch(anonymous)
+    wrapper = await mountSuspended(TopicPollList, {
+      props: { poll: anonymous }
+    })
+    const text = wrapper.text()
+    expect(text).toContain('共 3 票')
+    expect(text).not.toContain('还没有人投票')
+  })
+
+  it('says a poll is empty only when nobody has voted', async () => {
+    usePersistUserStore().id = 1
+    const empty = poll({
+      results: {
+        total_vote_count: 0,
+        voter_count: 0,
+        options: [
+          { option_id: '11', vote_count: 0 },
+          { option_id: '12', vote_count: 0 }
+        ],
+        sample_voters: []
+      }
+    })
+    captureFetch(empty)
+    wrapper = await mountSuspended(TopicPollList, { props: { poll: empty } })
+    expect(wrapper.text()).toContain('还没有人投票')
+  })
 })
 
 describe('the vote log is a cursor page', () => {

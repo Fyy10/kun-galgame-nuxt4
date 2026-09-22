@@ -249,7 +249,14 @@ const handleDelete = async () => {
         :users="results.sample_voters.map(toKunUser)"
         :total="results.voter_count"
       />
-      <span v-else class="text-default-500 text-sm">还没有人投票</span>
+      <!--
+        An anonymous poll always sends an empty sample_voters, so a bare v-else
+        here claimed 还没有人投票 next to a live tally on the 10 anonymous
+        always-visible polls in production. Only voter_count can say that.
+      -->
+      <span v-else-if="!results.voter_count" class="text-default-500 text-sm">
+        还没有人投票
+      </span>
 
       <div class="ml-auto flex items-center gap-2">
         <KunButton
