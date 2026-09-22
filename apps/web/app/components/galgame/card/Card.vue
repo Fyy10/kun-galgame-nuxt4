@@ -51,6 +51,39 @@ const ratingOf = (galgame: T) => {
   }
 }
 
+const { isFavorited, setFavorited, ensureLoaded } = useMyGalgameInteractions()
+
+const workIds = computed(() =>
+  props.galgames.map((galgame) => galgame.id).filter((id) => id > 0)
+)
+
+onMounted(() => {
+  void ensureLoaded(workIds.value)
+})
+watch(
+  () => workIds.value.join(','),
+  () => {
+    void ensureLoaded(workIds.value)
+  }
+)
+
+const pickerOpen = ref(false)
+const pickerId = ref(0)
+
+const openPicker = (gid: number) => {
+  if (!requireLogin()) {
+    return
+  }
+  pickerId.value = gid
+  pickerOpen.value = true
+}
+
+const onPickerSaved = (payload: { favorited: boolean }) => {
+  if (pickerId.value > 0) {
+    setFavorited(pickerId.value, payload.favorited)
+  }
+}
+
 const cards = computed(() =>
   props.galgames.map((galgame) => {
     const company =
@@ -68,6 +101,7 @@ const cards = computed(() =>
       href: galgame.id > 0 ? `/galgame/${galgame.id}` : undefined,
       updateTime: showUpdateTime.value ? galgame.resource_update_time : '',
       isSfw: galgame.content_limit === 'sfw',
+      favorited: isFavorited(galgame.id),
       company,
       rating,
       hasFooter: !!company || !!rating
@@ -89,47 +123,50 @@ const cards = computed(() =>
         )
       "
     >
-      <KunCard
-        :is-transparent="isTransparent"
+      <div
         v-for="card in cards"
         :key="card.galgame.catalog_id ?? card.galgame.id"
-        :href="card.href"
-        :target="isOpenInNewTab ? '_blank' : undefined"
-        class-name="p-0"
+        class="relative"
       >
-        <div class="relative overflow-hidden">
-          <KunImage
-            v-if="card.cover"
-            :src="card.cover"
-            loading="lazy"
-            :alt="card.galgame.name"
-            :thumbhash="card.thumbhash"
-            aspect-ratio="5 / 7"
-          />
-          <div
-            v-else
-            class="bg-default-100 text-default-400 flex items-center justify-center"
-            style="aspect-ratio: 5 / 7"
-          >
-            <KunIcon name="lucide:image-off" class="size-6" />
-          </div>
-
-          <div
-            v-if="showPlatform && card.galgame.platform.length"
-            class="absolute top-2 left-2 flex flex-wrap gap-1"
-            :class="showNsfwBadge ? 'right-7' : 'right-2'"
-          >
-            <span
-              v-for="(platform, i) in card.galgame.platform"
-              :key="i"
-              class="bg-background flex size-6 items-center justify-center rounded-full p-1.5 text-xs backdrop-blur-sm"
+        <KunCard
+          :is-transparent="isTransparent"
+          :href="card.href"
+          :target="isOpenInNewTab ? '_blank' : undefined"
+          class-name="p-0 h-full"
+        >
+          <div class="relative overflow-hidden">
+            <KunImage
+              v-if="card.cover"
+              :src="card.cover"
+              loading="lazy"
+              :alt="card.galgame.name"
+              :thumbhash="card.thumbhash"
+              aspect-ratio="5 / 7"
+            />
+            <div
+              v-else
+              class="bg-default-100 text-default-400 flex items-center justify-center"
+              style="aspect-ratio: 5 / 7"
             >
-              <KunIcon
-                :name="GALGAME_RESOURCE_PLATFORM_ICON_MAP[platform]"
-                class="h-4 w-4"
-              />
-            </span>
-          </div>
+              <KunIcon name="lucide:image-off" class="size-6" />
+            </div>
+
+            <div
+              v-if="showPlatform && card.galgame.platform.length"
+              class="absolute top-2 left-2 flex flex-wrap gap-1"
+              :class="showNsfwBadge ? 'right-12' : 'right-11'"
+            >
+              <span
+                v-for="(platform, i) in card.galgame.platform"
+                :key="i"
+                class="bg-background flex size-6 items-center justify-center rounded-full p-1.5 text-xs backdrop-blur-sm"
+              >
+                <KunIcon
+                  :name="GALGAME_RESOURCE_PLATFORM_ICON_MAP[platform]"
+                  class="h-4 w-4"
+                />
+              </span>
+            </div>
 
           <div
             v-if="showNsfwBadge"
@@ -210,7 +247,37 @@ const cards = computed(() =>
             </KunChip>
           </div>
         </div>
-      </KunCard>
+        </KunCard>
+
+        <div
+          v-if="card.href"
+          class="absolute z-10"
+          :class="showNsfwBadge ? 'top-6 right-1.5' : 'top-1.5 right-1.5'"
+          @click.stop.prevent
+        >
+          <KunTooltip text="收藏">
+            <span class="flex">
+              <KunReaction
+                :model-value="card.favorited"
+                :toggle="false"
+                size="sm"
+                icon="lucide:heart"
+                color="danger"
+                label="收藏"
+                class="bg-content1/90 py-1.5 shadow-sm backdrop-blur"
+                :class="!card.favorited && 'text-default-700'"
+                @click.stop="openPicker(card.galgame.id)"
+              />
+            </span>
+          </KunTooltip>
+        </div>
+      </div>
     </div>
+
+    <GalgameCollectionPickerModal
+      v-model="pickerOpen"
+      :galgame-id="pickerId"
+      @saved="onPickerSaved"
+    />
   </div>
 </template>

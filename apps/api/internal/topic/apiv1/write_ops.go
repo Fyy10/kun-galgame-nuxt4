@@ -1,18 +1,41 @@
 package apiv1
 
 import (
-	"context"
-	"errors"
-
-	"kun-galgame-api/pkg/problem"
+	"kun-galgame-api/internal/moemoepoint"
+	"kun-galgame-api/internal/trust/gate"
+	userRepo "kun-galgame-api/internal/user/repository"
 )
+
+type AwardFunc func(userID, delta int, reason, ref, idempotencyKey string)
 
 type Writes struct {
 	reads *Service
+	state *userRepo.StateRepository
+	check *gate.CheckService
+	scan  *gate.ScanService
+	award AwardFunc
 }
 
-func NewWrites(reads *Service) *Writes {
-	return &Writes{reads: reads}
+func NewWrites(
+	reads *Service,
+	state *userRepo.StateRepository,
+	check *gate.CheckService,
+	scan *gate.ScanService,
+	award AwardFunc,
+) *Writes {
+	if check == nil {
+		check = gate.NewCheckService(nil)
+	}
+	if scan == nil {
+		scan = gate.NewScanService(nil)
+	}
+	if award == nil {
+		award = moemoepoint.Award
+	}
+	if state == nil && reads != nil && reads.topics != nil {
+		state = userRepo.NewStateRepository(reads.topics.DB())
+	}
+	return &Writes{reads: reads, state: state, check: check, scan: scan, award: award}
 }
 
 type createTopicInput struct {
@@ -70,34 +93,4 @@ type getReplySourceInput struct {
 
 type getReplySourceOutput struct {
 	Body ReplySource
-}
-
-var errWritesNotImplemented = errors.New("apiv1 topic writes: not implemented")
-
-func (w *Writes) createTopic(ctx context.Context, in *createTopicInput) (*createTopicOutput, error) {
-	return nil, problem.Internal(errWritesNotImplemented)
-}
-
-func (w *Writes) updateTopic(ctx context.Context, in *updateTopicInput) (*updateTopicOutput, error) {
-	return nil, problem.Internal(errWritesNotImplemented)
-}
-
-func (w *Writes) getTopicSource(ctx context.Context, in *getTopicSourceInput) (*getTopicSourceOutput, error) {
-	return nil, problem.Internal(errWritesNotImplemented)
-}
-
-func (w *Writes) createReply(ctx context.Context, in *createReplyInput) (*createReplyOutput, error) {
-	return nil, problem.Internal(errWritesNotImplemented)
-}
-
-func (w *Writes) updateReply(ctx context.Context, in *updateReplyInput) (*updateReplyOutput, error) {
-	return nil, problem.Internal(errWritesNotImplemented)
-}
-
-func (w *Writes) deleteReply(ctx context.Context, in *deleteReplyInput) (*struct{}, error) {
-	return nil, problem.Internal(errWritesNotImplemented)
-}
-
-func (w *Writes) getReplySource(ctx context.Context, in *getReplySourceInput) (*getReplySourceOutput, error) {
-	return nil, problem.Internal(errWritesNotImplemented)
 }

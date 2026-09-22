@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import {
-  KUN_GALGAME_RESOURCE_LANGUAGE_MAP,
-  KUN_GALGAME_RESOURCE_PLATFORM_MAP,
-  KUN_GALGAME_RESOURCE_TYPE_MAP
-} from '~/constants/galgame'
+  resourceLanguageLabel,
+  resourcePlatformLabel,
+  resourceTypeLabel
+} from '~~/shared/utils/galgameResourceVocab'
 
 const route = useRoute()
 const resourceId = computed(() => Number((route.params as { id: string }).id))
@@ -22,12 +22,9 @@ if (data.value && data.value !== 'not found') {
   } else {
     const resource = data.value.resource
 
-    const typeLabel =
-      KUN_GALGAME_RESOURCE_TYPE_MAP[resource.type] || resource.type
-    const languageLabel =
-      KUN_GALGAME_RESOURCE_LANGUAGE_MAP[resource.language] || resource.language
-    const platformLabel =
-      KUN_GALGAME_RESOURCE_PLATFORM_MAP[resource.platform] || resource.platform
+    const typeLabel = resourceTypeLabel(resource.type)
+    const languageLabel = resourceLanguageLabel(resource.language)
+    const platformLabel = resourcePlatformLabel(resource.platform)
 
     const description = `${typeLabel} · ${languageLabel} · ${platformLabel} · ${resource.size}`
 

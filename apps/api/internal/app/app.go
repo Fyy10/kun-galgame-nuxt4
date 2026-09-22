@@ -60,6 +60,7 @@ import (
 	toolsetHandler "kun-galgame-api/internal/toolset/handler"
 	toolsetRepo "kun-galgame-api/internal/toolset/repository"
 	toolsetService "kun-galgame-api/internal/toolset/service"
+	topicapiv1 "kun-galgame-api/internal/topic/apiv1"
 	topicHandler "kun-galgame-api/internal/topic/handler"
 	topicRepo "kun-galgame-api/internal/topic/repository"
 	topicService "kun-galgame-api/internal/topic/service"
@@ -106,6 +107,7 @@ type App struct {
 	Config      *config.Config
 	OAuthClient *oauth.Client
 	UserState   *repository.StateRepository
+	TopicAward  topicapiv1.AwardFunc
 	TrustCheck  *gate.CheckService
 	TrustScan   *gate.ScanService
 	Notifier    msgService.Notifier
@@ -218,7 +220,7 @@ func New(cfg *config.Config) *App {
 	if moyuCli.Configured() {
 		slog.Info("moyu patch face client configured", "base_url", cfg.MoyuAPI.BaseURL)
 	} else {
-		slog.Warn("moyu patch face client NOT configured; the galgame patch tab stays hidden — set KUN_MOYU_API_KEY")
+		slog.Warn("moyu patch face client NOT configured; the galgame patch tab stays hidden — set KUN_NEXTMOE_API_KEY or KUN_MOYU_API_KEY")
 	}
 
 	oauthClient := oauth.NewClient(cfg.OAuth)
@@ -477,7 +479,7 @@ func New(cfg *config.Config) *App {
 		galgameMergeRepo, userStateRepo, gc, uc, catalogCli, storeLinks,
 	)
 	galgameCollectionRepo := galgameRepo.NewGalgameCollectionRepository(db)
-	galgameCollectionSvc := galgameService.NewCollectionService(galgameCollectionRepo, galgameCoreSvc, gc, uc, catalogCli, trustCheck, trustScan)
+	galgameCollectionSvc := galgameService.NewCollectionService(galgameCollectionRepo, galgameCoreSvc, gc, uc, catalogCli, trustCheck, trustScan, rdb)
 	galgameOfficialSvc := galgameService.NewOfficialService(gc, galgameCoreSvc)
 	galgameEngineSvc := galgameService.NewEngineService(gc, galgameCoreSvc)
 	galgameSeriesSvc := galgameService.NewSeriesService(gc, galgameEnricher, galgameCoreSvc)

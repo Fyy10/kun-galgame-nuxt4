@@ -5,6 +5,7 @@ import (
 
 	"kun-galgame-api/internal/galgame/dto"
 	"kun-galgame-api/internal/galgame/model"
+	"kun-galgame-api/internal/galgame/resourcevocab"
 	"kun-galgame-api/internal/infrastructure/markdown"
 	"kun-galgame-api/pkg/userclient"
 )
@@ -59,15 +60,33 @@ func userBriefToDTO(u userclient.User) dto.UserBrief {
 	return dto.UserBrief{ID: u.ID, Name: u.Name, Avatar: u.Avatar}
 }
 
+func axesFromRow(r model.GalgameResourceRow) (langs, plats, runs []string) {
+	langs, plats, runs = []string(r.Languages), []string(r.Platforms), []string(r.Runtimes)
+	if len(langs) == 0 {
+		langs = []string(resourcevocab.LegacyLanguage(r.Language))
+	}
+	if len(plats) == 0 && len(runs) == 0 {
+		p, rt := resourcevocab.LegacyPlatform(r.Platform)
+		plats, runs = []string(p), []string(rt)
+	}
+	return
+}
+
 func rowToCard(r model.GalgameResourceRow, u userclient.User, isLiked bool) dto.ResourceCard {
+	langs, plats, runs := axesFromRow(r)
 	return dto.ResourceCard{
 		ID:            r.ID,
 		View:          r.View,
 		GalgameID:     r.GalgameID,
 		User:          userBriefToDTO(u),
 		Type:          r.Type,
+		Title:         r.Title,
+		VersionLabel:  r.VersionLabel,
 		Language:      r.Language,
 		Platform:      r.Platform,
+		Languages:     langs,
+		Platforms:     plats,
+		Runtimes:      runs,
 		Size:          r.Size,
 		Status:        r.Status,
 		Download:      r.Download,
@@ -93,14 +112,20 @@ func rowToMeta(
 	if len(links) > 0 {
 		linkDomain = links[0]
 	}
+	langs, plats, runs := axesFromRow(r)
 	return dto.ResourceMeta{
 		ID:            r.ID,
 		View:          r.View,
 		GalgameID:     r.GalgameID,
 		User:          userBriefToDTO(owner),
 		Type:          r.Type,
+		Title:         r.Title,
+		VersionLabel:  r.VersionLabel,
 		Language:      r.Language,
 		Platform:      r.Platform,
+		Languages:     langs,
+		Platforms:     plats,
+		Runtimes:      runs,
 		Size:          r.Size,
 		Status:        r.Status,
 		Download:      r.Download,

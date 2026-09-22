@@ -11,10 +11,11 @@ import (
 )
 
 const (
-	v2CacheKeyPrefix = "nmcache:v2:"
-	v2CacheMaxBody   = 512 << 10
-	v2CacheDetailTTL = 15 * time.Second
-	v2CacheListTTL   = 60 * time.Second
+	v2CacheKeyPrefix   = "nmcache:v2:"
+	v2CacheMaxBody     = 512 << 10
+	v2CacheDetailTTL   = 15 * time.Second
+	v2CacheListTTL     = 60 * time.Second
+	v2CacheCalendarTTL = time.Hour
 )
 
 func v2CacheIdentity(v2Path string, q url.Values) string {
@@ -29,6 +30,9 @@ func v2CacheKey(v2Path string, q url.Values) string {
 }
 
 func v2CacheTTL(v2Path string) time.Duration {
+	if strings.HasPrefix(v2Path, "/v2/catalog/calendar") {
+		return v2CacheCalendarTTL
+	}
 	for _, seg := range strings.Split(v2Path, "/") {
 		if seg != "" && v2SegmentIsNumericID(seg) {
 			return v2CacheDetailTTL

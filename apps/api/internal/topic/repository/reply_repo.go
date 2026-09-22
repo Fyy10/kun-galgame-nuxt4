@@ -24,18 +24,6 @@ func (r *ReplyRepository) FindByID(id int) (*model.TopicReply, error) {
 	return &reply, err
 }
 
-func (r *ReplyRepository) GetMaxFloor(tx *gorm.DB, topicID int) (int, error) {
-	var maxFloor *int
-	err := tx.Model(&model.TopicReply{}).
-		Where("topic_id = ?", topicID).
-		Select("COALESCE(MAX(floor), 0)").
-		Scan(&maxFloor).Error
-	if err != nil || maxFloor == nil {
-		return 0, err
-	}
-	return *maxFloor, nil
-}
-
 type ReplyRow struct {
 	model.TopicReply
 	UserName        string

@@ -3,12 +3,13 @@ import {
   GALGAME_RESOURCE_TYPE_ICON_MAP,
   GALGAME_RESOURCE_PLATFORM_ICON_MAP
 } from '~/constants/galgameResource'
+import { KUN_USER_TEXT_CHIP_CLASS } from '~/constants/galgame'
 import {
-  KUN_GALGAME_RESOURCE_TYPE_MAP,
-  KUN_GALGAME_RESOURCE_LANGUAGE_MAP,
-  KUN_GALGAME_RESOURCE_PLATFORM_MAP,
-  KUN_USER_TEXT_CHIP_CLASS
-} from '~/constants/galgame'
+  resourceLanguageLabel,
+  resourcePlatformLabel,
+  resourceRuntimeLabel,
+  resourceTypeLabel
+} from '~~/shared/utils/galgameResourceVocab'
 
 const props = defineProps<{
   resource: GalgameResource
@@ -147,21 +148,46 @@ const handleMarkValid = async () => {
     <div class="flex flex-wrap items-center gap-1.5">
       <KunChip color="primary" variant="flat">
         <KunIcon :name="GALGAME_RESOURCE_TYPE_ICON_MAP[resource.type]" />
-        {{ KUN_GALGAME_RESOURCE_TYPE_MAP[resource.type] }}
+        {{ resourceTypeLabel(resource.type) }}
+      </KunChip>
+      <KunChip
+        v-if="resource.title"
+        color="primary"
+        variant="flat"
+        :class-name="KUN_USER_TEXT_CHIP_CLASS"
+      >
+        {{ resource.title }}
       </KunChip>
       <KunChip color="warning" variant="flat" :class-name="KUN_USER_TEXT_CHIP_CLASS">
         <KunIcon name="lucide:database" />
         {{ resource.size }}
       </KunChip>
-      <KunChip color="success" variant="flat">
-        <KunIcon
-          :name="GALGAME_RESOURCE_PLATFORM_ICON_MAP[resource.platform]"
-        />
-        {{ KUN_GALGAME_RESOURCE_PLATFORM_MAP[resource.platform] }}
+      <KunChip
+        v-for="p in resource.platforms?.length ? resource.platforms : [resource.platform]"
+        :key="'p-' + p"
+        color="success"
+        variant="flat"
+      >
+        <KunIcon :name="GALGAME_RESOURCE_PLATFORM_ICON_MAP[p]" />
+        {{ resourcePlatformLabel(p) }}
       </KunChip>
-      <KunChip color="secondary" variant="flat">
+      <KunChip
+        v-for="lang in resource.languages?.length
+          ? resource.languages
+          : [resource.language]"
+        :key="'l-' + lang"
+        color="secondary"
+        variant="flat"
+      >
         <KunIcon name="lucide:globe" />
-        {{ KUN_GALGAME_RESOURCE_LANGUAGE_MAP[resource.language] }}
+        {{ resourceLanguageLabel(lang) }}
+      </KunChip>
+      <KunChip
+        v-for="rt in resource.runtimes ?? []"
+        :key="'r-' + rt"
+        variant="flat"
+      >
+        {{ resourceRuntimeLabel(rt) }}
       </KunChip>
     </div>
 

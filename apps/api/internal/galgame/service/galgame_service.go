@@ -97,24 +97,31 @@ func (s *GalgameService) ToggleLike(
 	return nil
 }
 
-// The favourited half is every work in every folder the person owns, read from
-// the catalog with their own token. It is one call per folder, and the browser
-// asks for it once per session. This comment claimed "p50 is five" until the
-// distribution was actually measured on 2026-09-08: p50 is 1, p90 is 1, p99 is
-// 3, max 27. The 1+N here is not worth an upstream batch route — the folder
-// item face took 39 calls in the half hour that the list face took 1,221.
-// A session with no token, or
-// one minted before the folder scopes, gets its likes and an empty favourite
-// list rather than an error: the marks go missing, the page does not.
-func (s *GalgameService) GetMyInteractions(ctx context.Context, userID int, token string) dto.MyGalgameInteractions {
+// Favorited is the subset of workIDs that sit in any of the reader's folders.
+// Walking every membership to paint hearts is what spent user 90769's 10k/day
+// quota on 2026-09-20 (3,560 items, 36 catalog pages per call). Holdings
+// answers the same question for the ids on screen. An empty workIDs means
+// likes only — there is no "all my favourites" list here any more.
+// A session with no token, or one minted before the folder scopes, gets its
+// likes and an empty favourite list rather than an error.
+func (s *GalgameService) GetMyInteractions(ctx context.Context, userID int, token string, workIDs []int) dto.MyGalgameInteractions {
 	out := dto.MyGalgameInteractions{
 		Liked:     s.interactionRepo.UserLikedGalgames(userID),
 		Favorited: []int{},
 	}
-	if token == "" || s.catalog == nil {
+	if token == "" || s.catalog == nil || len(workIDs) == 0 {
 		return out
 	}
-	folders, err := s.catalog.MyFolders(ctx, token)
+	ids := make([]int64, 0, len(workIDs))
+	for _, id := range workIDs {
+		if id > 0 {
+			ids = append(ids, int64(id))
+		}
+	}
+	if len(ids) == 0 {
+		return out
+	}
+	holdings, err := s.catalog.MyFolderHoldings(ctx, token, ids)
 	if err != nil {
 		if stderrors.Is(err, catalogclient.ErrInsufficientScope) {
 			warnFoldersScope.warn("galgame: my folders unreadable, token lacks folder:read", "user_id", userID)
@@ -123,27 +130,11 @@ func (s *GalgameService) GetMyInteractions(ctx context.Context, userID int, toke
 		}
 		return out
 	}
-	seen := map[int64]bool{}
-	for _, f := range folders {
-		if f.ItemCount == 0 {
+	for _, h := range holdings {
+		if h.WorkID == 0 {
 			continue
 		}
-		items, iErr := s.catalog.MyFolderItems(ctx, token, f.ID)
-		if iErr != nil {
-			if stderrors.Is(iErr, catalogclient.ErrInsufficientScope) {
-				warnFoldersScope.warn("galgame: folder items unreadable, token lacks folder:read", "folder_id", f.ID)
-			} else {
-				slog.Warn("galgame: folder items unreadable", "folder_id", f.ID, "err", iErr)
-			}
-			return out
-		}
-		for _, it := range items {
-			if seen[it.WorkID] {
-				continue
-			}
-			seen[it.WorkID] = true
-			out.Favorited = append(out.Favorited, int(it.WorkID))
-		}
+		out.Favorited = append(out.Favorited, int(h.WorkID))
 	}
 	return out
 }

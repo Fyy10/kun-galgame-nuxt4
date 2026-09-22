@@ -37,11 +37,11 @@ const load = async (preserveSelection = false) => {
 }
 
 watch(
-  () => isOpen.value,
-  (open) => {
-    if (open) {
+  () => [isOpen.value, props.galgameId] as const,
+  ([open, gid]) => {
+    if (open && gid > 0) {
       createOpen.value = false
-      load()
+      void load()
     }
   }
 )

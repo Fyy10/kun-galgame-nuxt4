@@ -10,7 +10,7 @@ const detailLink = computed(() =>
 )
 
 const { isLiked, isFavorited, ensureLoaded } = useMyGalgameInteractions()
-onMounted(ensureLoaded)
+onMounted(() => ensureLoaded(gid.value ? [gid.value] : []))
 </script>
 
 <template>
