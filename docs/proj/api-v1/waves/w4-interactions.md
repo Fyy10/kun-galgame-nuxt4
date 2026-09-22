@@ -69,7 +69,7 @@
 
 - 新建一条记录，可重复、不可撤销，每次都收费（产品行为，保留）。
 - 必须带幂等键：这是花钱的 `POST`，重试不能扣两次。
-- `note`（原 `description`）至多 30 字，去首尾空白，空白算没写，响应里是 `null`。旧版静默截断，v1 超长 → `TOO_LONG`。
+- `note`（原 `description`）至多 30 字，去首尾空白，空白算没写，响应里是 `null`。旧版静默截断，v1 超长 → `TOO_LONG`。**长度上限按原始值判，去空白在其后**（01 K19）：「30 字 + 首尾空格」是 `TOO_LONG`，客户端按原始值计数。
 - 推自己 → `403 SELF_UPVOTE_FORBIDDEN`；缓存余额 < 10 → `403 MOEMOEPOINT_INSUFFICIENT` + `required: 10`。
 - 余额不在本地扣（C3：缓存只写 OAuth 返回的值），并发两次仍可能都过，余额可能短暂变负。与旧版相同，记录在案。
 - 顶帖、`upvoted_at`、`upvote_count`、`upvoted` 通知（去重）、动态流（触发器），都与旧版相同。
