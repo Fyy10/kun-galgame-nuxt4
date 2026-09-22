@@ -78,9 +78,6 @@ func (s *Service) visibleReply(ctx context.Context, idStr string) (*model.Topic,
 	if p != nil {
 		return nil, nil, nil, p
 	}
-	if row.TopicID != topic.ID {
-		return nil, nil, nil, notFound()
-	}
 	if p := s.rejectUnrenderableAuthor(ctx, row.UserID); p != nil {
 		return nil, nil, nil, p
 	}
