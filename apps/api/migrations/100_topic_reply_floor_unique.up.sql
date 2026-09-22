@@ -1,4 +1,4 @@
--- 098: unique reply floors, a per-topic floor counter, and an order for a
+-- 100: unique reply floors, a per-topic floor counter, and an order for a
 -- topic's sections.
 --
 -- CreateReply used MAX(floor)+1 inside a transaction but without a row lock
