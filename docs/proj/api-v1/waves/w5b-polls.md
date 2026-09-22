@@ -106,6 +106,15 @@
 
 顺带修掉一条 W2 就上线的假话：`Topic.bumped_at` 的描述写着「poll votes … set it to now」，而投票从来不顶帖——顶帖的是**建**投票、**建**抽奖和发评论。已改。
 
+## 5.6 网页轨报上来的两条，以及验收时抓到的一条
+
+网页轨（2026-09-22）：
+
+1. **`closes_at` 收不下 `toISOString()`。** `repr.DateTime` 是 `minLength=maxLength=20` 加 `^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$`，秒精度，不带毫秒；而既有的 `deadlineFromPicker` 吐 24 个字符的 `…T15:59:59.000Z`。凡是带截止日期的投票**每一次都会 422**。本契约和端点描述都没写这条，只有 Go schema 里有。网页轨加了 `closesAtFromPicker`，旧的留给还没搬的抽奖。全站扫过一遍：`toISOString()` 的其余调用点都是 JSON-LD 与 `<time datetime>`，没有第二个 v1 写面吃日期时间。
+2. **`PollViewer` 没有 `can_view_votes`。** 流水的服务端闸是 `!is_anonymous && canViewPollResults(...)`，网页按 `results !== null && !is_anonymous` 推。**这条不补，是刻意的**：`viewer` 对匿名访问者恒为 null（K16），而匿名访问者确实读得到 `always` 且实名的投票流水——真加了这个标志，登出的人就看不到按钮了。`results` 的可空性与流水闸是同一个 `canViewPollResults`，所以这个推导今天是**等值**而不是近似；要改流水闸，必须同时改 `results` 的可空性，否则这里就错了。
+
+验收时抓到的第三条（**已修**，`791144b2`）：投票卡的投票人一栏落到一个裸 `v-else`，只要 `sample_voters` 是空就说「还没有人投票」。服务端对**所有**匿名投票都下发空 `sample_voters`，生产上 10 个「匿名 + 任何人可见结果 + 有票」的投票会把这句话显示在实时票数和「共 N 票」旁边。旧代码是 `v-else-if="!poll.is_anonymous && poll.vote_count"` 且没有 `v-else`，所以什么都不显示——新写法把「不显示」变成了「说假话」。只有 `voter_count` 能下这个判断。（第二个可达分支：实名投票但抽样到的投票人全被封禁，`IsRenderable` 会把他们滤光。）
+
 ## 6. 本波不做
 
 - 删旧投票路由与下调基线（督查在验收后统一做）。
