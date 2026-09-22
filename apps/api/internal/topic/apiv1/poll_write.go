@@ -186,7 +186,7 @@ func (p *Polls) createPoll(ctx context.Context, in *createPollInput) (*createPol
 	}
 	p.scanPoll(decision, matched, pollID, user.ID, moderation)
 
-	out, herr := p.pollOut(ctx, topic, &model.TopicPoll{ID: pollID}, user)
+	out, herr := p.reloadOut(ctx, topic, pollID, user)
 	if herr != nil {
 		return nil, herr
 	}
@@ -372,10 +372,7 @@ func (p *Polls) updatePoll(ctx context.Context, in *updatePollInput) (*pollOutpu
 				return err
 			}
 		}
-		if err := p.polls.DeletePollOptions(tx, plan.remove); err != nil {
-			return err
-		}
-		return p.polls.TouchPoll(tx, poll.ID)
+		return p.polls.DeletePollOptions(tx, plan.remove)
 	})
 	if err != nil {
 		return nil, problem.Internal(err)
@@ -383,7 +380,7 @@ func (p *Polls) updatePoll(ctx context.Context, in *updatePollInput) (*pollOutpu
 	if moderation != "" {
 		p.scanPoll(decision, matched, poll.ID, poll.UserID, moderation)
 	}
-	return p.pollOut(ctx, topic, poll, user)
+	return p.reloadOut(ctx, topic, poll.ID, user)
 }
 
 func (p *Polls) deletePoll(ctx context.Context, in *pollInput) (*struct{}, error) {

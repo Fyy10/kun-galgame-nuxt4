@@ -257,11 +257,7 @@ func (p *Polls) getPoll(ctx context.Context, in *pollInput) (*pollOutput, error)
 }
 
 func (p *Polls) pollOut(ctx context.Context, topic *model.Topic, poll *model.TopicPoll, user *middleware.UserInfo) (*pollOutput, error) {
-	fresh, err := p.polls.FindByID(poll.ID)
-	if err != nil {
-		return nil, problem.Internal(err)
-	}
-	built, prob := p.buildPolls(ctx, topic, []model.TopicPoll{*fresh}, user)
+	built, prob := p.buildPolls(ctx, topic, []model.TopicPoll{*poll}, user)
 	if prob != nil {
 		return nil, prob
 	}
@@ -269,4 +265,14 @@ func (p *Polls) pollOut(ctx context.Context, topic *model.Topic, poll *model.Top
 		return nil, notFound()
 	}
 	return &pollOutput{Body: built[0]}, nil
+}
+
+// A write answers with the whole poll, and the row it changed is the stale one
+// the handler started from.
+func (p *Polls) reloadOut(ctx context.Context, topic *model.Topic, pollID int, user *middleware.UserInfo) (*pollOutput, error) {
+	fresh, err := p.polls.FindByID(pollID)
+	if err != nil {
+		return nil, problem.Internal(err)
+	}
+	return p.pollOut(ctx, topic, fresh, user)
 }

@@ -238,3 +238,33 @@ func mustPoll(t *testing.T, f *writeFix, pollID int, session string) map[string]
 	}
 	return poll
 }
+
+func TestV1PollWritesNeedCredentials(t *testing.T) {
+	f := newPollFix(t, nil)
+
+	for name, call := range map[string]func() (*http.Response, map[string]any){
+		"create": func() (*http.Response, map[string]any) {
+			return f.pollCreate(t, w3TopicPub, "", keyUUID(600), map[string]any{
+				"title": "x", "choice_type": "single", "result_visibility": "always",
+				"options": []map[string]any{{"text": "a"}, {"text": "b"}},
+			})
+		},
+		"patch": func() (*http.Response, map[string]any) {
+			return f.pollPatch(t, w5bPollAlways, "", map[string]any{"title": "x"})
+		},
+		"vote": func() (*http.Response, map[string]any) {
+			return f.voteSet(t, w5bPollAlways, "", []string{strconv.Itoa(w5bOptAlwaysA)})
+		},
+		"retract": func() (*http.Response, map[string]any) {
+			return f.voteClear(t, w5bPollAlways, "")
+		},
+	} {
+		resp, out := call()
+		if resp.StatusCode != http.StatusUnauthorized || out["code"] != "MISSING_CREDENTIAL" {
+			t.Errorf("anonymous %s: %d %+v", name, resp.StatusCode, out)
+		}
+		if got := resp.Header.Get("WWW-Authenticate"); got == "" {
+			t.Errorf("anonymous %s: no WWW-Authenticate", name)
+		}
+	}
+}

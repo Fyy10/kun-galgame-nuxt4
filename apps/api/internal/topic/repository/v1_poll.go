@@ -155,10 +155,6 @@ func (r *PollRepository) UpdatePollRow(tx *gorm.DB, pollID int, fields map[strin
 	return tx.Table("topic_poll").Where("id = ?", pollID).Updates(fields).Error
 }
 
-func (r *PollRepository) TouchPoll(tx *gorm.DB, pollID int) error {
-	return tx.Exec(`UPDATE topic_poll SET updated = now() WHERE id = ?`, pollID).Error
-}
-
 func (r *PollRepository) UpdatePollOptionText(tx *gorm.DB, optionID int, text string) error {
 	return tx.Exec(`UPDATE topic_poll_option SET text = ?, updated = now() WHERE id = ?`, text, optionID).Error
 }
@@ -211,24 +207,4 @@ func (r *PollRepository) AddOptionVoteCounts(tx *gorm.DB, optionIDs []int, delta
 	return tx.Exec(`
 		UPDATE topic_poll_option SET vote_count = vote_count + ?, updated = now()
 		WHERE id IN ?`, delta, optionIDs).Error
-}
-
-func (r *PollRepository) CountVotesOfOptions(optionIDs []int) (map[int]int, error) {
-	out := map[int]int{}
-	if len(optionIDs) == 0 {
-		return out, nil
-	}
-	var rows []struct {
-		OptionID int `gorm:"column:option_id"`
-		N        int `gorm:"column:n"`
-	}
-	err := r.db.Table("topic_poll_vote").
-		Select("option_id, COUNT(*) AS n").
-		Where("option_id IN ?", optionIDs).
-		Group("option_id").
-		Scan(&rows).Error
-	for _, row := range rows {
-		out[row.OptionID] = row.N
-	}
-	return out, err
 }

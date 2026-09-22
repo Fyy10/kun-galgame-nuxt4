@@ -106,7 +106,7 @@ func (p *Polls) setPollVote(ctx context.Context, in *setPollVoteInput) (*pollOut
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	return p.pollOut(ctx, topic, poll, user)
+	return p.reloadOut(ctx, topic, poll.ID, user)
 }
 
 func (p *Polls) clearPollVote(ctx context.Context, in *pollInput) (*pollOutput, error) {
@@ -133,7 +133,7 @@ func (p *Polls) clearPollVote(ctx context.Context, in *pollInput) (*pollOutput, 
 	if err != nil {
 		return nil, problem.Internal(err)
 	}
-	return p.pollOut(ctx, topic, poll, user)
+	return p.reloadOut(ctx, topic, poll.ID, user)
 }
 
 func (p *Polls) refuseVoteChange(poll *model.TopicPoll, hasVoted bool) *problem.Problem {
