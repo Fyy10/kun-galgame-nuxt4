@@ -182,6 +182,12 @@ func newWriteFix(t *testing.T, checker gate.Checker) *writeFix {
 		ReplyHandler: handler.NewReplyHandler(topicService.NewReplyService(
 			replyR, commentR, topicR, state, uc, rdb, gate.NewCheckService(nil), gate.NewScanService(nil),
 		)),
+		TopicCommentHandler: handler.NewCommentHandler(topicService.NewCommentService(
+			replyR, commentR, state, uc, rdb, gate.NewCheckService(nil), gate.NewScanService(nil),
+		)),
+		PollHandler: handler.NewPollHandler(topicService.NewPollService(
+			topicRepo.NewPollRepository(db), topicR, state, uc, rdb, gate.NewCheckService(nil), gate.NewScanService(nil),
+		)),
 	}
 	f.setupRoutes()
 	f.spec = newSpecConformance(t)
@@ -293,6 +299,14 @@ func (f *writeFix) cleanup(t *testing.T) {
 		ours[0], ours[1], ours[0], ours[1]).Error
 	_ = f.db.Exec(`DELETE FROM topic_comment WHERE user_id BETWEEN ? AND ? OR topic_id IN (SELECT id FROM topic WHERE user_id BETWEEN ? AND ?)`,
 		ours[0], ours[1], ours[0], ours[1]).Error
+	_ = f.db.Exec(`DELETE FROM topic_poll_vote WHERE poll_id IN (
+		SELECT id FROM topic_poll WHERE topic_id IN (SELECT id FROM topic WHERE user_id BETWEEN ? AND ?))`,
+		ours[0], ours[1]).Error
+	_ = f.db.Exec(`DELETE FROM topic_poll_option WHERE poll_id IN (
+		SELECT id FROM topic_poll WHERE topic_id IN (SELECT id FROM topic WHERE user_id BETWEEN ? AND ?))`,
+		ours[0], ours[1]).Error
+	_ = f.db.Exec(`DELETE FROM topic_poll WHERE topic_id IN (SELECT id FROM topic WHERE user_id BETWEEN ? AND ?)`,
+		ours[0], ours[1]).Error
 	_ = f.db.Exec(`DELETE FROM topic_reply_reaction WHERE topic_reply_id IN (
 		SELECT id FROM topic_reply WHERE user_id BETWEEN ? AND ? OR topic_id IN (SELECT id FROM topic WHERE user_id BETWEEN ? AND ?))`,
 		ours[0], ours[1], ours[0], ours[1]).Error

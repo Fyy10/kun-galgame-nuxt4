@@ -202,6 +202,28 @@ func (s *PollService) Vote(
 		}
 	}
 
+	// Nothing tied option_id to poll_id, and there is no composite foreign key:
+	// hosting your own poll and passing another poll's option ids incremented
+	// that option's vote_count, and changing the vote decremented it again.
+	options, optErr := s.pollRepo.FindOptionsByPollID(req.PollID)
+	if optErr != nil {
+		return errors.ErrInternal("投票失败")
+	}
+	belongs := make(map[int]struct{}, len(options))
+	for _, opt := range options {
+		belongs[opt.ID] = struct{}{}
+	}
+	chosen := make(map[int]struct{}, len(req.OptionIDArray))
+	for _, optionID := range req.OptionIDArray {
+		if _, ok := belongs[optionID]; !ok {
+			return errors.ErrBadRequest("选项不属于该投票")
+		}
+		if _, dup := chosen[optionID]; dup {
+			return errors.ErrBadRequest("不能重复选择同一个选项")
+		}
+		chosen[optionID] = struct{}{}
+	}
+
 	hasVoted, _ := s.pollRepo.HasUserVoted(req.PollID, userID)
 	if hasVoted && !poll.CanChangeVote {
 		return errors.ErrBadRequest("该投票不允许修改投票结果")

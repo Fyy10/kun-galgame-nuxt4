@@ -53,23 +53,40 @@ func NewCommentService(
 func (s *CommentService) CreateComment(
 	ctx context.Context,
 	user *middleware.UserInfo,
-	topicID, replyID, targetUserID int,
+	topicID, replyID int,
 	parentCommentID *int,
 	content string,
 ) (*dto.TopicCommentResponse, *errors.AppError) {
 	content = markdown.NormalizeStoredContent(content)
 	userID := user.ID
+	var parent *topicModel.TopicComment
 	if parentCommentID != nil {
-		parent, err := s.commentRepo.FindCommentByID(*parentCommentID)
-		if err != nil || parent.TopicReplyID != replyID {
+		found, err := s.commentRepo.FindCommentByID(*parentCommentID)
+		if err != nil || found.TopicReplyID != replyID {
 			return nil, errors.ErrBadRequest("回复的评论不存在")
 		}
+		parent = found
 	}
 
 	authorID := int64(userID)
 	decision, matched := s.check.Decision(ctx, content, &authorID)
 	if decision == gate.DecisionDeny {
 		return nil, errContentBlocked()
+	}
+
+	// reply_id was never tied to topic_id: a comment could be written into a
+	// topic the caller cannot read, by naming a readable topic in the body.
+	reply, replyErr := s.replyRepo.FindByID(replyID)
+	if replyErr != nil || reply.TopicID != topicID || reply.Status != 0 {
+		return nil, errors.ErrNotFound("未找到该回复")
+	}
+
+	// target_user_id used to come from the request body and nothing checked it,
+	// so any signed-in user could grant moemoepoint to any user id, for free and
+	// without a limit. It is derived now; the field on the wire is ignored.
+	targetUserID := reply.UserID
+	if parent != nil {
+		targetUserID = parent.UserID
 	}
 
 	topicRepo := repository.NewTopicRepository(s.replyRepo.DB())

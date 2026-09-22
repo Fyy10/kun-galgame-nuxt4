@@ -71,7 +71,7 @@ type TopicReplyResponse struct {
 type CreateCommentRequest struct {
 	TopicID         int    `json:"topic_id" validate:"required,min=1"`
 	ReplyID         int    `json:"reply_id" validate:"required,min=1"`
-	TargetUserID    int    `json:"target_user_id" validate:"required,min=1"`
+	TargetUserID    int    `json:"target_user_id" validate:"omitempty,min=1"` // ignored; the server derives the target
 	Content         string `json:"content" validate:"required,min=1,max=1007"`
 	ParentCommentID *int   `json:"parent_comment_id" validate:"omitempty,min=1"`
 }
