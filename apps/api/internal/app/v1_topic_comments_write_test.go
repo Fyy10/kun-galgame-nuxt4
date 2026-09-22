@@ -293,3 +293,28 @@ func TestV1CommentWritesFailClosedWhenOAuthIsDown(t *testing.T) {
 		t.Fatalf("like %d %+v", resp.StatusCode, out)
 	}
 }
+
+func TestV1CreateCommentIdempotency(t *testing.T) {
+	f := newCommentFix(t, nil)
+	key := keyUUID(110)
+
+	resp, first := f.postComment(t, w3ReplyMin, "sess-alice", key, map[string]any{"text": "once"})
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("create %d %+v", resp.StatusCode, first)
+	}
+	resp, replay := f.postComment(t, w3ReplyMin, "sess-alice", key, map[string]any{"text": "once"})
+	if resp.StatusCode != http.StatusCreated || replay["id"] != first["id"] {
+		t.Fatalf("replay %d %+v", resp.StatusCode, replay)
+	}
+	if resp.Header.Get("Idempotency-Replayed") != "true" {
+		t.Fatalf("Idempotency-Replayed %q", resp.Header.Get("Idempotency-Replayed"))
+	}
+	if n := f.commentRowCount(t, `SELECT COUNT(*) FROM topic_comment WHERE content = 'once'`); n != 1 {
+		t.Fatalf("comment rows %d, want 1", n)
+	}
+
+	resp, out := f.postComment(t, w3ReplyMin, "sess-alice", key, map[string]any{"text": "twice"})
+	if resp.StatusCode != http.StatusConflict || out["code"] != "IDEMPOTENCY_KEY_REUSED" {
+		t.Fatalf("reused key %d %+v", resp.StatusCode, out)
+	}
+}
