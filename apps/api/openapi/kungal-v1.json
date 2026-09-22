@@ -930,6 +930,68 @@
         ],
         "type": "object"
       },
+      "ListPoll": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/Poll"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
+      "ListPollVote": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/PollVote"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "ListProblemReason": {
         "properties": {
           "items": {
@@ -1357,6 +1419,613 @@
         "required": [
           "object",
           "children"
+        ],
+        "type": "object"
+      },
+      "Poll": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "The user who created the poll."
+          },
+          "can_change_vote": {
+            "description": "Whether a voter may replace or retract their vote.",
+            "type": "boolean"
+          },
+          "choice_type": {
+            "description": "Whether a voter picks exactly one option or several.",
+            "enum": [
+              "single",
+              "multiple"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "closes_at": {
+            "description": "When the poll stops accepting votes. null when it never closes.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "description": "Creation time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "description": {
+            "description": "Longer explanation as stored. Empty string when there is none, never null. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "type": "string"
+          },
+          "id": {
+            "description": "Poll id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "is_anonymous": {
+            "description": "Whether who voted for what is hidden. An anonymous poll never lists voters and has no vote log.",
+            "type": "boolean"
+          },
+          "max_choice": {
+            "description": "Most options a vote may hold. Always 1 when choice_type is single.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "min_choice": {
+            "description": "Fewest options a vote may hold. Always 1 when choice_type is single.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "object": {
+            "description": "Type discriminant. Always poll.",
+            "enum": [
+              "poll"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "options": {
+            "description": "The options, oldest first. Tallies are not here; they are in results.",
+            "items": {
+              "properties": {
+                "id": {
+                  "description": "Option id. JSON string of a decimal integer.",
+                  "maxLength": 20,
+                  "minLength": 1,
+                  "pattern": "^[0-9]+$",
+                  "type": "string"
+                },
+                "object": {
+                  "description": "Type discriminant. Always poll_option.",
+                  "enum": [
+                    "poll_option"
+                  ],
+                  "maxLength": 11,
+                  "type": "string",
+                  "x-vocabulary-closed": true
+                },
+                "text": {
+                  "description": "Option label as stored. Free text; never use it as a decision input.",
+                  "maxLength": 100,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "object",
+                "id",
+                "text"
+              ],
+              "type": "object"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "result_visibility": {
+            "description": "Who may see the tallies.",
+            "enum": [
+              "always",
+              "after_vote",
+              "after_deadline"
+            ],
+            "maxLength": 14,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "results": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PollResults"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The tallies. null as one block when the caller may not see them yet, never a scattering of null counts."
+          },
+          "title": {
+            "description": "Poll question as stored. Free text; never use it as a decision input.",
+            "maxLength": 100,
+            "type": "string"
+          },
+          "topic_id": {
+            "description": "Id of the topic the poll belongs to.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "Time of the latest change to the poll or its options.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PollViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's own state on this poll. null for an anonymous caller."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "topic_id",
+          "title",
+          "description",
+          "choice_type",
+          "min_choice",
+          "max_choice",
+          "closes_at",
+          "result_visibility",
+          "is_anonymous",
+          "can_change_vote",
+          "author",
+          "options",
+          "results",
+          "created_at",
+          "updated_at",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "PollCreate": {
+        "properties": {
+          "can_change_vote": {
+            "description": "Whether a voter may replace or retract their vote. Absent means true.",
+            "type": "boolean"
+          },
+          "choice_type": {
+            "description": "Whether a voter picks exactly one option or several.",
+            "enum": [
+              "single",
+              "multiple"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "closes_at": {
+            "description": "When the poll stops accepting votes. Absent or null means it never closes. It is stored as sent, never rounded.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "description": "Longer explanation. Absent means none. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "type": "string"
+          },
+          "is_anonymous": {
+            "description": "Whether who voted for what is hidden. Absent means false. It cannot be turned off once the poll holds a vote.",
+            "type": "boolean"
+          },
+          "max_choice": {
+            "description": "Most options a vote may hold, at most the number of options. Ignored when choice_type is single, which forces 1. Absent means every option.",
+            "format": "int64",
+            "maximum": 20,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "min_choice": {
+            "description": "Fewest options a vote may hold. Ignored when choice_type is single, which forces 1. Absent means 1.",
+            "format": "int64",
+            "maximum": 20,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "options": {
+            "description": "The options, in display order. Between 2 and 20.",
+            "items": {
+              "properties": {
+                "text": {
+                  "description": "Option label, stored as sent. A label of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input.",
+                  "maxLength": 100,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "text"
+              ],
+              "type": "object"
+            },
+            "maxItems": 20,
+            "minItems": 2,
+            "type": "array"
+          },
+          "result_visibility": {
+            "description": "Who may see the tallies.",
+            "enum": [
+              "always",
+              "after_vote",
+              "after_deadline"
+            ],
+            "maxLength": 14,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "title": {
+            "description": "Poll question, stored as sent. A question of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input.",
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "choice_type",
+          "result_visibility",
+          "options"
+        ],
+        "type": "object"
+      },
+      "PollOptionChanges": {
+        "properties": {
+          "add": {
+            "description": "Options to append, in order.",
+            "items": {
+              "properties": {
+                "text": {
+                  "description": "Option label, stored as sent. A label of only whitespace is refused as TOO_SHORT. Free text; never use it as a decision input.",
+                  "maxLength": 100,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "text"
+              ],
+              "type": "object"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "remove": {
+            "description": "Options to delete. An option that already holds votes cannot be deleted, and at least two options must remain.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "update": {
+            "description": "Labels to change. An option that already holds votes cannot be relabelled.",
+            "items": {
+              "$ref": "#/components/schemas/PollOptionUpdate"
+            },
+            "maxItems": 20,
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "PollOptionUpdate": {
+        "properties": {
+          "option_id": {
+            "description": "Id of an option of this poll. An id of another poll's option is refused as UNKNOWN_REFERENCE.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "text": {
+            "description": "New label, checked as in createPoll. Free text; never use it as a decision input.",
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "option_id",
+          "text"
+        ],
+        "type": "object"
+      },
+      "PollPatch": {
+        "properties": {
+          "can_change_vote": {
+            "description": "New can_change_vote.",
+            "type": "boolean"
+          },
+          "choice_type": {
+            "description": "New choice type. It cannot change once the poll holds a vote.",
+            "enum": [
+              "single",
+              "multiple"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "closes_at": {
+            "description": "New deadline. null clears it; leaving the field out keeps the stored one.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "description": "New explanation. An empty string removes it. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "type": "string"
+          },
+          "is_anonymous": {
+            "description": "New anonymity. Turning it off is refused once the poll holds a vote: those votes were cast under a promise of anonymity.",
+            "type": "boolean"
+          },
+          "max_choice": {
+            "description": "New upper bound. Forced to 1 when the resulting choice_type is single.",
+            "format": "int64",
+            "maximum": 20,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "min_choice": {
+            "description": "New lower bound. Forced to 1 when the resulting choice_type is single.",
+            "format": "int64",
+            "maximum": 20,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "option_changes": {
+            "$ref": "#/components/schemas/PollOptionChanges",
+            "description": "Options to add, relabel or delete. The stored options are otherwise left alone."
+          },
+          "result_visibility": {
+            "description": "New result visibility.",
+            "enum": [
+              "always",
+              "after_vote",
+              "after_deadline"
+            ],
+            "maxLength": 14,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "title": {
+            "description": "New question, checked as in createPoll. Free text; never use it as a decision input.",
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PollResults": {
+        "properties": {
+          "options": {
+            "description": "One entry per option of this poll, in the same order as options. Empty array if the poll has no options.",
+            "items": {
+              "properties": {
+                "option_id": {
+                  "description": "Id of the option these votes are for.",
+                  "maxLength": 20,
+                  "minLength": 1,
+                  "pattern": "^[0-9]+$",
+                  "type": "string"
+                },
+                "vote_count": {
+                  "description": "Number of votes this option holds.",
+                  "format": "int64",
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "option_id",
+                "vote_count"
+              ],
+              "type": "object"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "sample_voters": {
+            "description": "Up to five of the earliest voters, oldest first. Empty array when the poll is anonymous, and banned users are left out, so it can hold fewer than min(voter_count, 5).",
+            "items": {
+              "$ref": "#/components/schemas/UserRef"
+            },
+            "maxItems": 5,
+            "type": "array"
+          },
+          "total_votes": {
+            "description": "Number of votes cast, counting every option a voter picked.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "voter_count": {
+            "description": "Number of distinct users who have voted.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total_votes",
+          "voter_count",
+          "options",
+          "sample_voters"
+        ],
+        "type": "object"
+      },
+      "PollViewer": {
+        "properties": {
+          "can_change_vote": {
+            "description": "Whether the caller may replace or retract a vote they already cast. It is the poll's can_change_vote.",
+            "type": "boolean"
+          },
+          "can_delete": {
+            "description": "Whether the caller may delete the poll: the poll's author, the topic's author, or staff holding the delete permission.",
+            "type": "boolean"
+          },
+          "can_edit": {
+            "description": "Whether the caller may edit the poll: the poll's author, the topic's author, or staff holding the edit permission. Requests authenticated with a Bearer token never carry staff powers.",
+            "type": "boolean"
+          },
+          "can_view_results": {
+            "description": "Whether the caller may see results now. It says the same thing as results being non-null.",
+            "type": "boolean"
+          },
+          "can_vote": {
+            "description": "Whether setPollVote would be accepted now: the poll is open, and either the caller has not voted or the poll allows changing a vote.",
+            "type": "boolean"
+          },
+          "chosen_option_ids": {
+            "description": "Ids of the options the caller picked, in option order. Empty array when the caller has not voted.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
+          },
+          "has_voted": {
+            "description": "Whether the caller has voted in this poll.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "has_voted",
+          "chosen_option_ids",
+          "can_vote",
+          "can_change_vote",
+          "can_edit",
+          "can_delete",
+          "can_view_results"
+        ],
+        "type": "object"
+      },
+      "PollVote": {
+        "properties": {
+          "created_at": {
+            "description": "When it was cast.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "id": {
+            "description": "Vote id. JSON string of a decimal integer.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always poll_vote.",
+            "enum": [
+              "poll_vote"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "option_id": {
+            "description": "Id of the option that was picked. A voter in a multiple-choice poll has one entry per option they picked.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "poll_id": {
+            "description": "Id of the poll this vote belongs to.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "voter": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "The user who cast it."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "poll_id",
+          "option_id",
+          "voter",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "PollVoteSet": {
+        "properties": {
+          "option_ids": {
+            "description": "The options the caller picks, replacing whatever they picked before. Every id must belong to this poll, and the same id twice is refused as DUPLICATE_ITEM.",
+            "items": {
+              "maxLength": 20,
+              "minLength": 1,
+              "pattern": "^[0-9]+$",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "option_ids"
         ],
         "type": "object"
       },
@@ -4103,6 +4772,725 @@
         ]
       }
     },
+    "/polls/{poll_id}": {
+      "delete": {
+        "description": "Deletes the poll with its options and votes. It needs can_delete. Nothing is refunded and no counter is rolled back: the options go with the poll. NOT_FOUND under the same conditions as getPoll.",
+        "operationId": "deletePoll",
+        "parameters": [
+          {
+            "description": "Poll id.",
+            "in": "path",
+            "name": "poll_id",
+            "required": true,
+            "schema": {
+              "description": "Poll id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller may read but not delete the poll; SCOPE_REQUIRED or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a poll",
+        "tags": [
+          "topics"
+        ]
+      },
+      "get": {
+        "description": "Returns one poll. results is null as one block whenever the caller may not see the tallies yet, and sample_voters is empty for an anonymous poll even when results are visible. NOT_FOUND when the poll does not exist, was written by a banned user, or belongs to a topic getTopic would not return to the caller.",
+        "operationId": "getPoll",
+        "parameters": [
+          {
+            "description": "Poll id.",
+            "in": "path",
+            "name": "poll_id",
+            "required": true,
+            "schema": {
+              "description": "Poll id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Poll"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Get a poll",
+        "tags": [
+          "topics"
+        ]
+      },
+      "patch": {
+        "description": "Changes the fields present in the body and returns the poll as getPoll would. Absent fields keep their value. It needs can_edit. option_changes adds, relabels and removes options; an option that already holds votes keeps its label and cannot be removed, and two options must remain. Once the poll holds a vote, an anonymous poll cannot be made public and the choice type cannot change. closes_at set to null clears the deadline; leaving the field out keeps it. Only text this request submits is checked by trust and safety again. NOT_FOUND under the same conditions as getPoll.",
+        "operationId": "updatePoll",
+        "parameters": [
+          {
+            "description": "Poll id.",
+            "in": "path",
+            "name": "poll_id",
+            "required": true,
+            "schema": {
+              "description": "Poll id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PollPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Poll"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller may read but not edit the poll; SCOPE_REQUIRED or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED, or CONTENT_REJECTED when the trust-and-safety check refuses the text."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a poll",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
+    "/polls/{poll_id}/vote": {
+      "delete": {
+        "description": "Removes the caller's vote and returns the whole poll. Retracting when the caller has not voted is a 200 that changes nothing. It needs the poll to allow changing a vote. NOT_FOUND under the same conditions as getPoll.",
+        "operationId": "clearPollVote",
+        "parameters": [
+          {
+            "description": "Poll id.",
+            "in": "path",
+            "name": "poll_id",
+            "required": true,
+            "schema": {
+              "description": "Poll id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Poll"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "POLL_CLOSED when the poll is past closes_at, or VOTE_ALREADY_CAST when the caller has voted and the poll does not allow changing a vote."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Retract the caller's vote",
+        "tags": [
+          "topics"
+        ]
+      },
+      "put": {
+        "description": "Replaces whatever the caller picked before with option_ids and returns the whole poll. It is a slot, so sending the same choice again is a 200 that moves no counter and writes no row. Every id must be an option of this poll, the same id twice is refused, and the count must sit between min_choice and max_choice. It takes no Idempotency-Key: the operation is idempotent by shape. NOT_FOUND under the same conditions as getPoll.",
+        "operationId": "setPollVote",
+        "parameters": [
+          {
+            "description": "Poll id.",
+            "in": "path",
+            "name": "poll_id",
+            "required": true,
+            "schema": {
+              "description": "Poll id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PollVoteSet"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Poll"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "POLL_CLOSED when the poll is past closes_at, or VOTE_ALREADY_CAST when the caller has voted and the poll does not allow changing a vote."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when an id is not an option of this poll, an id repeats, or the number of ids is outside the poll's bounds."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Set the caller's vote",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
+    "/polls/{poll_id}/votes": {
+      "get": {
+        "description": "Lists who voted for what as a cursor page, newest first. A voter in a multiple-choice poll has one entry per option. Votes by banned users are left out; the server reads on to fill the page, so continue while next_cursor is present. There is no total. NOT_FOUND under the same conditions as getPoll.",
+        "operationId": "listPollVotes",
+        "parameters": [
+          {
+            "description": "Poll id.",
+            "in": "path",
+            "name": "poll_id",
+            "required": true,
+            "schema": {
+              "description": "Poll id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListPollVote"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER, LIMIT_TOO_LARGE, or INVALID_CURSOR."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the poll is anonymous or the caller may not see its results yet."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List a poll's votes",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
     "/problems": {
       "get": {
         "description": "The closed registry of top-level error codes. Unauthenticated. Sorted by domain, then code.",
@@ -6434,6 +7822,276 @@
           }
         ],
         "summary": "Pin a reply",
+        "tags": [
+          "topics"
+        ]
+      }
+    },
+    "/topics/{topic_id}/polls": {
+      "get": {
+        "description": "Lists every poll of the topic, newest first. It is not paginated: a topic holds at most 30 polls. Polls by banned authors are left out. NOT_FOUND under the same conditions as getTopic.",
+        "operationId": "listTopicPolls",
+        "parameters": [
+          {
+            "description": "Topic id.",
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "description": "Topic id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListPoll"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List a topic's polls",
+        "tags": [
+          "topics"
+        ]
+      },
+      "post": {
+        "description": "Creates a poll on the topic and returns it as getPoll would to its author. It needs the topic's author or staff holding the create permission, and the topic must be one the caller can read. A single-choice poll stores min_choice and max_choice as 1 whatever the body asks for; a multiple-choice poll defaults them to 1 and to the number of options. closes_at is stored exactly as sent. Creating a poll bumps the topic. NOT_FOUND under the same conditions as getTopic.",
+        "operationId": "createPoll",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Topic id.",
+            "in": "path",
+            "name": "topic_id",
+            "required": true,
+            "schema": {
+              "description": "Topic id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PollCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Poll"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the new poll, such as /api/v1/polls/412.",
+                  "format": "uri-reference",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED when the caller is neither the topic's author nor staff; SCOPE_REQUIRED or ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED when a label is blank, closes_at is not a real instant, the choice bounds contradict each other, or the topic already holds 30 polls; CONTENT_REJECTED when the trust-and-safety check refuses the text."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a poll",
         "tags": [
           "topics"
         ]

@@ -27,6 +27,8 @@ DELETE /api/update/history                            cors.New → middleware.Na
 DELETE /api/update/todo                               cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → UpdateHandler.DeleteTodo
 DELETE /api/v1/comments/:comment_id                   cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/comments/:comment_id/like              cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/polls/:poll_id                         cors.New → v1Headers → fiberAdapter.Handle
+DELETE /api/v1/polls/:poll_id/vote                    cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/replies/:reply_id                      cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/replies/:reply_id/reactions/:reaction  cors.New → v1Headers → fiberAdapter.Handle
 DELETE /api/v1/topics/:topic_id/best-answer           cors.New → v1Headers → fiberAdapter.Handle
@@ -184,6 +186,8 @@ GET    /api/user/status                               cors.New → middleware.Na
 GET    /api/v1/comments/:comment_id                   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/comments/:comment_id/source            cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/galgames/:galgame_id/moyu-patches      cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/polls/:poll_id                         cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/polls/:poll_id/votes                   cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/problems                               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/problems/reasons                       cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/replies/:reply_id                      cors.New → v1Headers → fiberAdapter.Handle
@@ -191,6 +195,7 @@ GET    /api/v1/replies/:reply_id/reactions            cors.New → v1Headers →
 GET    /api/v1/replies/:reply_id/source               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics                                 cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id                       cors.New → v1Headers → fiberAdapter.Handle
+GET    /api/v1/topics/:topic_id/polls                 cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id/reactions             cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id/replies               cors.New → v1Headers → fiberAdapter.Handle
 GET    /api/v1/topics/:topic_id/source                cors.New → v1Headers → fiberAdapter.Handle
@@ -206,6 +211,7 @@ GET    /api/website/:domain/comments                  cors.New → middleware.Na
 GET    /healthz                                       cors.New → App.setupRoutes
 PATCH  /api/galgame/collection/:cid                   cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → GalgameCollectionHandler.Update
 PATCH  /api/v1/comments/:comment_id                   cors.New → v1Headers → fiberAdapter.Handle
+PATCH  /api/v1/polls/:poll_id                         cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/replies/:reply_id                      cors.New → v1Headers → fiberAdapter.Handle
 PATCH  /api/v1/topics/:topic_id                       cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/admin/friend-link                         cors.New → middleware.NamePreference → ContentStance → OptionalAuth → Auth → RequirePermission → FriendLinkHandler.Create
@@ -272,6 +278,7 @@ POST   /api/user/check-in                             cors.New → middleware.Na
 POST   /api/user/creator/apply                        cors.New → middleware.NamePreference → ContentStance → Auth → CreatorHandler.Apply
 POST   /api/v1/replies/:reply_id/comments             cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/topics                                 cors.New → v1Headers → fiberAdapter.Handle
+POST   /api/v1/topics/:topic_id/polls                 cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/topics/:topic_id/replies               cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/topics/:topic_id/upvotes               cors.New → v1Headers → fiberAdapter.Handle
 POST   /api/v1/topics/:topic_id/views                 cors.New → v1Headers → fiberAdapter.Handle
@@ -323,6 +330,7 @@ PUT    /api/user/nsfw                                 cors.New → middleware.Na
 PUT    /api/user/preferences                          cors.New → middleware.NamePreference → ContentStance → Auth → ContentPrefsHandler.UpdatePreferences
 PUT    /api/user/username                             cors.New → middleware.NamePreference → ContentStance → Auth → ProfileHandler.UpdateUsername
 PUT    /api/v1/comments/:comment_id/like              cors.New → v1Headers → fiberAdapter.Handle
+PUT    /api/v1/polls/:poll_id/vote                    cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/replies/:reply_id/reactions/:reaction  cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/topics/:topic_id/best-answer           cors.New → v1Headers → fiberAdapter.Handle
 PUT    /api/v1/topics/:topic_id/favorite              cors.New → v1Headers → fiberAdapter.Handle
