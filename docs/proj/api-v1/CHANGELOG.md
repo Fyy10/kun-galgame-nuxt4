@@ -1,5 +1,18 @@
 # API v1 changelog
 
+## 2026-09-24 (G4.1 work detail vocabularies)
+
+`GET /api/v1/works/{work_id}` narrowed catalog's vocabularies and limits and lost data without saying so. Checked against infra's definitions, these are fixed:
+
+- **Roster rows with role `unknown` were dropped.** Catalog's `roster_role` includes `unknown` (5% of roster rows; mostly characters reached only through a voice credit). `roster[].character_kind` now includes `unknown`.
+- **`sensitive` age rating was reported as `all_ages`** (3,016 works). `content_rating` is now `all_ages` | `sensitive` | `r18`. It is a label on the age axis only; the SFW gate stays `is_nsfw`.
+- **Credit role names were cut at 128 characters**; catalog allows 512 and so does `credits[].display_name` now.
+- **Screenshot captions were cut at 512 characters**; `screenshots[].caption` now takes catalog's 2048.
+- **A source rank of 0 became `null`**; `external_ratings[].source_rank` now carries what catalog publishes (≥ 0).
+- **Lengths were measured in bytes, not characters,** so a 300-character CJK alias (900 bytes) was dropped. Aliases, voiced-character names and external ids are measured in characters.
+
+Also: `roster[].identity` is removed. It is catalog's opaque proposal token, not display text, and nothing read it. Every row still dropped on purpose (a cover or screenshot without a usable URL, a malformed ref, rating or playtime row) is now logged at WARN.
+
 ## 2026-09-24 (G4 galgame work detail)
 
 Breaking for `GET /api/galgame/:id`, `PUT /api/galgame/:id/like`, `GET /api/galgame/:id/link/all`, `GET /api/galgame/interactions/mine` and `GET /api/galgame/drafts`; all five are gone. `DELETE /api/galgame/:id` (submission withdraw) stays until G7. No App build calls them; `docs/proj/app-direct-api.md` names the replacements.
