@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"kun-galgame-api/internal/galgame/calendarapiv1"
 	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/entityapiv1"
 	"kun-galgame-api/internal/testdb"
@@ -122,6 +123,7 @@ type fakeCatalog struct {
 	rows       map[int]client.CatalogWorkListItem
 	details    map[int]*client.CatalogWorkDetail
 	movedWorks map[int]int64
+	media      map[int64]client.CatalogEntityMedia
 	works      []geWork
 	taxonomy   map[string][]client.CatalogTaxonomyItem
 	hits       map[string][]client.CatalogEntityHit
@@ -139,6 +141,14 @@ type fakeCatalog struct {
 	seriesMem  map[int][]int
 	gotLimits  []string
 	searched   []url.Values
+	omitIDs    map[int]bool
+	calItems   map[string][]client.CatalogWorkListItem
+	calToday   map[string]string
+	calMin     map[string]string
+	calMax     map[string]string
+	calFail    map[string]bool
+	calQ       []url.Values
+	calBucket  []string
 }
 
 func decodeInto(t *testing.T, raw string, out any) {
@@ -185,6 +195,9 @@ func (f *fakeCatalog) CatalogRowsByWorkIDs(_ context.Context, ids []int, _, cont
 	f.mu.Unlock()
 	out := map[int]client.CatalogWorkListItem{}
 	for _, id := range ids {
+		if f.omitIDs[id] {
+			continue
+		}
 		if f.visible(id, contentLimit) {
 			row := f.rows[id]
 			if !client.CatalogItemRenderable(&row) {
@@ -270,6 +283,19 @@ func (f *fakeCatalog) CatalogWorkDetail(_ context.Context, workID int) (*client.
 		return nil, false, 0, legacyErrors.New(233, err.Error(), http.StatusInternalServerError)
 	}
 	return &d, true, 0, nil
+}
+
+func (f *fakeCatalog) CatalogEntityMediaBatch(_ context.Context, entity string, ids []int64) (map[int64]client.CatalogEntityMedia, *legacyErrors.AppError) {
+	if e := f.err(); e != nil {
+		return nil, e
+	}
+	out := map[int64]client.CatalogEntityMedia{}
+	for _, id := range ids {
+		if m, ok := f.media[id]; ok {
+			out[id] = m
+		}
+	}
+	return out, nil
 }
 
 func (f *fakeCatalog) CatalogEngine(_ context.Context, id string) (*client.CatalogEngineDetail, bool, *legacyErrors.AppError) {
@@ -478,6 +504,34 @@ func (f *fakeCatalog) CatalogWorksSearch(_ context.Context, q url.Values) (*clie
 			}
 		}
 		ids = f.sortMembers(ids, "released_desc")
+	default:
+		for _, w := range f.works {
+			ids = append(ids, w.id)
+		}
+		if len(ids) == 0 {
+			for id := range f.rows {
+				ids = append(ids, id)
+			}
+			sort.Ints(ids)
+		}
+	}
+	after, before := q.Get("released_after"), q.Get("released_before")
+	if after != "" || before != "" {
+		kept := ids[:0]
+		for _, id := range ids {
+			d := ""
+			if row := f.rows[id]; row.ReleaseDate != nil {
+				d = *row.ReleaseDate
+			}
+			if after != "" && d < after {
+				continue
+			}
+			if before != "" && d > before {
+				continue
+			}
+			kept = append(kept, id)
+		}
+		ids = kept
 	}
 	visible := []int{}
 	for _, id := range ids {
@@ -496,7 +550,74 @@ func (f *fakeCatalog) CatalogWorksSearch(_ context.Context, q url.Values) (*clie
 	return res, nil
 }
 
+func (f *fakeCatalog) CatalogCalendar(_ context.Context, bucket string, q url.Values) (*client.CatalogWorksPage, *legacyErrors.AppError) {
+	if e := f.err(); e != nil {
+		return nil, e
+	}
+	f.mu.Lock()
+	f.calQ = append(f.calQ, maps.Clone(q))
+	f.calBucket = append(f.calBucket, bucket)
+	f.mu.Unlock()
+	key := bucket
+	switch bucket {
+	case "":
+		key = q.Get("month")
+	case "/pending":
+		key = "pending:" + q.Get("year")
+	case "/tba":
+		key = "tba"
+	}
+	if f.calFail[key] {
+		return nil, legacyErrors.New(233, "calendar down", http.StatusInternalServerError)
+	}
+	items := f.calItems[key]
+	start := 0
+	if cur := q.Get("cursor"); strings.HasPrefix(cur, "p") {
+		start, _ = strconv.Atoi(cur[1:])
+	}
+	limit := 100
+	if n, err := strconv.Atoi(q.Get("limit")); err == nil && n > 0 {
+		limit = n
+	}
+	end := min(start+limit, len(items))
+	if start > len(items) {
+		start = len(items)
+		end = start
+	}
+	page := &client.CatalogWorksPage{
+		Items: append([]client.CatalogWorkListItem{}, items[start:end]...),
+		Month: q.Get("month"),
+		Year:  q.Get("year"),
+		Count: int64(len(items)),
+		Total: int64(len(items)),
+	}
+	page.Meta.Today = f.calToday[key]
+	page.Meta.MinMonth = f.calMin[key]
+	page.Meta.MaxMonth = f.calMax[key]
+	if f.calHasPrev(key) {
+		v := true
+		page.Meta.HasPrev = &v
+	}
+	if f.calHasNext(key) {
+		v := true
+		page.Meta.HasNext = &v
+	}
+	if end < len(items) {
+		page.NextCursor = "p" + strconv.Itoa(end)
+	}
+	return page, nil
+}
+
+func (f *fakeCatalog) calHasPrev(key string) bool {
+	return f.calMin[key] != "" && f.calMin[key] < key
+}
+
+func (f *fakeCatalog) calHasNext(key string) bool {
+	return f.calMax[key] != "" && f.calMax[key] > key
+}
+
 var _ entityapiv1.Catalog = (*fakeCatalog)(nil)
+var _ calendarapiv1.Catalog = (*fakeCatalog)(nil)
 
 type geFix struct {
 	app  *App
@@ -609,6 +730,9 @@ func (f *geFix) seedCatalog(t *testing.T) {
 
 	c.hits["names"] = decodeHits(t, `[{"id":9101,"display_name":"瀬戸","latin":"Seto"}]`)
 	c.hits["characters"] = decodeHits(t, `[{"id":9201,"display_name":"夏帆","latin":"Kaho"}]`)
+	c.media = map[int64]client.CatalogEntityMedia{
+		9201: {Image: "https://image.other.example/aa/bb/" + geHash(9201) + ".webp", WorkCount: 3},
+	}
 	var name client.CatalogName
 	decodeInto(t, fmt.Sprintf(`{"id":9101,"display_name":"瀬戸","latin":"Seto","lang":"ja","gender":2,"birth_m":4,"birth_d":1,
 		"refs":[{"source":"vndb","external_id":"2099"},{"source":"dlsite","external_id":"x"}],
