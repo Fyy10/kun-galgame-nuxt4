@@ -2049,6 +2049,234 @@ export interface paths {
         patch: operations["updateTodo"];
         trace?: never;
     };
+    "/toolsets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List toolsets
+         * @description Lists toolsets as a page-number collection. Default sort is resource_updated_desc. type, language, platform and version narrow the list; an unknown token is UNKNOWN_ENUM_VALUE. q searches the name. Toolsets whose author is not renderable are omitted from both items and total.
+         */
+        get: operations["listToolsets"];
+        put?: never;
+        /**
+         * Create a toolset
+         * @description Creates a toolset and returns it. Idempotency-Key is required. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. name is length-checked on the raw value; only whitespace is TOO_SHORT. type, language, platform and version are required closed vocabularies. Location is the new toolset's path.
+         */
+        post: operations["createToolset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/toolsets/{toolset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a toolset
+         * @description Returns the toolset and counts one view. An unrenderable author is NOT_FOUND. viewer is null for an anonymous caller.
+         */
+        get: operations["getToolset"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a toolset
+         * @description Deletes a toolset and its resources, aliases, contributors, ratings and uploads. Needs can_delete. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Object-store failure is SERVICE_UNAVAILABLE and nothing is deleted.
+         */
+        delete: operations["deleteToolset"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit a toolset
+         * @description Changes the fields that are sent and returns the toolset. Needs can_edit. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Only name, content_markdown and aliases, when sent, go through the trust-and-safety check. aliases and homepage_urls, when present, replace the whole set.
+         */
+        patch: operations["updateToolset"];
+        trace?: never;
+    };
+    "/toolsets/{toolset_id}/practicality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Rate a toolset's practicality
+         * @description Sets the caller's 1–5 rating. Rating again with the same value changes nothing. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        put: operations["putToolsetPracticality"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/toolsets/{toolset_id}/resources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a resource to a toolset
+         * @description Adds a resource. Any signed-in user may add a resource to another user's toolset and becomes a contributor. Idempotency-Key is required. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. file needs a completed artifact_id of the caller on this toolset; link needs url and size_label.
+         */
+        post: operations["createToolsetResource"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/toolsets/{toolset_id}/resources/{resource_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a toolset resource
+         * @description Returns a resource without download secrets. A resource that does not belong to the toolset, or whose poster or the toolset's author is not renderable, is NOT_FOUND.
+         */
+        get: operations["getToolsetResource"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a toolset resource
+         * @description Deletes a resource. Needs can_delete. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Object-store failure is SERVICE_UNAVAILABLE and the row stays.
+         */
+        delete: operations["deleteToolsetResource"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit a toolset resource
+         * @description Changes the fields that are sent. Needs can_edit. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. A file resource cannot change url, extraction_code or size_label.
+         */
+        patch: operations["updateToolsetResource"];
+        trace?: never;
+    };
+    "/toolsets/{toolset_id}/resources/{resource_id}/downloads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue download secrets for a resource
+         * @description Returns the download URL and codes, and counts one download. Anonymous callers may use it. A file resource's URL is a presigned artifact URL; failure is SERVICE_UNAVAILABLE.
+         */
+        post: operations["createToolsetDownload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/toolsets/{toolset_id}/resources/{resource_id}/source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a toolset resource's edit source
+         * @description Returns the editable fields of a resource, secrets included, without counting a download. Needs the resource's viewer.can_edit. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        get: operations["getToolsetResourceSource"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/toolsets/{toolset_id}/source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a toolset's edit source
+         * @description Returns the stored Markdown of the description. Needs viewer.can_edit. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        get: operations["getToolsetSource"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/toolsets/{toolset_id}/uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a toolset file upload
+         * @description Creates an upload session for a .7z, .zip or .rar file. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Over the daily quota is QUOTA_EXCEEDED with Retry-After until the next daily reset.
+         */
+        post: operations["createToolsetUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/toolsets/{toolset_id}/uploads/{upload_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Resume a toolset file upload
+         * @description Returns the upload session with fresh part URLs. Only the owner can read it. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        get: operations["getToolsetUpload"];
+        put?: never;
+        post?: never;
+        /**
+         * Abort a toolset file upload
+         * @description Aborts a pending upload. A completed upload is INVALID_STATE_TRANSITION. Object-store failure is SERVICE_UNAVAILABLE and the row stays. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written.
+         */
+        delete: operations["deleteToolsetUpload"];
+        options?: never;
+        head?: never;
+        /**
+         * Complete a toolset file upload
+         * @description Marks the upload completed. state must be completed. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. completed_at is written once, in the same transaction as the daily quota.
+         */
+        patch: operations["updateToolsetUpload"];
+        trace?: never;
+    };
     "/topics": {
         parameters: {
             query?: never;
@@ -2433,6 +2661,26 @@ export interface paths {
          * @description Returns one user's public profile and activity counts. NOT_FOUND when the account does not exist or is not renderable. topic_count excludes hidden topics. topic_today_count uses the Asia/Shanghai calendar day. community_comment_count is null when the community service is unavailable and there is no cached value.
          */
         get: operations["getUser"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{user_id}/toolsets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a user's toolsets
+         * @description Lists toolsets the user authored, newest first. An unrenderable user is NOT_FOUND. An empty list is 200 with total 0.
+         */
+        get: operations["listUserToolsets"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3504,6 +3752,15 @@ export interface components {
             via_company: components["schemas"]["CompanyRef"] | null;
             /** @description The work. */
             work_summary: components["schemas"]["WorkSummary"];
+        };
+        CompletePartBody: {
+            /** @description ETag returned by the object store. Free text; never use it as a decision input. */
+            etag: string;
+            /**
+             * Format: int64
+             * @description 1-based part number.
+             */
+            part_number: number;
         };
         ContentDocument: {
             /** @description Top-level block nodes in document order. Empty array for an empty body. */
@@ -5448,6 +5705,25 @@ export interface components {
              */
             total_relation: "eq" | "gte";
         };
+        PageListToolsetSummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["ToolsetSummary"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
         PageListWorkSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["WorkSummary"][];
@@ -5757,6 +6033,20 @@ export interface components {
             /** @description The options the caller picks, replacing whatever they picked before. Every id must belong to this poll, and the same id twice is refused as DUPLICATE_ITEM. */
             option_ids: string[];
         };
+        PracticalityPut: {
+            /**
+             * Format: int64
+             * @description Star rating, 1–5.
+             */
+            rating: number;
+        };
+        PracticalityViewer: {
+            /**
+             * Format: int64
+             * @description The rating just written. Never null in this response.
+             */
+            practicality_rating: number | null;
+        };
         Preferences: {
             /** @description Cloud preference document. A JSON object. */
             doc: {
@@ -6053,6 +6343,12 @@ export interface components {
              * @enum {string}
              */
             object: "report_reason";
+        };
+        ResourceViewer: {
+            /** @description Whether the caller may delete this resource. Requests authenticated with a Bearer token never carry staff powers. */
+            can_delete: boolean;
+            /** @description Whether the caller may edit this resource. Requests authenticated with a Bearer token never carry staff powers. */
+            can_edit: boolean;
         };
         ReviewItem: {
             /** @description The moderator who claimed the item. null before anyone has. */
@@ -6696,6 +6992,477 @@ export interface components {
             /** @description Whether the caller may move a discarded task back to pending: the caller holds update_log.reopen. */
             can_reopen: boolean;
         };
+        Toolset: {
+            /** @description Alternate names. Empty array, never null. */
+            aliases: string[];
+            /** @description Author of the toolset. */
+            author: components["schemas"]["UserRef"];
+            /**
+             * Format: int64
+             * @description Comments on the toolset's wall.
+             */
+            comment_count: number;
+            /** @description Description as a node tree. An empty document when there is no description. */
+            content: components["schemas"]["ContentDocument"];
+            /** @description Users who have contributed a resource. Unrenderable accounts are omitted. Empty array, never null. */
+            contributors: components["schemas"]["UserRef"][];
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /**
+             * Format: int64
+             * @description Sum of download counts of every resource. 0 when there are none.
+             */
+            download_count: number;
+            /**
+             * Format: date-time
+             * @description Time of the latest edit. null when never edited.
+             */
+            edited_at: string | null;
+            /** @description http or https homepage URLs. Empty array, never null. */
+            homepage_urls: string[];
+            /** @description Toolset id. */
+            id: string;
+            /**
+             * @description The tool's interface language. Lower-case BCP 47, plus others.
+             * @enum {string}
+             */
+            interface_language: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "others";
+            /**
+             * @description Type discriminant. Always toolset.
+             * @enum {string}
+             */
+            object: "toolset";
+            /**
+             * @description Platform the tool runs on.
+             * @enum {string}
+             */
+            platform: "windows" | "mac" | "linux" | "emulator" | "others";
+            /**
+             * Format: double
+             * @description Mean rating, two decimal places. null when nobody has rated.
+             */
+            practicality_average: number | null;
+            /**
+             * Format: int64
+             * @description Number of ratings.
+             */
+            practicality_count: number;
+            /** @description Counts per star. Index 0 is 1 star. Length 5, never null. */
+            practicality_distribution: number[];
+            /**
+             * @description Release channel of the tool.
+             * @enum {string}
+             */
+            release_channel: "stable" | "beta" | "alpha" | "rc";
+            /**
+             * Format: date-time
+             * @description Time a resource of this toolset was last added; its creation time before the first. Never null on a toolset; nullable only to match the work summary field of the same name.
+             */
+            resource_updated_at: string | null;
+            /** @description Name of the tool. Free text; never use it as a decision input. */
+            title: string;
+            /** @description Resources of the toolset, newest first. Empty array, never null. */
+            toolset_resources: components["schemas"]["ToolsetResourceSummary"][];
+            /**
+             * @description Kind of tool.
+             * @enum {string}
+             */
+            toolset_type: "emulator" | "translator" | "extractor" | "converter" | "debug" | "launcher" | "script" | "docs" | "others";
+            /**
+             * Format: date-time
+             * @description Time of the latest write to the row.
+             */
+            updated_at: string;
+            /**
+             * Format: int64
+             * @description Lifetime view count. Each read of this operation adds one.
+             */
+            view_count: number;
+            /** @description The caller's own state. null for an anonymous caller. */
+            viewer: components["schemas"]["ToolsetViewer"] | null;
+        };
+        ToolsetCreate: {
+            /** @description Alternate names, at most 17, each 1–500 after trimming, unique in the request. */
+            aliases?: string[];
+            /** @description Markdown description. May be empty. Free text; never use it as a decision input. */
+            content_markdown?: string;
+            /** @description http or https URLs, at most 10, each at most 500 characters. */
+            homepage_urls?: string[];
+            /**
+             * @description The tool's interface language.
+             * @enum {string}
+             */
+            interface_language: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "others";
+            /**
+             * @description Platform the tool runs on.
+             * @enum {string}
+             */
+            platform: "windows" | "mac" | "linux" | "emulator" | "others";
+            /**
+             * @description Release channel of the tool.
+             * @enum {string}
+             */
+            release_channel: "stable" | "beta" | "alpha" | "rc";
+            /** @description Display name. Length is checked on the raw value; only whitespace is TOO_SHORT. Free text; never use it as a decision input. */
+            title: string;
+            /**
+             * @description Kind of tool.
+             * @enum {string}
+             */
+            toolset_type: "emulator" | "translator" | "extractor" | "converter" | "debug" | "launcher" | "script" | "docs" | "others";
+        };
+        ToolsetDownload: {
+            /** @description Archive password. Empty string when none. Free text; never use it as a decision input. */
+            archive_password: string;
+            /** @description Download URL. A link resource returns the stored link; a file resource returns a presigned URL. */
+            download_url: string;
+            /**
+             * Format: date-time
+             * @description When the presigned URL expires. null for a link.
+             */
+            expires_at: string | null;
+            /** @description Extraction code. Empty string when none. Free text; never use it as a decision input. */
+            extraction_code: string;
+            /**
+             * @description Type discriminant. Always toolset_download.
+             * @enum {string}
+             */
+            object: "toolset_download";
+        };
+        ToolsetPatch: {
+            /** @description When present, replaces every alias. */
+            aliases?: string[];
+            /** @description New Markdown description. Free text; never use it as a decision input. */
+            content_markdown?: string;
+            /** @description When present, replaces every homepage URL. */
+            homepage_urls?: string[];
+            /**
+             * @description New interface language.
+             * @enum {string}
+             */
+            interface_language?: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "others";
+            /**
+             * @description New platform.
+             * @enum {string}
+             */
+            platform?: "windows" | "mac" | "linux" | "emulator" | "others";
+            /**
+             * @description New release channel.
+             * @enum {string}
+             */
+            release_channel?: "stable" | "beta" | "alpha" | "rc";
+            /** @description New name. Free text; never use it as a decision input. */
+            title?: string;
+            /**
+             * @description New kind of tool.
+             * @enum {string}
+             */
+            toolset_type?: "emulator" | "translator" | "extractor" | "converter" | "debug" | "launcher" | "script" | "docs" | "others";
+        };
+        ToolsetPracticality: {
+            /**
+             * @description Type discriminant. Always toolset_practicality.
+             * @enum {string}
+             */
+            object: "toolset_practicality";
+            /**
+             * Format: double
+             * @description Mean rating, two decimal places. null when nobody has rated.
+             */
+            practicality_average: number | null;
+            /**
+             * Format: int64
+             * @description Number of ratings.
+             */
+            practicality_count: number;
+            /** @description Counts per star. Index 0 is 1 star. Length 5, never null. */
+            practicality_distribution: number[];
+            /** @description Id of the toolset. */
+            toolset_id: string;
+            /** @description The caller's rating after this request. */
+            viewer: components["schemas"]["PracticalityViewer"] | null;
+        };
+        ToolsetResourceCreate: {
+            /** @description Archive password. Free text; never use it as a decision input. */
+            archive_password?: string;
+            /**
+             * Format: uuid
+             * @description Completed upload of the caller on this toolset. Required for file; inconsistent on link.
+             */
+            artifact_id?: string;
+            /** @description Extraction code. Free text; never use it as a decision input. */
+            extraction_code?: string;
+            /** @description External download link: http, https, ftp, ftps, magnet, ed2k or thunder. Required for link; inconsistent on file. */
+            link_url?: string;
+            /** @description Note. Absent, null or empty means none. Free text; never use it as a decision input. */
+            note?: string | null;
+            /**
+             * @description file needs artifact_id; link needs url and size_label.
+             * @enum {string}
+             */
+            resource_type: "file" | "link";
+            /** @description The poster's size text. Required for link; inconsistent on file. Free text; never use it as a decision input. */
+            size_label?: string;
+        };
+        ToolsetResourceFile: {
+            /**
+             * Format: int64
+             * @description Size of the archive in bytes. 0 for a legacy file whose size was never recorded.
+             */
+            file_size: number;
+        };
+        ToolsetResourceLink: {
+            /** @description The poster's own size text, such as 12 MB. Free text; never use it as a decision input. */
+            size_label: string;
+        };
+        ToolsetResourcePatch: {
+            /** @description New archive password. Free text; never use it as a decision input. */
+            archive_password?: string;
+            /** @description New extraction code. Immutable on a file resource. Free text; never use it as a decision input. */
+            extraction_code?: string;
+            /** @description New download link. Immutable on a file resource. */
+            link_url?: string;
+            /** @description New note. Absent or null leaves it; an empty string clears it. Free text; never use it as a decision input. */
+            note?: string | null;
+            /** @description New size text. Immutable on a file resource. Free text; never use it as a decision input. */
+            size_label?: string;
+        };
+        ToolsetResourceSource: {
+            /** @description Archive password. Empty string when none. Free text; never use it as a decision input. */
+            archive_password: string;
+            /** @description Extraction code. Empty string when none. Free text; never use it as a decision input. */
+            extraction_code: string;
+            /** @description The stored download link. Present only on a link resource. */
+            link_url?: string;
+            /** @description Note shown with the resource. null when none. Free text; never use it as a decision input. */
+            note: string | null;
+            /**
+             * @description Type discriminant. Always toolset_resource_source.
+             * @enum {string}
+             */
+            object: "toolset_resource_source";
+            /** @description Id of the resource. */
+            resource_id: string;
+            /** @description The poster's size text. Present only on a link resource. Free text; never use it as a decision input. */
+            size_label?: string;
+        };
+        ToolsetResourceSummary: {
+            /** @description The hosted archive of a file resource. null for a link. */
+            archive: components["schemas"]["ToolsetResourceFile"] | null;
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /**
+             * Format: int64
+             * @description Times this resource's download secrets were issued.
+             */
+            download_count: number;
+            /** @description Resource id. */
+            id: string;
+            /** @description The size text of a link resource. null for a file. */
+            link: components["schemas"]["ToolsetResourceLink"] | null;
+            /** @description Note shown with the resource. null when none. Free text; never use it as a decision input. */
+            note: string | null;
+            /**
+             * @description Type discriminant. Always toolset_resource.
+             * @enum {string}
+             */
+            object: "toolset_resource";
+            /** @description User who added the resource. */
+            poster: components["schemas"]["UserRef"];
+            /**
+             * @description file is a hosted archive; link is an external URL.
+             * @enum {string}
+             */
+            resource_type: "file" | "link";
+            /** @description The caller's own state. null for an anonymous caller. */
+            viewer: components["schemas"]["ResourceViewer"] | null;
+        };
+        ToolsetSource: {
+            /** @description Stored Markdown of the description. Free text; never use it as a decision input. */
+            content_markdown: string;
+            /**
+             * @description Type discriminant. Always toolset_source.
+             * @enum {string}
+             */
+            object: "toolset_source";
+            /** @description Id of the toolset. */
+            toolset_id: string;
+        };
+        ToolsetSummary: {
+            /** @description Alternate names. Empty array, never null. */
+            aliases: string[];
+            /** @description Author of the toolset. */
+            author: components["schemas"]["UserRef"];
+            /**
+             * Format: int64
+             * @description Comments on the toolset's wall.
+             */
+            comment_count: number;
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /**
+             * Format: int64
+             * @description Sum of download counts of every resource. 0 when there are none.
+             */
+            download_count: number;
+            /**
+             * Format: date-time
+             * @description Time of the latest edit. null when never edited.
+             */
+            edited_at: string | null;
+            /** @description http or https homepage URLs. Empty array, never null. */
+            homepage_urls: string[];
+            /** @description Toolset id. */
+            id: string;
+            /**
+             * @description The tool's interface language. Lower-case BCP 47, plus others.
+             * @enum {string}
+             */
+            interface_language: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "others";
+            /**
+             * @description Type discriminant. Always toolset.
+             * @enum {string}
+             */
+            object: "toolset";
+            /**
+             * @description Platform the tool runs on.
+             * @enum {string}
+             */
+            platform: "windows" | "mac" | "linux" | "emulator" | "others";
+            /**
+             * Format: double
+             * @description Mean rating, two decimal places. null when nobody has rated.
+             */
+            practicality_average: number | null;
+            /**
+             * Format: int64
+             * @description Number of ratings.
+             */
+            practicality_count: number;
+            /** @description Counts per star. Index 0 is 1 star. Length 5, never null. */
+            practicality_distribution: number[];
+            /**
+             * @description Release channel of the tool.
+             * @enum {string}
+             */
+            release_channel: "stable" | "beta" | "alpha" | "rc";
+            /**
+             * Format: date-time
+             * @description Time a resource of this toolset was last added; its creation time before the first. Never null on a toolset; nullable only to match the work summary field of the same name.
+             */
+            resource_updated_at: string | null;
+            /** @description Name of the tool. Free text; never use it as a decision input. */
+            title: string;
+            /**
+             * @description Kind of tool.
+             * @enum {string}
+             */
+            toolset_type: "emulator" | "translator" | "extractor" | "converter" | "debug" | "launcher" | "script" | "docs" | "others";
+            /**
+             * Format: date-time
+             * @description Time of the latest write to the row.
+             */
+            updated_at: string;
+            /**
+             * Format: int64
+             * @description Lifetime view count.
+             */
+            view_count: number;
+        };
+        ToolsetUpload: {
+            /**
+             * Format: date-time
+             * @description Time the upload completed. null while pending.
+             */
+            completed_at: string | null;
+            /**
+             * Format: date-time
+             * @description Creation time.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When the upload URLs expire. null when completed.
+             */
+            expires_at: string | null;
+            /**
+             * Format: int64
+             * @description Declared size in bytes.
+             */
+            file_size: number;
+            /** @description Original filename. Free text; never use it as a decision input. */
+            filename: string;
+            /** @description Upload id, equal to the artifact UUID. */
+            id: string;
+            /** @description Whether the upload is split into parts. */
+            is_multipart: boolean;
+            /**
+             * @description Type discriminant. Always toolset_upload.
+             * @enum {string}
+             */
+            object: "toolset_upload";
+            /**
+             * Format: int64
+             * @description Part size in bytes when multipart. null otherwise.
+             */
+            part_size: number | null;
+            /** @description Presigned part URLs. Empty array, never null. */
+            part_urls: components["schemas"]["UploadPart"][];
+            /**
+             * @description pending until complete; completed afterwards.
+             * @enum {string}
+             */
+            state: "pending" | "completed";
+            /** @description Toolset this upload belongs to. */
+            toolset_id: string;
+            /**
+             * Format: uri
+             * @description Single-shot upload URL. null when multipart or completed.
+             */
+            upload_url: string | null;
+            /** @description Parts already uploaded, on a pending multipart resume. Empty array otherwise. */
+            uploaded_parts: components["schemas"]["UploadedPart"][];
+        };
+        ToolsetUploadCreate: {
+            /** @description MIME type of the file. Free text; never use it as a decision input. */
+            content_type?: string;
+            /**
+             * Format: int64
+             * @description Size in bytes, 1–2147483648.
+             */
+            file_size: number;
+            /** @description Original filename. Must end in .7z, .zip, or .rar. Free text; never use it as a decision input. */
+            filename: string;
+        };
+        ToolsetUploadPatch: {
+            /** @description Completed multipart parts. */
+            parts?: components["schemas"]["CompletePartBody"][];
+            /**
+             * @description Must be completed. Any other value is INVALID_STATE_TRANSITION.
+             * @enum {string}
+             */
+            state: "pending" | "completed";
+        };
+        ToolsetViewer: {
+            /** @description Whether the caller may delete this toolset. Requests authenticated with a Bearer token never carry staff powers. */
+            can_delete: boolean;
+            /** @description Whether the caller may edit this toolset. Requests authenticated with a Bearer token never carry staff powers. */
+            can_edit: boolean;
+            /**
+             * Format: int64
+             * @description The caller's rating, 1–5. null when they have not rated.
+             */
+            practicality_rating: number | null;
+        };
         Topic: {
             /**
              * @description Who may read the topic: everyone, signed-in users, holders of granted roles, or granted users. The author and staff always may.
@@ -7189,6 +7956,32 @@ export interface components {
             can_delete: boolean;
             /** @description Whether the caller holds update_log.edit. Requests authenticated with a Bearer token never carry it. */
             can_edit: boolean;
+        };
+        UploadPart: {
+            /**
+             * Format: int64
+             * @description 1-based part number.
+             */
+            part_number: number;
+            /**
+             * Format: uri
+             * @description Presigned URL for this part.
+             */
+            url: string;
+        };
+        UploadedPart: {
+            /**
+             * Format: int64
+             * @description Bytes uploaded in this part.
+             */
+            byte_count: number;
+            /** @description ETag returned by the object store. Free text; never use it as a decision input. */
+            etag: string;
+            /**
+             * Format: int64
+             * @description 1-based part number.
+             */
+            part_number: number;
         };
         UpvoteCreate: {
             /** @description A note shown with the upvote. Absent or null for none. Leading and trailing whitespace is removed, and a note of only whitespace counts as none. Free text; never use it as a decision input. */
@@ -18443,6 +19236,1556 @@ export interface operations {
             };
         };
     };
+    listToolsets: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description When set, only this type. Omitted means every type. */
+                toolset_type?: "emulator" | "translator" | "extractor" | "converter" | "debug" | "launcher" | "script" | "docs" | "others";
+                /** @description When set, only tools with this interface language. Omitted means every language. */
+                interface_language?: "zh-cn" | "zh-tw" | "ja-jp" | "en-us" | "others";
+                /** @description When set, only this platform. Omitted means every platform. */
+                platform?: "windows" | "mac" | "linux" | "emulator" | "others";
+                /** @description When set, only this channel. Omitted means every channel. */
+                release_channel?: "stable" | "beta" | "alpha" | "rc";
+                /** @description Sort token. Default resource_updated_desc. */
+                sort?: "resource_updated_desc" | "resource_updated_asc" | "created_desc" | "created_asc" | "view_desc" | "view_asc" | "title_asc" | "title_desc";
+                /** @description Case-insensitive search over the toolset title. Omitted or blank means no search. Free text; never use it as a decision input. */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListToolsetSummary"];
+                };
+            };
+            /** @description UNKNOWN_ENUM_VALUE, UNKNOWN_SORT, LIMIT_TOO_LARGE, or INVALID_PARAMETER. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createToolset: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ToolsetCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Toolset"];
+                };
+            };
+            /** @description INVALID_PARAMETER when Idempotency-Key is missing or malformed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED or CONTENT_REJECTED. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getToolset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Toolset"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the toolset does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteToolset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without can_delete; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the toolset does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateToolset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ToolsetPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Toolset"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the toolset does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ALREADY_EXISTS when an alias collides. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED or CONTENT_REJECTED. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    putToolsetPracticality: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PracticalityPut"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetPracticality"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the toolset does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createToolsetResource: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key": string;
+            };
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ToolsetResourceCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetResourceSummary"];
+                };
+            };
+            /** @description INVALID_PARAMETER when Idempotency-Key is missing or malformed. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the toolset does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ALREADY_EXISTS when the artifact is already bound or the URL is taken; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED or CONTENT_REJECTED. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getToolsetResource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+                /** @description Resource id. */
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetResourceSummary"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the resource is not visible at this path. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteToolsetResource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+                /** @description Resource id. */
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without can_delete; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the resource is not visible at this path. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateToolsetResource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+                /** @description Resource id. */
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ToolsetResourcePatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetResourceSummary"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the resource is not visible at this path. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ALREADY_EXISTS when the new URL is taken. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED or CONTENT_REJECTED. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createToolsetDownload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+                /** @description Resource id. */
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetDownload"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the resource is not visible at this path. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getToolsetResourceSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+                /** @description Resource id. */
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetResourceSource"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the toolset or resource does not exist, the resource belongs to another toolset, or the toolset author or resource poster is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getToolsetSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetSource"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the toolset does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    createToolsetUpload: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ToolsetUploadCreate"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetUpload"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the toolset does not exist or its author is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description VALIDATION_FAILED. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description QUOTA_EXCEEDED when the daily upload quota is exhausted. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getToolsetUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+                /** @description Upload id, equal to the artifact UUID. */
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetUpload"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the upload is not the caller's session on this toolset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    deleteToolsetUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+                /** @description Upload id, equal to the artifact UUID. */
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the upload is not the caller's session on this toolset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION when the upload is already completed. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    updateToolsetUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Toolset id. */
+                toolset_id: string;
+                /** @description Upload id, equal to the artifact UUID. */
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ToolsetUploadPatch"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolsetUpload"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description ACCOUNT_BANNED. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the upload is not the caller's session on this toolset. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description INVALID_STATE_TRANSITION when state is not completed. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unsupported Media Type */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     listTopics: {
         parameters: {
             query?: {
@@ -21027,6 +23370,88 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the account service cannot be reached. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    listUserToolsets: {
+        parameters: {
+            query?: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 24. Values above 100 are rejected, not clamped. */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                /** @description User id. */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListToolsetSummary"];
+                };
+            };
+            /** @description LIMIT_TOO_LARGE or INVALID_PARAMETER. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description NOT_FOUND when the user does not exist or is not renderable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Service Unavailable */
             503: {
                 headers: {
                     [name: string]: unknown;

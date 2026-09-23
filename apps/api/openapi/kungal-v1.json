@@ -1999,6 +1999,27 @@
         ],
         "type": "object"
       },
+      "CompletePartBody": {
+        "properties": {
+          "etag": {
+            "description": "ETag returned by the object store. Free text; never use it as a decision input.",
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "part_number": {
+            "description": "1-based part number.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "part_number",
+          "etag"
+        ],
+        "type": "object"
+      },
       "ContentDocument": {
         "properties": {
           "children": {
@@ -7150,6 +7171,49 @@
         ],
         "type": "object"
       },
+      "PageListToolsetSummary": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/ToolsetSummary"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many.",
+            "enum": [
+              "eq",
+              "gte"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
       "PageListWorkSummary": {
         "properties": {
           "items": {
@@ -7990,6 +8054,39 @@
         ],
         "type": "object"
       },
+      "PracticalityPut": {
+        "properties": {
+          "rating": {
+            "description": "Star rating, 1–5.",
+            "format": "int64",
+            "maximum": 5,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rating"
+        ],
+        "type": "object"
+      },
+      "PracticalityViewer": {
+        "properties": {
+          "practicality_rating": {
+            "description": "The rating just written. Never null in this response.",
+            "format": "int64",
+            "maximum": 5,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "practicality_rating"
+        ],
+        "type": "object"
+      },
       "Preferences": {
         "properties": {
           "doc": {
@@ -8806,6 +8903,23 @@
           "object",
           "key",
           "display_name"
+        ],
+        "type": "object"
+      },
+      "ResourceViewer": {
+        "properties": {
+          "can_delete": {
+            "description": "Whether the caller may delete this resource. Requests authenticated with a Bearer token never carry staff powers.",
+            "type": "boolean"
+          },
+          "can_edit": {
+            "description": "Whether the caller may edit this resource. Requests authenticated with a Bearer token never carry staff powers.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "can_edit",
+          "can_delete"
         ],
         "type": "object"
       },
@@ -10585,6 +10699,1281 @@
         ],
         "type": "object"
       },
+      "Toolset": {
+        "properties": {
+          "aliases": {
+            "description": "Alternate names. Empty array, never null.",
+            "items": {
+              "description": "An alternate name of the tool. Free text; never use it as a decision input.",
+              "maxLength": 500,
+              "type": "string"
+            },
+            "maxItems": 17,
+            "type": "array"
+          },
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Author of the toolset."
+          },
+          "comment_count": {
+            "description": "Comments on the toolset's wall.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "content": {
+            "$ref": "#/components/schemas/ContentDocument",
+            "description": "Description as a node tree. An empty document when there is no description."
+          },
+          "contributors": {
+            "description": "Users who have contributed a resource. Unrenderable accounts are omitted. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/UserRef"
+            },
+            "type": "array"
+          },
+          "created_at": {
+            "description": "Creation time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "download_count": {
+            "description": "Sum of download counts of every resource. 0 when there are none.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "edited_at": {
+            "description": "Time of the latest edit. null when never edited.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "homepage_urls": {
+            "description": "http or https homepage URLs. Empty array, never null.",
+            "items": {
+              "description": "An http or https URL of at most 500 characters.",
+              "format": "uri",
+              "maxLength": 500,
+              "type": "string"
+            },
+            "maxItems": 10,
+            "type": "array"
+          },
+          "id": {
+            "description": "Toolset id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "interface_language": {
+            "description": "The tool's interface language. Lower-case BCP 47, plus others.",
+            "enum": [
+              "zh-cn",
+              "zh-tw",
+              "ja-jp",
+              "en-us",
+              "others"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "object": {
+            "description": "Type discriminant. Always toolset.",
+            "enum": [
+              "toolset"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "platform": {
+            "description": "Platform the tool runs on.",
+            "enum": [
+              "windows",
+              "mac",
+              "linux",
+              "emulator",
+              "others"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "practicality_average": {
+            "description": "Mean rating, two decimal places. null when nobody has rated.",
+            "format": "double",
+            "maximum": 5,
+            "minimum": 1,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "practicality_count": {
+            "description": "Number of ratings.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "practicality_distribution": {
+            "description": "Counts per star. Index 0 is 1 star. Length 5, never null.",
+            "items": {
+              "description": "Number of ratings with this many stars.",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "maxItems": 5,
+            "minItems": 5,
+            "type": "array"
+          },
+          "release_channel": {
+            "description": "Release channel of the tool.",
+            "enum": [
+              "stable",
+              "beta",
+              "alpha",
+              "rc"
+            ],
+            "maxLength": 6,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "resource_updated_at": {
+            "description": "Time a resource of this toolset was last added; its creation time before the first. Never null on a toolset; nullable only to match the work summary field of the same name.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "description": "Name of the tool. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "type": "string"
+          },
+          "toolset_resources": {
+            "description": "Resources of the toolset, newest first. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/ToolsetResourceSummary"
+            },
+            "type": "array"
+          },
+          "toolset_type": {
+            "description": "Kind of tool.",
+            "enum": [
+              "emulator",
+              "translator",
+              "extractor",
+              "converter",
+              "debug",
+              "launcher",
+              "script",
+              "docs",
+              "others"
+            ],
+            "maxLength": 10,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "updated_at": {
+            "description": "Time of the latest write to the row.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "view_count": {
+            "description": "Lifetime view count. Each read of this operation adds one.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolsetViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's own state. null for an anonymous caller."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "title",
+          "aliases",
+          "toolset_type",
+          "interface_language",
+          "platform",
+          "release_channel",
+          "homepage_urls",
+          "author",
+          "view_count",
+          "download_count",
+          "comment_count",
+          "practicality_average",
+          "practicality_count",
+          "practicality_distribution",
+          "created_at",
+          "updated_at",
+          "edited_at",
+          "resource_updated_at",
+          "content",
+          "contributors",
+          "toolset_resources",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "ToolsetCreate": {
+        "properties": {
+          "aliases": {
+            "description": "Alternate names, at most 17, each 1–500 after trimming, unique in the request.",
+            "items": {
+              "description": "An alternate name of the tool. Free text; never use it as a decision input.",
+              "maxLength": 500,
+              "type": "string"
+            },
+            "maxItems": 17,
+            "type": "array"
+          },
+          "content_markdown": {
+            "description": "Markdown description. May be empty. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "homepage_urls": {
+            "description": "http or https URLs, at most 10, each at most 500 characters.",
+            "items": {
+              "description": "An http or https URL of at most 500 characters.",
+              "format": "uri",
+              "maxLength": 500,
+              "type": "string"
+            },
+            "maxItems": 10,
+            "type": "array"
+          },
+          "interface_language": {
+            "description": "The tool's interface language.",
+            "enum": [
+              "zh-cn",
+              "zh-tw",
+              "ja-jp",
+              "en-us",
+              "others"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "platform": {
+            "description": "Platform the tool runs on.",
+            "enum": [
+              "windows",
+              "mac",
+              "linux",
+              "emulator",
+              "others"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "release_channel": {
+            "description": "Release channel of the tool.",
+            "enum": [
+              "stable",
+              "beta",
+              "alpha",
+              "rc"
+            ],
+            "maxLength": 6,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "title": {
+            "description": "Display name. Length is checked on the raw value; only whitespace is TOO_SHORT. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "toolset_type": {
+            "description": "Kind of tool.",
+            "enum": [
+              "emulator",
+              "translator",
+              "extractor",
+              "converter",
+              "debug",
+              "launcher",
+              "script",
+              "docs",
+              "others"
+            ],
+            "maxLength": 10,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "title",
+          "toolset_type",
+          "interface_language",
+          "platform",
+          "release_channel"
+        ],
+        "type": "object"
+      },
+      "ToolsetDownload": {
+        "properties": {
+          "archive_password": {
+            "description": "Archive password. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": "string"
+          },
+          "download_url": {
+            "description": "Download URL. A link resource returns the stored link; a file resource returns a presigned URL.",
+            "maxLength": 4096,
+            "pattern": "^(https?|ftps?|magnet|ed2k|thunder):",
+            "type": "string"
+          },
+          "expires_at": {
+            "description": "When the presigned URL expires. null for a link.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "extraction_code": {
+            "description": "Extraction code. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always toolset_download.",
+            "enum": [
+              "toolset_download"
+            ],
+            "maxLength": 16,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "download_url",
+          "expires_at",
+          "extraction_code",
+          "archive_password"
+        ],
+        "type": "object"
+      },
+      "ToolsetPatch": {
+        "properties": {
+          "aliases": {
+            "description": "When present, replaces every alias.",
+            "items": {
+              "description": "An alternate name of the tool. Free text; never use it as a decision input.",
+              "maxLength": 500,
+              "type": "string"
+            },
+            "maxItems": 17,
+            "type": "array"
+          },
+          "content_markdown": {
+            "description": "New Markdown description. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "homepage_urls": {
+            "description": "When present, replaces every homepage URL.",
+            "items": {
+              "description": "An http or https URL of at most 500 characters.",
+              "format": "uri",
+              "maxLength": 500,
+              "type": "string"
+            },
+            "maxItems": 10,
+            "type": "array"
+          },
+          "interface_language": {
+            "description": "New interface language.",
+            "enum": [
+              "zh-cn",
+              "zh-tw",
+              "ja-jp",
+              "en-us",
+              "others"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "platform": {
+            "description": "New platform.",
+            "enum": [
+              "windows",
+              "mac",
+              "linux",
+              "emulator",
+              "others"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "release_channel": {
+            "description": "New release channel.",
+            "enum": [
+              "stable",
+              "beta",
+              "alpha",
+              "rc"
+            ],
+            "maxLength": 6,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "title": {
+            "description": "New name. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "toolset_type": {
+            "description": "New kind of tool.",
+            "enum": [
+              "emulator",
+              "translator",
+              "extractor",
+              "converter",
+              "debug",
+              "launcher",
+              "script",
+              "docs",
+              "others"
+            ],
+            "maxLength": 10,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "type": "object"
+      },
+      "ToolsetPracticality": {
+        "properties": {
+          "object": {
+            "description": "Type discriminant. Always toolset_practicality.",
+            "enum": [
+              "toolset_practicality"
+            ],
+            "maxLength": 20,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "practicality_average": {
+            "description": "Mean rating, two decimal places. null when nobody has rated.",
+            "format": "double",
+            "maximum": 5,
+            "minimum": 1,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "practicality_count": {
+            "description": "Number of ratings.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "practicality_distribution": {
+            "description": "Counts per star. Index 0 is 1 star. Length 5, never null.",
+            "items": {
+              "description": "Number of ratings with this many stars.",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "maxItems": 5,
+            "minItems": 5,
+            "type": "array"
+          },
+          "toolset_id": {
+            "description": "Id of the toolset.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PracticalityViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's rating after this request."
+          }
+        },
+        "required": [
+          "object",
+          "toolset_id",
+          "practicality_average",
+          "practicality_count",
+          "practicality_distribution",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "ToolsetResourceCreate": {
+        "properties": {
+          "archive_password": {
+            "description": "Archive password. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": "string"
+          },
+          "artifact_id": {
+            "description": "Completed upload of the caller on this toolset. Required for file; inconsistent on link.",
+            "format": "uuid",
+            "maxLength": 36,
+            "type": "string"
+          },
+          "extraction_code": {
+            "description": "Extraction code. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": "string"
+          },
+          "link_url": {
+            "description": "External download link: http, https, ftp, ftps, magnet, ed2k or thunder. Required for link; inconsistent on file.",
+            "maxLength": 1007,
+            "pattern": "^(https?|ftps?|magnet|ed2k|thunder):",
+            "type": "string"
+          },
+          "note": {
+            "description": "Note. Absent, null or empty means none. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "resource_type": {
+            "description": "file needs artifact_id; link needs url and size_label.",
+            "enum": [
+              "file",
+              "link"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "size_label": {
+            "description": "The poster's size text. Required for link; inconsistent on file. Free text; never use it as a decision input.",
+            "maxLength": 107,
+            "type": "string"
+          }
+        },
+        "required": [
+          "resource_type"
+        ],
+        "type": "object"
+      },
+      "ToolsetResourceFile": {
+        "properties": {
+          "file_size": {
+            "description": "Size of the archive in bytes. 0 for a legacy file whose size was never recorded.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "file_size"
+        ],
+        "type": "object"
+      },
+      "ToolsetResourceLink": {
+        "properties": {
+          "size_label": {
+            "description": "The poster's own size text, such as 12 MB. Free text; never use it as a decision input.",
+            "maxLength": 107,
+            "type": "string"
+          }
+        },
+        "required": [
+          "size_label"
+        ],
+        "type": "object"
+      },
+      "ToolsetResourcePatch": {
+        "properties": {
+          "archive_password": {
+            "description": "New archive password. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": "string"
+          },
+          "extraction_code": {
+            "description": "New extraction code. Immutable on a file resource. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": "string"
+          },
+          "link_url": {
+            "description": "New download link. Immutable on a file resource.",
+            "maxLength": 1007,
+            "pattern": "^(https?|ftps?|magnet|ed2k|thunder):",
+            "type": "string"
+          },
+          "note": {
+            "description": "New note. Absent or null leaves it; an empty string clears it. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "size_label": {
+            "description": "New size text. Immutable on a file resource. Free text; never use it as a decision input.",
+            "maxLength": 107,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ToolsetResourceSource": {
+        "properties": {
+          "archive_password": {
+            "description": "Archive password. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": "string"
+          },
+          "extraction_code": {
+            "description": "Extraction code. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": "string"
+          },
+          "link_url": {
+            "description": "The stored download link. Present only on a link resource.",
+            "maxLength": 1007,
+            "pattern": "^(https?|ftps?|magnet|ed2k|thunder):",
+            "type": "string"
+          },
+          "note": {
+            "description": "Note shown with the resource. null when none. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "description": "Type discriminant. Always toolset_resource_source.",
+            "enum": [
+              "toolset_resource_source"
+            ],
+            "maxLength": 23,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "resource_id": {
+            "description": "Id of the resource.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "size_label": {
+            "description": "The poster's size text. Present only on a link resource. Free text; never use it as a decision input.",
+            "maxLength": 107,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "resource_id",
+          "extraction_code",
+          "archive_password",
+          "note"
+        ],
+        "type": "object"
+      },
+      "ToolsetResourceSummary": {
+        "properties": {
+          "archive": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolsetResourceFile"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The hosted archive of a file resource. null for a link."
+          },
+          "created_at": {
+            "description": "Creation time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "download_count": {
+            "description": "Times this resource's download secrets were issued.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "id": {
+            "description": "Resource id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "link": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolsetResourceLink"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The size text of a link resource. null for a file."
+          },
+          "note": {
+            "description": "Note shown with the resource. null when none. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "description": "Type discriminant. Always toolset_resource.",
+            "enum": [
+              "toolset_resource"
+            ],
+            "maxLength": 16,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "poster": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "User who added the resource."
+          },
+          "resource_type": {
+            "description": "file is a hosted archive; link is an external URL.",
+            "enum": [
+              "file",
+              "link"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "viewer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResourceViewer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The caller's own state. null for an anonymous caller."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "resource_type",
+          "archive",
+          "link",
+          "note",
+          "download_count",
+          "poster",
+          "created_at",
+          "viewer"
+        ],
+        "type": "object"
+      },
+      "ToolsetSource": {
+        "properties": {
+          "content_markdown": {
+            "description": "Stored Markdown of the description. Free text; never use it as a decision input.",
+            "maxLength": 2000,
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always toolset_source.",
+            "enum": [
+              "toolset_source"
+            ],
+            "maxLength": 14,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "toolset_id": {
+            "description": "Id of the toolset.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "toolset_id",
+          "content_markdown"
+        ],
+        "type": "object"
+      },
+      "ToolsetSummary": {
+        "properties": {
+          "aliases": {
+            "description": "Alternate names. Empty array, never null.",
+            "items": {
+              "description": "An alternate name of the tool. Free text; never use it as a decision input.",
+              "maxLength": 500,
+              "type": "string"
+            },
+            "maxItems": 17,
+            "type": "array"
+          },
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "Author of the toolset."
+          },
+          "comment_count": {
+            "description": "Comments on the toolset's wall.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "created_at": {
+            "description": "Creation time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "download_count": {
+            "description": "Sum of download counts of every resource. 0 when there are none.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "edited_at": {
+            "description": "Time of the latest edit. null when never edited.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "homepage_urls": {
+            "description": "http or https homepage URLs. Empty array, never null.",
+            "items": {
+              "description": "An http or https URL of at most 500 characters.",
+              "format": "uri",
+              "maxLength": 500,
+              "type": "string"
+            },
+            "maxItems": 10,
+            "type": "array"
+          },
+          "id": {
+            "description": "Toolset id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "interface_language": {
+            "description": "The tool's interface language. Lower-case BCP 47, plus others.",
+            "enum": [
+              "zh-cn",
+              "zh-tw",
+              "ja-jp",
+              "en-us",
+              "others"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "object": {
+            "description": "Type discriminant. Always toolset.",
+            "enum": [
+              "toolset"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "platform": {
+            "description": "Platform the tool runs on.",
+            "enum": [
+              "windows",
+              "mac",
+              "linux",
+              "emulator",
+              "others"
+            ],
+            "maxLength": 8,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "practicality_average": {
+            "description": "Mean rating, two decimal places. null when nobody has rated.",
+            "format": "double",
+            "maximum": 5,
+            "minimum": 1,
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "practicality_count": {
+            "description": "Number of ratings.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "practicality_distribution": {
+            "description": "Counts per star. Index 0 is 1 star. Length 5, never null.",
+            "items": {
+              "description": "Number of ratings with this many stars.",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "maxItems": 5,
+            "minItems": 5,
+            "type": "array"
+          },
+          "release_channel": {
+            "description": "Release channel of the tool.",
+            "enum": [
+              "stable",
+              "beta",
+              "alpha",
+              "rc"
+            ],
+            "maxLength": 6,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "resource_updated_at": {
+            "description": "Time a resource of this toolset was last added; its creation time before the first. Never null on a toolset; nullable only to match the work summary field of the same name.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "description": "Name of the tool. Free text; never use it as a decision input.",
+            "maxLength": 500,
+            "type": "string"
+          },
+          "toolset_type": {
+            "description": "Kind of tool.",
+            "enum": [
+              "emulator",
+              "translator",
+              "extractor",
+              "converter",
+              "debug",
+              "launcher",
+              "script",
+              "docs",
+              "others"
+            ],
+            "maxLength": 10,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "updated_at": {
+            "description": "Time of the latest write to the row.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "view_count": {
+            "description": "Lifetime view count.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "title",
+          "aliases",
+          "toolset_type",
+          "interface_language",
+          "platform",
+          "release_channel",
+          "homepage_urls",
+          "author",
+          "view_count",
+          "download_count",
+          "comment_count",
+          "practicality_average",
+          "practicality_count",
+          "practicality_distribution",
+          "created_at",
+          "updated_at",
+          "edited_at",
+          "resource_updated_at"
+        ],
+        "type": "object"
+      },
+      "ToolsetUpload": {
+        "properties": {
+          "completed_at": {
+            "description": "Time the upload completed. null while pending.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "description": "Creation time.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "expires_at": {
+            "description": "When the upload URLs expire. null when completed.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "file_size": {
+            "description": "Declared size in bytes.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "filename": {
+            "description": "Original filename. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "type": "string"
+          },
+          "id": {
+            "description": "Upload id, equal to the artifact UUID.",
+            "maxLength": 36,
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "type": "string"
+          },
+          "is_multipart": {
+            "description": "Whether the upload is split into parts.",
+            "type": "boolean"
+          },
+          "object": {
+            "description": "Type discriminant. Always toolset_upload.",
+            "enum": [
+              "toolset_upload"
+            ],
+            "maxLength": 14,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "part_size": {
+            "description": "Part size in bytes when multipart. null otherwise.",
+            "format": "int64",
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "part_urls": {
+            "description": "Presigned part URLs. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/UploadPart"
+            },
+            "type": "array"
+          },
+          "state": {
+            "description": "pending until complete; completed afterwards.",
+            "enum": [
+              "pending",
+              "completed"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "toolset_id": {
+            "description": "Toolset this upload belongs to.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "upload_url": {
+            "description": "Single-shot upload URL. null when multipart or completed.",
+            "format": "uri",
+            "maxLength": 4096,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "uploaded_parts": {
+            "description": "Parts already uploaded, on a pending multipart resume. Empty array otherwise.",
+            "items": {
+              "$ref": "#/components/schemas/UploadedPart"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "toolset_id",
+          "filename",
+          "file_size",
+          "state",
+          "is_multipart",
+          "upload_url",
+          "part_size",
+          "part_urls",
+          "uploaded_parts",
+          "expires_at",
+          "created_at",
+          "completed_at"
+        ],
+        "type": "object"
+      },
+      "ToolsetUploadCreate": {
+        "properties": {
+          "content_type": {
+            "description": "MIME type of the file. Free text; never use it as a decision input.",
+            "maxLength": 100,
+            "type": "string"
+          },
+          "file_size": {
+            "description": "Size in bytes, 1–2147483648.",
+            "format": "int64",
+            "maximum": 2147483648,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "filename": {
+            "description": "Original filename. Must end in .7z, .zip, or .rar. Free text; never use it as a decision input.",
+            "maxLength": 1007,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "filename",
+          "file_size"
+        ],
+        "type": "object"
+      },
+      "ToolsetUploadPatch": {
+        "properties": {
+          "parts": {
+            "description": "Completed multipart parts.",
+            "items": {
+              "$ref": "#/components/schemas/CompletePartBody"
+            },
+            "type": "array"
+          },
+          "state": {
+            "description": "Must be completed. Any other value is INVALID_STATE_TRANSITION.",
+            "enum": [
+              "pending",
+              "completed"
+            ],
+            "maxLength": 9,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "type": "object"
+      },
+      "ToolsetViewer": {
+        "properties": {
+          "can_delete": {
+            "description": "Whether the caller may delete this toolset. Requests authenticated with a Bearer token never carry staff powers.",
+            "type": "boolean"
+          },
+          "can_edit": {
+            "description": "Whether the caller may edit this toolset. Requests authenticated with a Bearer token never carry staff powers.",
+            "type": "boolean"
+          },
+          "practicality_rating": {
+            "description": "The caller's rating, 1–5. null when they have not rated.",
+            "format": "int64",
+            "maximum": 5,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "can_edit",
+          "can_delete",
+          "practicality_rating"
+        ],
+        "type": "object"
+      },
       "Topic": {
         "properties": {
           "access_scope": {
@@ -12172,6 +13561,54 @@
         "required": [
           "can_edit",
           "can_delete"
+        ],
+        "type": "object"
+      },
+      "UploadPart": {
+        "properties": {
+          "part_number": {
+            "description": "1-based part number.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "url": {
+            "description": "Presigned URL for this part.",
+            "format": "uri",
+            "maxLength": 4096,
+            "type": "string"
+          }
+        },
+        "required": [
+          "part_number",
+          "url"
+        ],
+        "type": "object"
+      },
+      "UploadedPart": {
+        "properties": {
+          "byte_count": {
+            "description": "Bytes uploaded in this part.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "etag": {
+            "description": "ETag returned by the object store. Free text; never use it as a decision input.",
+            "maxLength": 256,
+            "type": "string"
+          },
+          "part_number": {
+            "description": "1-based part number.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "part_number",
+          "etag",
+          "byte_count"
         ],
         "type": "object"
       },
@@ -29705,6 +31142,2293 @@
         ]
       }
     },
+    "/toolsets": {
+      "get": {
+        "description": "Lists toolsets as a page-number collection. Default sort is resource_updated_desc. type, language, platform and version narrow the list; an unknown token is UNKNOWN_ENUM_VALUE. q searches the name. Toolsets whose author is not renderable are omitted from both items and total.",
+        "operationId": "listToolsets",
+        "parameters": [
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 24,
+              "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "When set, only this type. Omitted means every type.",
+            "explode": false,
+            "in": "query",
+            "name": "toolset_type",
+            "schema": {
+              "description": "When set, only this type. Omitted means every type.",
+              "enum": [
+                "emulator",
+                "translator",
+                "extractor",
+                "converter",
+                "debug",
+                "launcher",
+                "script",
+                "docs",
+                "others"
+              ],
+              "maxLength": 10,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "When set, only tools with this interface language. Omitted means every language.",
+            "explode": false,
+            "in": "query",
+            "name": "interface_language",
+            "schema": {
+              "description": "When set, only tools with this interface language. Omitted means every language.",
+              "enum": [
+                "zh-cn",
+                "zh-tw",
+                "ja-jp",
+                "en-us",
+                "others"
+              ],
+              "maxLength": 7,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "When set, only this platform. Omitted means every platform.",
+            "explode": false,
+            "in": "query",
+            "name": "platform",
+            "schema": {
+              "description": "When set, only this platform. Omitted means every platform.",
+              "enum": [
+                "windows",
+                "mac",
+                "linux",
+                "emulator",
+                "others"
+              ],
+              "maxLength": 8,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "When set, only this channel. Omitted means every channel.",
+            "explode": false,
+            "in": "query",
+            "name": "release_channel",
+            "schema": {
+              "description": "When set, only this channel. Omitted means every channel.",
+              "enum": [
+                "stable",
+                "beta",
+                "alpha",
+                "rc"
+              ],
+              "maxLength": 6,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Sort token. Default resource_updated_desc.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "resource_updated_desc",
+              "description": "Sort token. Default resource_updated_desc.",
+              "enum": [
+                "resource_updated_desc",
+                "resource_updated_asc",
+                "created_desc",
+                "created_asc",
+                "view_desc",
+                "view_asc",
+                "title_asc",
+                "title_desc"
+              ],
+              "maxLength": 21,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          },
+          {
+            "description": "Case-insensitive search over the toolset title. Omitted or blank means no search. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "description": "Case-insensitive search over the toolset title. Omitted or blank means no search. Free text; never use it as a decision input.",
+              "maxLength": 100,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListToolsetSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "UNKNOWN_ENUM_VALUE, UNKNOWN_SORT, LIMIT_TOO_LARGE, or INVALID_PARAMETER."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List toolsets",
+        "tags": [
+          "toolsets"
+        ]
+      },
+      "post": {
+        "description": "Creates a toolset and returns it. Idempotency-Key is required. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. name is length-checked on the raw value; only whitespace is TOO_SHORT. type, language, platform and version are required closed vocabularies. Location is the new toolset's path.",
+        "operationId": "createToolset",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolsetCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Toolset"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the new toolset, such as /api/v1/toolsets/12.",
+                  "format": "uri-reference",
+                  "maxLength": 64,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when Idempotency-Key is missing or malformed."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or CONTENT_REJECTED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a toolset",
+        "tags": [
+          "toolsets"
+        ]
+      }
+    },
+    "/toolsets/{toolset_id}": {
+      "delete": {
+        "description": "Deletes a toolset and its resources, aliases, contributors, ratings and uploads. Needs can_delete. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Object-store failure is SERVICE_UNAVAILABLE and nothing is deleted.",
+        "operationId": "deleteToolset",
+        "parameters": [
+          {
+            "description": "Toolset id.",
+            "in": "path",
+            "name": "toolset_id",
+            "required": true,
+            "schema": {
+              "description": "Toolset id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without can_delete; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the toolset does not exist or its author is not renderable."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a toolset",
+        "tags": [
+          "toolsets"
+        ]
+      },
+      "get": {
+        "description": "Returns the toolset and counts one view. An unrenderable author is NOT_FOUND. viewer is null for an anonymous caller.",
+        "operationId": "getToolset",
+        "parameters": [
+          {
+            "description": "Toolset id.",
+            "in": "path",
+            "name": "toolset_id",
+            "required": true,
+            "schema": {
+              "description": "Toolset id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Toolset"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the toolset does not exist or its author is not renderable."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Get a toolset",
+        "tags": [
+          "toolsets"
+        ]
+      },
+      "patch": {
+        "description": "Changes the fields that are sent and returns the toolset. Needs can_edit. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Only name, content_markdown and aliases, when sent, go through the trust-and-safety check. aliases and homepage_urls, when present, replace the whole set.",
+        "operationId": "updateToolset",
+        "parameters": [
+          {
+            "description": "Toolset id.",
+            "in": "path",
+            "name": "toolset_id",
+            "required": true,
+            "schema": {
+              "description": "Toolset id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolsetPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Toolset"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the toolset does not exist or its author is not renderable."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ALREADY_EXISTS when an alias collides."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or CONTENT_REJECTED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit a toolset",
+        "tags": [
+          "toolsets"
+        ]
+      }
+    },
+    "/toolsets/{toolset_id}/practicality": {
+      "put": {
+        "description": "Sets the caller's 1–5 rating. Rating again with the same value changes nothing. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "putToolsetPracticality",
+        "parameters": [
+          {
+            "description": "Toolset id.",
+            "in": "path",
+            "name": "toolset_id",
+            "required": true,
+            "schema": {
+              "description": "Toolset id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PracticalityPut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolsetPracticality"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the toolset does not exist or its author is not renderable."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Rate a toolset's practicality",
+        "tags": [
+          "toolsets"
+        ]
+      }
+    },
+    "/toolsets/{toolset_id}/resources": {
+      "post": {
+        "description": "Adds a resource. Any signed-in user may add a resource to another user's toolset and becomes a contributor. Idempotency-Key is required. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. file needs a completed artifact_id of the caller on this toolset; link needs url and size_label.",
+        "operationId": "createToolsetResource",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Toolset id.",
+            "in": "path",
+            "name": "toolset_id",
+            "required": true,
+            "schema": {
+              "description": "Toolset id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolsetResourceCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolsetResourceSummary"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the new resource, such as /api/v1/toolsets/12/resources/4.",
+                  "format": "uri-reference",
+                  "maxLength": 96,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when Idempotency-Key is missing or malformed."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the toolset does not exist or its author is not renderable."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ALREADY_EXISTS when the artifact is already bound or the URL is taken; IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or CONTENT_REJECTED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a resource to a toolset",
+        "tags": [
+          "toolsets"
+        ]
+      }
+    },
+    "/toolsets/{toolset_id}/resources/{resource_id}": {
+      "delete": {
+        "description": "Deletes a resource. Needs can_delete. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Object-store failure is SERVICE_UNAVAILABLE and the row stays.",
+        "operationId": "deleteToolsetResource",
+        "parameters": [
+          {
+            "description": "Toolset id.",
+            "in": "path",
+            "name": "toolset_id",
+            "required": true,
+            "schema": {
+              "description": "Toolset id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Resource id.",
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "description": "Resource id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without can_delete; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the resource is not visible at this path."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a toolset resource",
+        "tags": [
+          "toolsets"
+        ]
+      },
+      "get": {
+        "description": "Returns a resource without download secrets. A resource that does not belong to the toolset, or whose poster or the toolset's author is not renderable, is NOT_FOUND.",
+        "operationId": "getToolsetResource",
+        "parameters": [
+          {
+            "description": "Toolset id.",
+            "in": "path",
+            "name": "toolset_id",
+            "required": true,
+            "schema": {
+              "description": "Toolset id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Resource id.",
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "description": "Resource id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolsetResourceSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the resource is not visible at this path."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Get a toolset resource",
+        "tags": [
+          "toolsets"
+        ]
+      },
+      "patch": {
+        "description": "Changes the fields that are sent. Needs can_edit. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. A file resource cannot change url, extraction_code or size_label.",
+        "operationId": "updateToolsetResource",
+        "parameters": [
+          {
+            "description": "Toolset id.",
+            "in": "path",
+            "name": "toolset_id",
+            "required": true,
+            "schema": {
+              "description": "Toolset id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Resource id.",
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "description": "Resource id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolsetResourcePatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolsetResourceSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the resource is not visible at this path."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ALREADY_EXISTS when the new URL is taken."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED or CONTENT_REJECTED."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit a toolset resource",
+        "tags": [
+          "toolsets"
+        ]
+      }
+    },
+    "/toolsets/{toolset_id}/resources/{resource_id}/downloads": {
+      "post": {
+        "description": "Returns the download URL and codes, and counts one download. Anonymous callers may use it. A file resource's URL is a presigned artifact URL; failure is SERVICE_UNAVAILABLE.",
+        "operationId": "createToolsetDownload",
+        "parameters": [
+          {
+            "description": "Toolset id.",
+            "in": "path",
+            "name": "toolset_id",
+            "required": true,
+            "schema": {
+              "description": "Toolset id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Resource id.",
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "description": "Resource id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolsetDownload"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the resource is not visible at this path."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Issue download secrets for a resource",
+        "tags": [
+          "toolsets"
+        ]
+      }
+    },
+    "/toolsets/{toolset_id}/resources/{resource_id}/source": {
+      "get": {
+        "description": "Returns the editable fields of a resource, secrets included, without counting a download. Needs the resource's viewer.can_edit. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "getToolsetResourceSource",
+        "parameters": [
+          {
+            "description": "Toolset id.",
+            "in": "path",
+            "name": "toolset_id",
+            "required": true,
+            "schema": {
+              "description": "Toolset id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Resource id.",
+            "in": "path",
+            "name": "resource_id",
+            "required": true,
+            "schema": {
+              "description": "Resource id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolsetResourceSource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the toolset or resource does not exist, the resource belongs to another toolset, or the toolset author or resource poster is not renderable."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a toolset resource's edit source",
+        "tags": [
+          "toolsets"
+        ]
+      }
+    },
+    "/toolsets/{toolset_id}/source": {
+      "get": {
+        "description": "Returns the stored Markdown of the description. Needs viewer.can_edit. Requests authenticated with a Bearer token never carry toolset permissions. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "getToolsetSource",
+        "parameters": [
+          {
+            "description": "Toolset id.",
+            "in": "path",
+            "name": "toolset_id",
+            "required": true,
+            "schema": {
+              "description": "Toolset id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolsetSource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "PERMISSION_REQUIRED without can_edit; ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the toolset does not exist or its author is not renderable."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a toolset's edit source",
+        "tags": [
+          "toolsets"
+        ]
+      }
+    },
+    "/toolsets/{toolset_id}/uploads": {
+      "post": {
+        "description": "Creates an upload session for a .7z, .zip or .rar file. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. Over the daily quota is QUOTA_EXCEEDED with Retry-After until the next daily reset.",
+        "operationId": "createToolsetUpload",
+        "parameters": [
+          {
+            "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "description": "Caller-generated UUID (canonical 8-4-4-4-12 hex, any version) or 26-character Crockford ULID. Scoped to (user, operation, key) for 24 hours.",
+              "maxLength": 36,
+              "minLength": 26,
+              "pattern": "^([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|[0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{26})$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Toolset id.",
+            "in": "path",
+            "name": "toolset_id",
+            "required": true,
+            "schema": {
+              "description": "Toolset id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolsetUploadCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolsetUpload"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "description": "Absolute path of the new upload, such as /api/v1/toolsets/12/uploads/550e8400-e29b-41d4-a716-446655440000.",
+                  "format": "uri-reference",
+                  "maxLength": 96,
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the toolset does not exist or its author is not renderable."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "IDEMPOTENCY_KEY_REUSED or IDEMPOTENCY_REQUEST_IN_PROGRESS."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "VALIDATION_FAILED."
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "QUOTA_EXCEEDED when the daily upload quota is exhausted."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Start a toolset file upload",
+        "tags": [
+          "toolsets"
+        ]
+      }
+    },
+    "/toolsets/{toolset_id}/uploads/{upload_id}": {
+      "delete": {
+        "description": "Aborts a pending upload. A completed upload is INVALID_STATE_TRANSITION. Object-store failure is SERVICE_UNAVAILABLE and the row stays. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "deleteToolsetUpload",
+        "parameters": [
+          {
+            "description": "Toolset id.",
+            "in": "path",
+            "name": "toolset_id",
+            "required": true,
+            "schema": {
+              "description": "Toolset id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Upload id, equal to the artifact UUID.",
+            "in": "path",
+            "name": "upload_id",
+            "required": true,
+            "schema": {
+              "description": "Upload id, equal to the artifact UUID.",
+              "format": "uuid",
+              "maxLength": 36,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the upload is not the caller's session on this toolset."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_STATE_TRANSITION when the upload is already completed."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Abort a toolset file upload",
+        "tags": [
+          "toolsets"
+        ]
+      },
+      "get": {
+        "description": "Returns the upload session with fresh part URLs. Only the owner can read it. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. ",
+        "operationId": "getToolsetUpload",
+        "parameters": [
+          {
+            "description": "Toolset id.",
+            "in": "path",
+            "name": "toolset_id",
+            "required": true,
+            "schema": {
+              "description": "Toolset id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Upload id, equal to the artifact UUID.",
+            "in": "path",
+            "name": "upload_id",
+            "required": true,
+            "schema": {
+              "description": "Upload id, equal to the artifact UUID.",
+              "format": "uuid",
+              "maxLength": 36,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolsetUpload"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the upload is not the caller's session on this toolset."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Resume a toolset file upload",
+        "tags": [
+          "toolsets"
+        ]
+      },
+      "patch": {
+        "description": "Marks the upload completed. state must be completed. The caller is checked against the account service's current record first: a banned account is ACCOUNT_BANNED, and a failure of that lookup is SERVICE_UNAVAILABLE with nothing written. completed_at is written once, in the same transaction as the daily quota.",
+        "operationId": "updateToolsetUpload",
+        "parameters": [
+          {
+            "description": "Toolset id.",
+            "in": "path",
+            "name": "toolset_id",
+            "required": true,
+            "schema": {
+              "description": "Toolset id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Upload id, equal to the artifact UUID.",
+            "in": "path",
+            "name": "upload_id",
+            "required": true,
+            "schema": {
+              "description": "Upload id, equal to the artifact UUID.",
+              "format": "uuid",
+              "maxLength": 36,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolsetUploadPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolsetUpload"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "ACCOUNT_BANNED."
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the upload is not the caller's session on this toolset."
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_STATE_TRANSITION when state is not completed."
+          },
+          "415": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unsupported Media Type"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Complete a toolset file upload",
+        "tags": [
+          "toolsets"
+        ]
+      }
+    },
     "/topics": {
       "get": {
         "description": "Lists topics visible to the caller as a cursor page. Anonymous callers see public published topics. Signed-in callers also see login-scoped topics. Role and user grants never appear. Hidden topics never appear. Topics by banned authors are left out; the server reads on to fill the page, so every page but the last holds limit items unless a long run of such topics cuts it short. Continue while next_cursor is present, whatever the page size.",
@@ -33567,6 +37291,138 @@
           }
         },
         "summary": "Get a user's public profile",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/{user_id}/toolsets": {
+      "get": {
+        "description": "Lists toolsets the user authored, newest first. An unrenderable user is NOT_FOUND. An empty list is 200 with total 0.",
+        "operationId": "listUserToolsets",
+        "parameters": [
+          {
+            "description": "User id.",
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "description": "User id.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 24,
+              "description": "Page size. 1–100, default 24. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListToolsetSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "LIMIT_TOO_LARGE or INVALID_PARAMETER."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "NOT_FOUND when the user does not exist or is not renderable."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "List a user's toolsets",
         "tags": [
           "users"
         ]
