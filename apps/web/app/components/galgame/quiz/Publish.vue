@@ -1,13 +1,16 @@
 <script setup lang="ts">
+import type { Quiz, QuizSource, WorkRef } from '#shared/utils/api/schemas'
+
 const props = defineProps<{
   modelValue: boolean
-  workId?: number
-  editData?: QuizEditData | null
+  workId?: string
+  source?: QuizSource | null
+  works?: WorkRef[]
 }>()
 
 const emits = defineEmits<{
   'update:modelValue': [value: boolean]
-  onPublished: [quiz: GalgameQuizCard]
+  onPublished: [quiz: Quiz]
   onUpdated: []
 }>()
 
@@ -17,13 +20,15 @@ const close = () => emits('update:modelValue', false)
 <template>
   <KunModal
     :model-value="modelValue"
+    :aria-label="source ? '编辑题目' : '出题'"
     inner-class-name="max-w-[720px] w-[90vw]"
     :is-dismissable="false"
     @update:model-value="(v) => emits('update:modelValue', v)"
   >
     <GalgameQuizForm
       :work-id="props.workId"
-      :edit-data="props.editData"
+      :source="props.source"
+      :works="props.works"
       @published="
         (q) => {
           emits('onPublished', q)
