@@ -2060,6 +2060,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/search/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search topic comments
+         * @description Topic comments whose body contains every keyword, under topics the caller could find with searchTopics, most relevant first; ties break on posting time, then id, both descending. A page-number collection: page × limit may not exceed 10000, and total counts under the same filters as items. Posts by banned authors, or under topics by banned authors, are dropped after counting, so a page may hold fewer items than limit and total may count them.
+         */
+        get: operations["searchComments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/search/replies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search replies
+         * @description Replies whose body contains every keyword, under topics the caller could find with searchTopics, most relevant first; ties break on posting time, then id, both descending. A page-number collection: page × limit may not exceed 10000, and total counts under the same filters as items. Posts by banned authors, or under topics by banned authors, are dropped after counting, so a page may hold fewer items than limit and total may count them.
+         */
+        get: operations["searchReplies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/search/topics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search topics
+         * @description Topics whose title, body or category contains every keyword, most relevant first: title hits outrank category hits outrank body hits, and the keywords sitting next to each other outrank them scattered. Ties break on bump time, then id, both descending. Hidden topics never match; login-only topics match for a signed-in caller. A page-number collection: page × limit may not exceed 10000, and total counts under the same filters as items. Topics by banned authors are dropped after counting, so a page may hold fewer items than limit.
+         */
+        get: operations["searchTopics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/search/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search users
+         * @description Accounts whose name matches, in the account service's order; banned and deleted accounts are left out. The account service answers at most 50 matches and cannot page past them, so total stops at 50 with total_relation gte when there may be more. topic_count counts login-only topics for a signed-in caller.
+         */
+        get: operations["searchUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/search/wall-comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search comment walls
+         * @description Posts on the comment walls this forum hosts (works, ratings, resources, quizzes, toolsets and websites) that match the keywords, newest first. A cursor collection with no total: the comment index answers a cursor and no count. Posts on walls another site opened, and posts by banned authors, are dropped after the fact, so a page may hold fewer items than limit. A cursor is bound to q.
+         */
+        get: operations["searchWallComments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/search/works": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search works
+         * @description Works in the catalog search index, in the chosen order. Filters narrow the same request. Works this forum displays as adult are left out unless include_nsfw is true. total is the index's count. A page-number collection: page × limit may not exceed 10000, and total counts under the same filters as items.
+         */
+        get: operations["searchWorks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sections": {
         parameters: {
             query?: never;
@@ -3875,6 +3995,28 @@ export interface components {
             /** @description New body as plain text. Checked as in createComment. Free text; never use it as a decision input. */
             text?: string;
         };
+        CommentSearchHit: {
+            /** @description The comment's author. */
+            author: components["schemas"]["UserRef"];
+            /**
+             * Format: date-time
+             * @description When the comment was posted.
+             */
+            created_at: string;
+            /** @description Plain text around the earliest keyword hit, prefixed with … when cut. Free text; never use it as a decision input. */
+            excerpt: string;
+            /** @description Comment id. */
+            id: string;
+            /**
+             * @description Type discriminant. Always comment.
+             * @enum {string}
+             */
+            object: "comment";
+            /** @description The topic the comment belongs to. */
+            topic_id: string;
+            /** @description That topic's title. Free text; never use it as a decision input. */
+            topic_title: string;
+        };
         CommentSource: {
             /** @description Id of the comment. */
             comment_id: string;
@@ -5200,6 +5342,17 @@ export interface components {
              */
             object: "list";
         };
+        ListWallCommentSearchHit: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["WallCommentSearchHit"][];
+            /** @description Opaque keyset cursor. Omitted on the last page. */
+            next_cursor?: string;
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+        };
         ListWebsiteCategory: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["WebsiteCategory"][];
@@ -6068,6 +6221,25 @@ export interface components {
              */
             total_relation: "eq" | "gte";
         };
+        PageListCommentSearchHit: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["CommentSearchHit"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
         PageListCompanySummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["CompanySummary"][];
@@ -6201,6 +6373,25 @@ export interface components {
              */
             total_relation: "eq" | "gte";
         };
+        PageListReplySearchHit: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["ReplySearchHit"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
         PageListReviewItemSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["ReviewItemSummary"][];
@@ -6261,6 +6452,63 @@ export interface components {
         PageListToolsetSummary: {
             /** @description Members of this page. Empty array, never null. */
             items: components["schemas"]["ToolsetSummary"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
+        PageListTopicSummary: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["TopicSummary"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
+        PageListUserSearchHit: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["UserSearchHit"][];
+            /**
+             * @description Type discriminant. Always list.
+             * @enum {string}
+             */
+            object: "list";
+            /**
+             * Format: int64
+             * @description Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.
+             */
+            total: number;
+            /**
+             * @description eq when total is exact, gte when it stopped at the depth limit and there are at least that many.
+             * @enum {string}
+             */
+            total_relation: "eq" | "gte";
+        };
+        PageListWorkRef: {
+            /** @description Members of this page. Empty array, never null. */
+            items: components["schemas"]["WorkRef"][];
             /**
              * @description Type discriminant. Always list.
              * @enum {string}
@@ -6843,6 +7091,33 @@ export interface components {
             object: "reply_reference";
             /** @description Id of the referenced reply in the same topic. */
             reply_id: string;
+        };
+        ReplySearchHit: {
+            /** @description The reply's author. */
+            author: components["schemas"]["UserRef"];
+            /**
+             * Format: date-time
+             * @description When the reply was posted.
+             */
+            created_at: string;
+            /** @description Plain text around the earliest keyword hit, prefixed with … when cut. Free text; never use it as a decision input. */
+            excerpt: string;
+            /**
+             * Format: int64
+             * @description The reply's floor in its topic.
+             */
+            floor: number;
+            /** @description Reply id. */
+            id: string;
+            /**
+             * @description Type discriminant. Always reply.
+             * @enum {string}
+             */
+            object: "reply";
+            /** @description The topic the reply belongs to. */
+            topic_id: string;
+            /** @description That topic's title. Free text; never use it as a decision input. */
+            topic_title: string;
         };
         ReplySource: {
             /** @description Reply body as the stored Markdown source. Free text; never use it as a decision input. */
@@ -8738,6 +9013,38 @@ export interface components {
              */
             object: "user";
         };
+        UserSearchHit: {
+            /** @description Avatar image. null when the account has no image-service hash. */
+            avatar: components["schemas"]["Image"] | null;
+            /** @description Profile bio as stored. Empty string when none. Free text; never use it as a decision input. */
+            bio: string | null;
+            /** @description User id. */
+            id: string;
+            /** @description Display name. Free text; never use it as a decision input. */
+            name: string | null;
+            /**
+             * @description Type discriminant. Always user.
+             * @enum {string}
+             */
+            object: "user";
+            /**
+             * Format: date-time
+             * @description When the account was registered, as the account service reports it. null when it does not say.
+             */
+            registered_at: string | null;
+            /**
+             * Format: int64
+             * @description Visible replies by this user.
+             */
+            reply_count: number;
+            /** @description Badge roles among creator, moderator, admin and ren, including site roles. Display only; never a permission check. Empty array if none. */
+            roles: ("creator" | "moderator" | "admin" | "ren")[];
+            /**
+             * Format: int64
+             * @description Topics by this user the caller can see in shared lists.
+             */
+            topic_count: number;
+        };
         VideoNode: {
             /**
              * @description Type discriminant. Always video. (enum property replaced by openapi-typescript)
@@ -8825,6 +9132,35 @@ export interface components {
         WallCommentPatch: {
             /** @description New body as Markdown source, checked as in createWallComment. Free text; never use it as a decision input. */
             content_markdown: string;
+        };
+        WallCommentSearchHit: {
+            /** @description The comment's author. */
+            author: components["schemas"]["UserRef"];
+            /**
+             * Format: date-time
+             * @description When the comment was posted.
+             */
+            created_at: string;
+            /** @description Plain text around the earliest keyword hit, prefixed with … when cut. Free text; never use it as a decision input. */
+            excerpt: string;
+            /** @description Wall comment id. */
+            id: string;
+            /**
+             * @description Type discriminant. Always wall_comment.
+             * @enum {string}
+             */
+            object: "wall_comment";
+            /** @description Id of that page: a work, rating, resource, quiz, toolset or website id, by subject_type. */
+            subject_id: string;
+            /** @description The page's path on the web, such as /galgame/4121 or /website/example.com. */
+            subject_path: string;
+            /**
+             * @description Kind of page whose comment wall this is.
+             * @enum {string}
+             */
+            subject_type: "galgame" | "galgame_rating" | "galgame_resource" | "galgame_quiz" | "toolset" | "website";
+            /** @description The work when subject_type is galgame. null otherwise, and when catalog does not answer for it. */
+            work: components["schemas"]["WorkRef"] | null;
         };
         WallCommentSource: {
             /** @description Comment body as the stored Markdown source. Free text; never use it as a decision input. */
@@ -19561,6 +19897,420 @@ export interface operations {
                 };
             };
             /** @description SERVICE_UNAVAILABLE when the trust service or the account service is unreachable, unconfigured, or answers with anything this operation does not map. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    searchComments: {
+        parameters: {
+            query: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Search keywords, split on whitespace; every word must match. Free text; never use it as a decision input. */
+                q: string;
+                /** @description When true, NSFW topics and the posts under them are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListCommentSearchHit"];
+                };
+            };
+            /** @description INVALID_PARAMETER when q is blank after trimming, or the page is past the depth limit. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot say whose posts these are. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    searchReplies: {
+        parameters: {
+            query: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Search keywords, split on whitespace; every word must match. Free text; never use it as a decision input. */
+                q: string;
+                /** @description When true, NSFW topics and the posts under them are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListReplySearchHit"];
+                };
+            };
+            /** @description INVALID_PARAMETER when q is blank after trimming, or the page is past the depth limit. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot say whose posts these are. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    searchTopics: {
+        parameters: {
+            query: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Search keywords, split on whitespace; every word must match. Free text; never use it as a decision input. */
+                q: string;
+                /** @description When true, NSFW topics and the posts under them are included. Default false. */
+                include_nsfw?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListTopicSummary"];
+                };
+            };
+            /** @description INVALID_PARAMETER when q is blank after trimming, or the page is past the depth limit. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service cannot say who wrote these topics. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    searchUsers: {
+        parameters: {
+            query: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Name to search for. Free text; never use it as a decision input. */
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListUserSearchHit"];
+                };
+            };
+            /** @description INVALID_PARAMETER when q is blank after trimming, or the page is past the depth limit. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the account service is unreachable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    searchWallComments: {
+        parameters: {
+            query: {
+                /** @description Search keywords, 2–100 characters: the comment index cannot search a single character. Free text; never use it as a decision input. */
+                q: string;
+                /** @description Opaque keyset cursor from a previous page of this collection. */
+                cursor?: string;
+                /** @description Page size. 1–50, default 20. */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListWallCommentSearchHit"];
+                };
+            };
+            /** @description INVALID_PARAMETER when q has fewer than 2 characters after trimming; INVALID_CURSOR when the cursor is malformed or came from another q. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the community service or the account service is unreachable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    searchWorks: {
+        parameters: {
+            query: {
+                /** @description 1-based page number. page × limit may not exceed 10000. */
+                page?: number;
+                /** @description Page size. 1–100, default 20. Values above 100 are rejected, not clamped. */
+                limit?: number;
+                /** @description Search keywords. Free text; never use it as a decision input. */
+                q: string;
+                /** @description When true, works this forum displays as adult are included. Default false. */
+                include_nsfw?: boolean;
+                /** @description Only works by this catalog company. */
+                company_id?: string;
+                /** @description Only works carrying every one of these catalog tags. Comma-separated, at most 10. */
+                tag_ids?: string[];
+                /** @description Released in or after this year (YYYY) or month (YYYY-MM). */
+                released_from?: string;
+                /** @description Released in or before this year (YYYY) or month (YYYY-MM). */
+                released_to?: string;
+                /** @description Order. relevance: the search index's ranking. popularity: catalog popularity. updated: last catalog edit. released: release date. */
+                sort?: "relevance_desc" | "popularity_desc" | "updated_desc" | "released_desc" | "released_asc";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageListWorkRef"];
+                };
+            };
+            /** @description INVALID_PARAMETER when q is blank after trimming, released_from is after released_to, or the page is past the depth limit. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description SERVICE_UNAVAILABLE when the catalog is unreachable or refuses the query. */
             503: {
                 headers: {
                     [name: string]: unknown;

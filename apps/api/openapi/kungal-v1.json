@@ -1647,6 +1647,65 @@
         },
         "type": "object"
       },
+      "CommentSearchHit": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "The comment's author."
+          },
+          "created_at": {
+            "description": "When the comment was posted.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "excerpt": {
+            "description": "Plain text around the earliest keyword hit, prefixed with … when cut. Free text; never use it as a decision input.",
+            "maxLength": 240,
+            "type": "string"
+          },
+          "id": {
+            "description": "Comment id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always comment.",
+            "enum": [
+              "comment"
+            ],
+            "maxLength": 7,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "topic_id": {
+            "description": "The topic the comment belongs to.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "topic_title": {
+            "description": "That topic's title. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "topic_id",
+          "topic_title",
+          "excerpt",
+          "author",
+          "created_at"
+        ],
+        "type": "object"
+      },
       "CommentSource": {
         "properties": {
           "comment_id": {
@@ -5260,6 +5319,37 @@
         ],
         "type": "object"
       },
+      "ListWallCommentSearchHit": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WallCommentSearchHit"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Opaque keyset cursor. Omitted on the last page.",
+            "maxLength": 512,
+            "pattern": "^cur_[A-Za-z0-9_-]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items"
+        ],
+        "type": "object"
+      },
       "ListWebsiteCategory": {
         "properties": {
           "items": {
@@ -7506,6 +7596,49 @@
         ],
         "type": "object"
       },
+      "PageListCommentSearchHit": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/CommentSearchHit"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many.",
+            "enum": [
+              "eq",
+              "gte"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
       "PageListCompanySummary": {
         "properties": {
           "items": {
@@ -7807,6 +7940,49 @@
         ],
         "type": "object"
       },
+      "PageListReplySearchHit": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/ReplySearchHit"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many.",
+            "enum": [
+              "eq",
+              "gte"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
       "PageListReviewItemSummary": {
         "properties": {
           "items": {
@@ -7942,6 +8118,135 @@
             "description": "Members of this page. Empty array, never null.",
             "items": {
               "$ref": "#/components/schemas/ToolsetSummary"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many.",
+            "enum": [
+              "eq",
+              "gte"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
+      "PageListTopicSummary": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/TopicSummary"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many.",
+            "enum": [
+              "eq",
+              "gte"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
+      "PageListUserSearchHit": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/UserSearchHit"
+            },
+            "type": "array"
+          },
+          "object": {
+            "description": "Type discriminant. Always list.",
+            "enum": [
+              "list"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "total": {
+            "description": "Members matching the filters, under the same predicate as items. Counted up to the depth limit when total_relation is gte.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "total_relation": {
+            "description": "eq when total is exact, gte when it stopped at the depth limit and there are at least that many.",
+            "enum": [
+              "eq",
+              "gte"
+            ],
+            "maxLength": 3,
+            "type": "string",
+            "x-vocabulary-closed": true
+          }
+        },
+        "required": [
+          "object",
+          "items",
+          "total",
+          "total_relation"
+        ],
+        "type": "object"
+      },
+      "PageListWorkRef": {
+        "properties": {
+          "items": {
+            "description": "Members of this page. Empty array, never null.",
+            "items": {
+              "$ref": "#/components/schemas/WorkRef"
             },
             "type": "array"
           },
@@ -9507,6 +9812,72 @@
           "object",
           "reply_id",
           "floor"
+        ],
+        "type": "object"
+      },
+      "ReplySearchHit": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "The reply's author."
+          },
+          "created_at": {
+            "description": "When the reply was posted.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "excerpt": {
+            "description": "Plain text around the earliest keyword hit, prefixed with … when cut. Free text; never use it as a decision input.",
+            "maxLength": 240,
+            "type": "string"
+          },
+          "floor": {
+            "description": "The reply's floor in its topic.",
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "id": {
+            "description": "Reply id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always reply.",
+            "enum": [
+              "reply"
+            ],
+            "maxLength": 5,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "topic_id": {
+            "description": "The topic the reply belongs to.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "topic_title": {
+            "description": "That topic's title. Free text; never use it as a decision input.",
+            "maxLength": 233,
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "topic_id",
+          "topic_title",
+          "floor",
+          "excerpt",
+          "author",
+          "created_at"
         ],
         "type": "object"
       },
@@ -14870,6 +15241,105 @@
         ],
         "type": "object"
       },
+      "UserSearchHit": {
+        "properties": {
+          "avatar": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Image"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Avatar image. null when the account has no image-service hash."
+          },
+          "bio": {
+            "description": "Profile bio as stored. Empty string when none. Free text; never use it as a decision input.",
+            "maxLength": 107,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "User id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "name": {
+            "description": "Display name. Free text; never use it as a decision input.",
+            "maxLength": 64,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "description": "Type discriminant. Always user.",
+            "enum": [
+              "user"
+            ],
+            "maxLength": 4,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "registered_at": {
+            "description": "When the account was registered, as the account service reports it. null when it does not say.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reply_count": {
+            "description": "Visible replies by this user.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "roles": {
+            "description": "Badge roles among creator, moderator, admin and ren, including site roles. Display only; never a permission check. Empty array if none.",
+            "items": {
+              "description": "Role shown as a profile badge. Display only; never a permission check.",
+              "enum": [
+                "creator",
+                "moderator",
+                "admin",
+                "ren"
+              ],
+              "maxLength": 9,
+              "type": "string",
+              "x-vocabulary-closed": true
+            },
+            "maxItems": 4,
+            "type": "array"
+          },
+          "topic_count": {
+            "description": "Topics by this user the caller can see in shared lists.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "name",
+          "avatar",
+          "bio",
+          "roles",
+          "registered_at",
+          "topic_count",
+          "reply_count"
+        ],
+        "type": "object"
+      },
       "VideoNode": {
         "properties": {
           "object": {
@@ -15130,6 +15600,93 @@
         },
         "required": [
           "content_markdown"
+        ],
+        "type": "object"
+      },
+      "WallCommentSearchHit": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/UserRef",
+            "description": "The comment's author."
+          },
+          "created_at": {
+            "description": "When the comment was posted.",
+            "format": "date-time",
+            "maxLength": 20,
+            "minLength": 20,
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "excerpt": {
+            "description": "Plain text around the earliest keyword hit, prefixed with … when cut. Free text; never use it as a decision input.",
+            "maxLength": 240,
+            "type": "string"
+          },
+          "id": {
+            "description": "Wall comment id.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "object": {
+            "description": "Type discriminant. Always wall_comment.",
+            "enum": [
+              "wall_comment"
+            ],
+            "maxLength": 12,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "subject_id": {
+            "description": "Id of that page: a work, rating, resource, quiz, toolset or website id, by subject_type.",
+            "maxLength": 20,
+            "minLength": 1,
+            "pattern": "^[0-9]+$",
+            "type": "string"
+          },
+          "subject_path": {
+            "description": "The page's path on the web, such as /galgame/4121 or /website/example.com.",
+            "maxLength": 512,
+            "pattern": "^/[^/].*$",
+            "type": "string"
+          },
+          "subject_type": {
+            "description": "Kind of page whose comment wall this is.",
+            "enum": [
+              "galgame",
+              "galgame_rating",
+              "galgame_resource",
+              "galgame_quiz",
+              "toolset",
+              "website"
+            ],
+            "maxLength": 16,
+            "type": "string",
+            "x-vocabulary-closed": true
+          },
+          "work": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WorkRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The work when subject_type is galgame. null otherwise, and when catalog does not answer for it."
+          }
+        },
+        "required": [
+          "object",
+          "id",
+          "subject_type",
+          "subject_id",
+          "subject_path",
+          "work",
+          "excerpt",
+          "author",
+          "created_at"
         ],
         "type": "object"
       },
@@ -31449,6 +32006,798 @@
         "summary": "Report content",
         "tags": [
           "reports"
+        ]
+      }
+    },
+    "/search/comments": {
+      "get": {
+        "description": "Topic comments whose body contains every keyword, under topics the caller could find with searchTopics, most relevant first; ties break on posting time, then id, both descending. A page-number collection: page × limit may not exceed 10000, and total counts under the same filters as items. Posts by banned authors, or under topics by banned authors, are dropped after counting, so a page may hold fewer items than limit and total may count them. ",
+        "operationId": "searchComments",
+        "parameters": [
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Search keywords, split on whitespace; every word must match. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "description": "Search keywords, split on whitespace; every word must match. Free text; never use it as a decision input.",
+              "maxLength": 107,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "description": "When true, NSFW topics and the posts under them are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "description": "When true, NSFW topics and the posts under them are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListCommentSearchHit"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when q is blank after trimming, or the page is past the depth limit."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot say whose posts these are."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Search topic comments",
+        "tags": [
+          "search"
+        ]
+      }
+    },
+    "/search/replies": {
+      "get": {
+        "description": "Replies whose body contains every keyword, under topics the caller could find with searchTopics, most relevant first; ties break on posting time, then id, both descending. A page-number collection: page × limit may not exceed 10000, and total counts under the same filters as items. Posts by banned authors, or under topics by banned authors, are dropped after counting, so a page may hold fewer items than limit and total may count them. ",
+        "operationId": "searchReplies",
+        "parameters": [
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Search keywords, split on whitespace; every word must match. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "description": "Search keywords, split on whitespace; every word must match. Free text; never use it as a decision input.",
+              "maxLength": 107,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "description": "When true, NSFW topics and the posts under them are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "description": "When true, NSFW topics and the posts under them are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListReplySearchHit"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when q is blank after trimming, or the page is past the depth limit."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot say whose posts these are."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Search replies",
+        "tags": [
+          "search"
+        ]
+      }
+    },
+    "/search/topics": {
+      "get": {
+        "description": "Topics whose title, body or category contains every keyword, most relevant first: title hits outrank category hits outrank body hits, and the keywords sitting next to each other outrank them scattered. Ties break on bump time, then id, both descending. Hidden topics never match; login-only topics match for a signed-in caller. A page-number collection: page × limit may not exceed 10000, and total counts under the same filters as items. Topics by banned authors are dropped after counting, so a page may hold fewer items than limit.",
+        "operationId": "searchTopics",
+        "parameters": [
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Search keywords, split on whitespace; every word must match. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "description": "Search keywords, split on whitespace; every word must match. Free text; never use it as a decision input.",
+              "maxLength": 107,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "description": "When true, NSFW topics and the posts under them are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "description": "When true, NSFW topics and the posts under them are included. Default false.",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListTopicSummary"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when q is blank after trimming, or the page is past the depth limit."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service cannot say who wrote these topics."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Search topics",
+        "tags": [
+          "search"
+        ]
+      }
+    },
+    "/search/users": {
+      "get": {
+        "description": "Accounts whose name matches, in the account service's order; banned and deleted accounts are left out. The account service answers at most 50 matches and cannot page past them, so total stops at 50 with total_relation gte when there may be more. topic_count counts login-only topics for a signed-in caller.",
+        "operationId": "searchUsers",
+        "parameters": [
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Name to search for. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "description": "Name to search for. Free text; never use it as a decision input.",
+              "maxLength": 107,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListUserSearchHit"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when q is blank after trimming, or the page is past the depth limit."
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the account service is unreachable."
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          },
+          {}
+        ],
+        "summary": "Search users",
+        "tags": [
+          "search"
+        ]
+      }
+    },
+    "/search/wall-comments": {
+      "get": {
+        "description": "Posts on the comment walls this forum hosts (works, ratings, resources, quizzes, toolsets and websites) that match the keywords, newest first. A cursor collection with no total: the comment index answers a cursor and no count. Posts on walls another site opened, and posts by banned authors, are dropped after the fact, so a page may hold fewer items than limit. A cursor is bound to q.",
+        "operationId": "searchWallComments",
+        "parameters": [
+          {
+            "description": "Search keywords, 2–100 characters: the comment index cannot search a single character. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "description": "Search keywords, 2–100 characters: the comment index cannot search a single character. Free text; never use it as a decision input.",
+              "maxLength": 100,
+              "minLength": 2,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Opaque keyset cursor from a previous page of this collection.",
+            "explode": false,
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "description": "Opaque keyset cursor from a previous page of this collection.",
+              "maxLength": 512,
+              "pattern": "^cur_[A-Za-z0-9_-]+$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page size. 1–50, default 20.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–50, default 20.",
+              "format": "int64",
+              "maximum": 50,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListWallCommentSearchHit"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when q has fewer than 2 characters after trimming; INVALID_CURSOR when the cursor is malformed or came from another q."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the community service or the account service is unreachable."
+          }
+        },
+        "summary": "Search comment walls",
+        "tags": [
+          "search"
+        ]
+      }
+    },
+    "/search/works": {
+      "get": {
+        "description": "Works in the catalog search index, in the chosen order. Filters narrow the same request. Works this forum displays as adult are left out unless include_nsfw is true. total is the index's count. A page-number collection: page × limit may not exceed 10000, and total counts under the same filters as items. ",
+        "operationId": "searchWorks",
+        "parameters": [
+          {
+            "description": "1-based page number. page × limit may not exceed 10000.",
+            "explode": false,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "default": 1,
+              "description": "1-based page number. page × limit may not exceed 10000.",
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size. 1–100, default 20. Values above 100 are rejected, not clamped.",
+              "format": "int64",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Search keywords. Free text; never use it as a decision input.",
+            "explode": false,
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "description": "Search keywords. Free text; never use it as a decision input.",
+              "maxLength": 107,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "description": "When true, works this forum displays as adult are included. Default false.",
+            "explode": false,
+            "in": "query",
+            "name": "include_nsfw",
+            "schema": {
+              "description": "When true, works this forum displays as adult are included. Default false.",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "Only works by this catalog company.",
+            "explode": false,
+            "in": "query",
+            "name": "company_id",
+            "schema": {
+              "description": "Only works by this catalog company.",
+              "maxLength": 19,
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only works carrying every one of these catalog tags. Comma-separated, at most 10.",
+            "explode": false,
+            "in": "query",
+            "name": "tag_ids",
+            "schema": {
+              "description": "Only works carrying every one of these catalog tags. Comma-separated, at most 10.",
+              "items": {
+                "maxLength": 20,
+                "minLength": 1,
+                "pattern": "^[0-9]+$",
+                "type": "string"
+              },
+              "maxItems": 10,
+              "type": "array"
+            }
+          },
+          {
+            "description": "Released in or after this year (YYYY) or month (YYYY-MM).",
+            "explode": false,
+            "in": "query",
+            "name": "released_from",
+            "schema": {
+              "description": "Released in or after this year (YYYY) or month (YYYY-MM).",
+              "maxLength": 7,
+              "pattern": "^[0-9]{4}(-(0[1-9]|1[0-2]))?$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Released in or before this year (YYYY) or month (YYYY-MM).",
+            "explode": false,
+            "in": "query",
+            "name": "released_to",
+            "schema": {
+              "description": "Released in or before this year (YYYY) or month (YYYY-MM).",
+              "maxLength": 7,
+              "pattern": "^[0-9]{4}(-(0[1-9]|1[0-2]))?$",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Order. relevance: the search index's ranking. popularity: catalog popularity. updated: last catalog edit. released: release date.",
+            "explode": false,
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "default": "relevance_desc",
+              "description": "Order. relevance: the search index's ranking. popularity: catalog popularity. updated: last catalog edit. released: release date.",
+              "enum": [
+                "relevance_desc",
+                "popularity_desc",
+                "updated_desc",
+                "released_desc",
+                "released_asc"
+              ],
+              "maxLength": 15,
+              "type": "string",
+              "x-vocabulary-closed": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageListWorkRef"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "INVALID_PARAMETER when q is blank after trimming, released_from is after released_to, or the page is past the depth limit."
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            },
+            "description": "SERVICE_UNAVAILABLE when the catalog is unreachable or refuses the query."
+          }
+        },
+        "summary": "Search works",
+        "tags": [
+          "search"
         ]
       }
     },
