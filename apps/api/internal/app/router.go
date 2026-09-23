@@ -7,6 +7,7 @@ import (
 	docapiv1 "kun-galgame-api/internal/doc/apiv1"
 	friendlinkapiv1 "kun-galgame-api/internal/friendlink/apiv1"
 	galgameapiv1 "kun-galgame-api/internal/galgame/apiv1"
+	galgameentityv1 "kun-galgame-api/internal/galgame/entityapiv1"
 	messageapiv1 "kun-galgame-api/internal/message/apiv1"
 	"kun-galgame-api/internal/middleware"
 	permissionapiv1 "kun-galgame-api/internal/permission/apiv1"
@@ -47,6 +48,7 @@ func (a *App) setupRoutes() {
 		topicapiv1.RegisterLotteries(a.newTopicV1Lotteries(topicReads)),
 		topicapiv1.RegisterAdminTopics(a.newTopicV1Admin(topicReads)),
 		galgameapiv1.Register(a.GalgameV1),
+		galgameentityv1.Register(a.GalgameEntityV1),
 		wallapiv1.Register(a.WallV1),
 		userapiv1.Register(a.newUserV1()),
 		messageapiv1.Register(a.newMessageV1()),
@@ -140,24 +142,6 @@ func (a *App) setupRoutes() {
 	api.Get("/galgame/drafts", a.GalgameDraftsHandler.GetDrafts)
 	api.Get("/galgame/:id/edit/diff", a.GalgameEditHandler.Diff)
 	api.Get("/galgame/:id/edit/proposals", a.GalgameEditHandler.GameProposals)
-	api.Get("/galgame-tag", a.GalgameEntityHandler.GetTagList)
-	api.Get("/galgame-tag/search", a.GalgameEntityHandler.SearchTags)
-	api.Get("/galgame-tag/multi", a.GalgameEntityHandler.GetMultiTagGalgames)
-	api.Get("/galgame-tag/:id", a.GalgameEntityHandler.GetTagDetail)
-	api.Get("/galgame-official", a.GalgameEntityHandler.GetOfficialList)
-	api.Get("/galgame-official/search", a.GalgameEntityHandler.SearchOfficials)
-	api.Get("/galgame-official/legacy/:id", a.GalgameEntityHandler.ResolveLegacyOfficial)
-	api.Get("/galgame-official/:id", a.GalgameEntityHandler.GetOfficialDetail)
-	api.Get("/galgame-official/:id/relation-graph", a.GalgameEntityHandler.GetOfficialRelationGraph)
-	api.Get("/galgame-engine", a.GalgameEntityHandler.GetEngineList)
-	api.Get("/galgame-engine/:id", a.GalgameEntityHandler.GetEngineDetail)
-	api.Get("/galgame-staff/search", a.GalgameEntityHandler.SearchStaff)
-	api.Get("/galgame-staff/:id", a.GalgameEntityHandler.GetStaffDetail)
-	api.Get("/galgame-character/search", a.GalgameEntityHandler.SearchCharacters)
-	api.Get("/galgame-character/:id", a.GalgameEntityHandler.GetCharacterDetail)
-	api.Get("/galgame-series", a.GalgameEntityHandler.GetSeriesList)
-	api.Get("/galgame-series/cards", a.GalgameEntityHandler.GetSeriesCards)
-	api.Get("/galgame-series/:id", a.GalgameEntityHandler.GetSeriesDetail)
 	api.Get("/galgame-rating/all", a.GalgameRatingHandler.GetAllRatings)
 	api.Get(
 		"/galgame-quiz/:id/answers",
