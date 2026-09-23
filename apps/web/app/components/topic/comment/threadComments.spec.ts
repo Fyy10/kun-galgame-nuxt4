@@ -17,6 +17,7 @@ const comment = (
   object: 'comment',
   id,
   reply_id: '9',
+  reply_floor: 2,
   parent_comment_id: parent,
   author: user(id),
   in_reply_to_user: user('1'),

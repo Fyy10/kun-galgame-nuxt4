@@ -30,6 +30,7 @@ const comment = (over: Partial<Comment> = {}): Comment => ({
   object: 'comment',
   id: '5',
   reply_id: '11',
+  reply_floor: 2,
   parent_comment_id: null,
   author: user('2'),
   in_reply_to_user: user('3'),
