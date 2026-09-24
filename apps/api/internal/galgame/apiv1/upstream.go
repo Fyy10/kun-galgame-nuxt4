@@ -100,6 +100,9 @@ func mapUserPlaneAt(err error, own bool, pointer pointerOf) error {
 func mapCatalog409(api *catalogclient.UserAPIError) error {
 	switch api.ProblemCode {
 	case problem.CodeDuplicateSuspects:
+		// Catalog's detail tells the caller to resend with confirm_duplicates,
+		// a field v1 clients do not have; on the old route that English was the
+		// whole message and a same-title work could not be submitted at all.
 		p := problem.New(problem.CodeDuplicateSuspects, "Live works share a submitted title; nothing was written.")
 		suspects := make([]map[string]string, 0, len(api.Suspects))
 		for _, s := range api.Suspects {
@@ -120,6 +123,9 @@ func mapCatalog409(api *catalogclient.UserAPIError) error {
 }
 
 func mapCatalog422(api *catalogclient.UserAPIError, pointer pointerOf) error {
+	if fields := attributedFields(api.FieldErrors, pointer); len(fields) > 0 {
+		return validationFailed(fields...)
+	}
 	msg := strings.ToLower(api.Message + " " + api.ProblemCode)
 	switch {
 	case strings.Contains(msg, "default folder cannot be deleted"):
@@ -144,9 +150,6 @@ func mapCatalog422(api *catalogclient.UserAPIError, pointer pointerOf) error {
 			problem.AtPointer("/visibility", problem.ReasonUnknownValue, "visibility must be private or public",
 				&problem.FieldParams{Allowed: &allowed}))
 	default:
-		if fields := attributedFields(api.FieldErrors, pointer); len(fields) > 0 {
-			return validationFailed(fields...)
-		}
 		slog.Warn("catalog user plane: unrecognised upstream 422 passed on as VALIDATION_FAILED",
 			"upstream_status", api.Status, "upstream_code", api.ProblemCode, "upstream_message", api.Message)
 		return validationFailed(problem.AtPointer("", problem.ReasonNotAllowedValue, "catalog refused the write", nil))

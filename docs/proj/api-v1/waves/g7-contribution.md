@@ -472,6 +472,36 @@ catalog 用户面一次调用的失败，按下表进 v1。**不得**落到无 c
   - #25：缺席 `If-Match` 时没有回落 `*`（上游收到空头）→ 上游收到 `*`；
   - #26：单条 GET 不回 `ETag` → 响应头存在，且等于上游值。
 
+### 3.15 G7a 实现记录（投稿半，只增不改）
+
+按 G8 / G9 / G14 / F1 / F8 与 infra 现状改的，以此为准：
+
+| 前文 | 实际 | 为什么 |
+|---|---|---|
+| `ClaimEventRef.reason` | `note`（string \| null ≤2000） | G8：`reason` 已是 `FieldError` / `MoemoepointEntry` 的非空 string。PATCH 送的就是 `note`，事件上同名更顺 |
+| 请求体 `intros: SubmissionIntro[]` | `introductions: SubmissionIntroduction[]`（`locale` + `value`） | G8：`intros` 已是 `CatalogIntro[]`（含 `is_machine` / `data_source`）。`locale` 是带 BCP-47 pattern 的 string，由 handler 判 `en` / `ja` / `zh-Hans` / `zh-Hant`（未知 `422 UNKNOWN_VALUE`、重复 `DUPLICATE_ITEM`）；做成 enum 会同时撞 G8 `locale` 与 F1（`zh-Hans` 不是 snake_case） |
+| `WorkSubmissionSummary` 无时间 | 加 `first_acted_at`（date-time \| null） | 网页「提交于 / 首次审核」要它。审核队列行 catalog 本就不带 `last_event` / `first_acted_at`（`repr/me.go:21` 注释），两者在队列行恒为 `null` |
+| 4.8 `q` 空 → `422 /q` | `400 INVALID_PARAMETER` parameter `q` `REQUIRED` | §4 通则：`400` 只给参数、`422` 只给请求体 |
+| `state` 查询是 CSV string | `state` 是具名枚举元素的逗号数组（`ClaimStateFilter`） | G14 要求 string 参数有 enum/pattern；未知值由 huma 判成 `400 UNKNOWN_ENUM_VALUE`，与契约相同 |
+| 可空可选的请求字段用 `omitempty` | `required:"false"` | G9；`release_date` / `release_date_precision` / `note` 由此与 `Work` / 现有 `note` 同为可空 |
+| 横幅提案 note「投稿时提交的横幅图」 | `Banner uploaded with the submission` | F8：apiv1 代码里不许有人类语言字面量 |
+
+实现细节（契约没写死、代码这样做）：
+
+- 列表游标：catalog 的 `cur_…` 装进论坛自己的指纹游标（`collect.EncodeCursor`），指纹是排序后的 `state` 集合；换过滤条件复用游标 → `400 INVALID_CURSOR`。catalog 回的 `400 INVALID_CURSOR` 同样译成 `400 INVALID_CURSOR`。
+- 候选游标装的是 catalog 页码（`q`、`include_nsfw`、`limit` 进指纹）；`next_cursor` 在 `页码 × limit < catalog total` 时发。请求带 `nsfw=true` + `content_limit=sfw`（`ApplyWorksGate`），行上再按展示轴滤一次，防索引滞后。
+- hidden 作品不在 catalog 公开行里（infra `public_works_list.go:183-192`），单条读的 `is_nsfw` / `content_rating` 此时改读编辑快照 `GET /v2/moderation/snapshots/work/{id}`；创建回执直接用请求值。
+- `If-Match` 缺席时 handler 送 `*`（`ifMatchOrAny`），不是 catalogclient 兜底——这样测试能在接口边界看见。
+- 审核者路径的 `viewer.can_submit` / `can_withdraw` / `can_delete` 按本地 `creator_user_id` 判归属；审核队列行同理（一次 `IN` 查询）。
+- 创建的 `201` 带 `ETag`，但幂等回放只存 `Location`，回放的 `201` 没有 `ETag`；需要校验值时重新 `GET`。
+- `release_date_precision` 没有 `release_date` → `422 INCONSISTENT_WITH`；年份 1970–2200 之外 → `422 OUT_OF_RANGE`。别名空白与重复静默去掉；正式标题同语言重复 → `422 DUPLICATE_ITEM`。
+- 旧 kungal 错误码 `236`（旧投稿面的同名软门）退役，不许复用。
+- 向导的 VNDB 号不再显示：`WorkSummary` 没有外部 id。
+- **catalog 接受写之后不再回 5xx**（编排者评审，2026-09-24）。创建、提交者 PATCH、审核决定在上游写成功后：重读失败就用写本身的结果回答——审核用决定记录的 `to_state`（unban 的恢复态就在里面）、提交者用 PATCH 返回的记录与 ETag、创建用铸造的 `state` 加送出的名字；用户查询失败就发删除用户 ref。都打 WARN `galgame submissions: write landed, …`。`is_nsfw` / `content_rating` / 本地提交者在写**之前**读，读失败是写前的 5xx。否则审核者点「通过」看到失败、重试得 409；创建的 5xx 不进幂等缓存，重试会再挂一次横幅提案，换了表单就再铸一部。变异 #31–#35。
+- **创建回执重读**：catalog 铸造只回 `{object, id, state}`（infra `me_claims_mint.go:77`），它的 ETag 按这份残缺记录算（`claimETag` 含 `last_event` 等），永远对不上 PATCH 校验的版本。201 改为铸造后 `GET /v2/me/claims/{id}` 重读，用它的 `display_name` / `last_event` / ETag；重读失败则 201 不带 ETag（给错的不如不给）。变异 #30。
+- 横幅合并看结果（G7b 之后）：`DecideProposal` 回 catalog 的 `to_state`，合并被规则收成 `declined` 等非 `merged` 时 `has_banner_attached: false` 并 ERROR。`submissionCatalog` 是运行期类型断言拿到的，rebase 时 G7b 改了 `DecideProposal` 签名，编译照过、所有投稿调用都会 503——加了 `var _ submissionCatalog = (*catalogclient.Client)(nil)` 让这类漂移在编译期红。变异 #37。
+- 删除草稿（编排者裁决，推翻 §4.4 的 500）：catalog 已删之后本地清理 SQL 出错 → **`204`** + ERROR `delete draft: catalog draft gone, local row not cleaned`。用户的动作已经发生，500 只会让重试撞 404；残留行交给 ERROR 与镜像核对车道。变异 #36。
+
 ### 3.16 实现记录（G7b 编辑引擎半，2026-09-24；编排者逐条批准，覆盖前文同名条目）
 
 逐条对 nextmoe-infra `5dc86518` 核过（路径相对 `apps/api/internal/platform/`）。
@@ -608,6 +638,7 @@ Query：`work_id`（可选）、`state`（可选，未知 400）、`cursor`、`l
 不新增 kungal 码。复用：
 
 - **`DUPLICATE_SUSPECTS`**（me，409）。infra 已注册（`apiv2/problem/registry.go:148`），type URI `https://developer.nextmoe.dev/problems/me/duplicate-suspects`，扩展 `suspects[]`（`id` + `display_name`）。**实现时写入本仓 `pkg/problem` 注册表**（目前还没有这一行），与 infra 逐字相同。
+  - 描述文字不与 infra 逐字相同（编排者 2026-09-24 裁决）：infra 写「re-send with confirm_duplicates=true」，本仓写 `is_duplicate_confirmed=true`。描述是本 API 的文档，照抄会让客户端发一个论坛不认的字段、在同一个 409 上打转。code 与 type URI 仍与 infra 相同。
 - **`INVALID_STATE_TRANSITION`**（me，409）。非法 claim / 提案转移、非 draft 删除、已决提案。
 - **`ALREADY_EXISTS`**（me，409）。
 - **`SCOPE_REQUIRED`**（platform，403）。缺 `catalog:edit`。
