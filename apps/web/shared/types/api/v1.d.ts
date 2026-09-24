@@ -4506,7 +4506,7 @@ export interface paths {
         };
         /**
          * List works on the forum
-         * @description A page-number collection of published forum works. Default sort is resource_updated_desc, default limit 24. NSFW works are excluded before paging unless include_nsfw=true; a work whose content_limit has not been synced yet is included either way. Default pages require at least one forum resource; include_resourceless=true lists every published work. An id catalog does not render is dropped with a warning, so a page may be shorter than limit; total still counts the SQL population.
+         * @description A page-number collection of published forum works. Default sort is resource_updated_desc, default limit 24. NSFW works are excluded before paging unless include_nsfw=true; a work whose content_limit has not been synced yet counts as adult until it is. Default pages require at least one forum resource; include_resourceless=true lists every published work. An id catalog does not render is dropped with a warning, so a page may be shorter than limit; total still counts the SQL population.
          */
         get: operations["listWorks"];
         put?: never;
@@ -5699,7 +5699,7 @@ export interface components {
             object: "collection";
             /** @description The account that owns this collection. */
             owner: components["schemas"]["UserRef"];
-            /** @description Art of the earliest memberships, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works and images graded explicit. Empty array, never null. */
+            /** @description Art of the earliest memberships, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works. Empty array, never null. */
             preview_covers: components["schemas"]["Image"][];
             /** @description Display name. Empty string for an unnamed imported default. Free text; never use it as a decision input. */
             title: string;
@@ -5807,7 +5807,7 @@ export interface components {
             object: "collection";
             /** @description The account that owns this collection. */
             owner: components["schemas"]["UserRef"];
-            /** @description Art of the earliest memberships, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works and images graded explicit. Empty array, never null. */
+            /** @description Art of the earliest memberships, at most 4: each work's banner, else its cover. A work with neither is skipped, and without include_nsfw so are adult works. Empty array, never null. */
             preview_covers: components["schemas"]["Image"][];
             /** @description Display name. Empty string for an unnamed imported default. Free text; never use it as a decision input. */
             title: string;
@@ -38470,7 +38470,7 @@ export interface operations {
                 min_rating?: number;
                 /** @description Minimum number of forum ratings. 0 or omitted means no filter. */
                 min_rating_count?: number;
-                /** @description When true, adult works are included. Default false. A work whose content_limit has not been synced yet is included either way. */
+                /** @description When true, adult works are included. Default false. A work whose content_limit has not been synced yet counts as adult until it is. */
                 include_nsfw?: boolean;
                 /** @description When true, published works with no forum resource are included. Default false. A resource-axis or host filter still requires a resource. */
                 include_resourceless?: boolean;
