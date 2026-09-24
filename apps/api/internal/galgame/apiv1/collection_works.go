@@ -7,7 +7,6 @@ import (
 
 	"kun-galgame-api/internal/apiv1/collect"
 	"kun-galgame-api/internal/apiv1/repr"
-	"kun-galgame-api/internal/galgame/client"
 	"kun-galgame-api/internal/galgame/workrepr"
 	"kun-galgame-api/pkg/catalogclient"
 	"kun-galgame-api/pkg/problem"
@@ -56,24 +55,9 @@ func (s *Service) listCollectionWorks(ctx context.Context, in *listCollectionWor
 		}
 		return items[i].WorkID > items[j].WorkID
 	})
-	ids := make([]int, 0, len(items))
-	for _, it := range items {
-		ids = append(ids, int(it.WorkID))
-	}
-	rows, appErr := s.works.CatalogRowsByWorkIDs(ctx, ids, workrepr.RowInclude, "all")
-	if appErr != nil {
-		return nil, catalogUnavailable(appErr)
-	}
-	population := make([]int, 0, len(ids))
-	for _, id := range ids {
-		row, ok := rows[id]
-		if !ok || !client.CatalogItemRenderable(&row) {
-			continue
-		}
-		if !in.IncludeNSFW && workNSFW(&row) {
-			continue
-		}
-		population = append(population, id)
+	population, p := s.folderPopulation(ctx, folder, items, in.IncludeNSFW)
+	if p != nil {
+		return nil, p
 	}
 	n, rel := collect.ClampTotal(len(population))
 	start := pg.Offset()

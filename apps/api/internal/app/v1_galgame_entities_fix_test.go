@@ -117,6 +117,9 @@ type geMember struct {
 // fakeCatalog answers entityapiv1.Catalog from in-memory fixtures decoded from
 // JSON, because the client's wire types carry unexported fields.
 type fakeCatalog struct {
+	sfwHidden  map[int]bool
+	rowsGate   chan struct{}
+	rowsIn     chan struct{}
 	mu         sync.Mutex
 	fail       atomic.Bool
 	calls      atomic.Int32
@@ -174,6 +177,9 @@ func (f *fakeCatalog) visible(id int, contentLimit string) bool {
 	if contentLimit != "sfw" {
 		return true
 	}
+	if f.sfwHidden[id] {
+		return false
+	}
 	return client.CatalogItemToBrief(context.Background(), &row).ContentLimit == "sfw"
 }
 
@@ -192,7 +198,13 @@ func (f *fakeCatalog) CatalogRowsByWorkIDs(_ context.Context, ids []int, _, cont
 	}
 	f.mu.Lock()
 	f.gotLimits = append(f.gotLimits, contentLimit)
+	gate := f.rowsGate
+	f.rowsGate = nil
 	f.mu.Unlock()
+	if gate != nil {
+		f.rowsIn <- struct{}{}
+		<-gate
+	}
 	out := map[int]client.CatalogWorkListItem{}
 	for _, id := range ids {
 		if f.omitIDs[id] {

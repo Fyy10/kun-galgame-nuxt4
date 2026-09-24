@@ -3,7 +3,9 @@ package app
 import (
 	"net/http"
 	"testing"
+	"time"
 
+	"kun-galgame-api/pkg/catalogclient"
 	"kun-galgame-api/pkg/problem"
 )
 
@@ -84,5 +86,88 @@ func TestV1MembershipDoesNotTouchOtherFolders(t *testing.T) {
 	}
 	if len(f.user.deleteItems) != 0 {
 		t.Errorf("adding a work held in the default folder removed it elsewhere: %v", f.user.deleteItems)
+	}
+}
+
+func TestV1ListCollectionWorksCountsWhatItShows(t *testing.T) {
+	f := newG6Fix(t)
+	f.cat.sfwHidden = map[int]bool{g6WorkExtra: true}
+	f.user.mu.Lock()
+	f.user.items[g6FolderAliceDef] = append(f.user.items[g6FolderAliceDef], catalogclient.FolderItem{
+		FolderID: g6FolderAliceDef, WorkID: g6WorkExtra, CreatedAt: "2026-09-03T00:00:00Z", UpdatedAt: "2026-09-03T00:00:00Z",
+	})
+	folder := f.user.folders[g6FolderAliceDef]
+	folder.ItemCount = 2
+	folder.UpdatedAt = "2026-09-03T00:00:00Z"
+	f.user.folders[g6FolderAliceDef] = folder
+	f.user.mu.Unlock()
+	for _, tc := range []struct {
+		query string
+		want  int
+	}{{"", 1}, {"?include_nsfw=true", 2}} {
+		resp, body := f.call(t, http.MethodGet, g6col(g6FolderAliceDef)+"/works"+tc.query,
+			"/collections/{collection_id}/works", "", "", nil)
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("works%s %d %+v", tc.query, resp.StatusCode, body)
+		}
+		items, _ := body["items"].([]any)
+		if asInt(body["total"]) != tc.want || len(items) != tc.want {
+			t.Errorf("works%s: total %v with %d items, want %d of each", tc.query, body["total"], len(items), tc.want)
+		}
+	}
+}
+
+func TestV1ListCollectionWorksCachesPopulation(t *testing.T) {
+	f := newG6Fix(t)
+	reads := func() int {
+		f.cat.mu.Lock()
+		defer f.cat.mu.Unlock()
+		return len(f.cat.gotLimits)
+	}
+	view := func() {
+		resp, body := f.call(t, http.MethodGet, g6col(g6FolderAliceDef)+"/works",
+			"/collections/{collection_id}/works", "", "", nil)
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("works %d %+v", resp.StatusCode, body)
+		}
+	}
+	before := reads()
+	view()
+	cold := reads() - before
+	view()
+	warm := reads() - before - cold
+	if cold != 2 || warm != 1 {
+		t.Errorf("catalog row reads: cold %d (want population + page = 2), warm %d (want the page only = 1)", cold, warm)
+	}
+}
+
+func TestV1ListCollectionWorksBuildsPopulationOnce(t *testing.T) {
+	f := newG6Fix(t)
+	gate := make(chan struct{})
+	f.cat.mu.Lock()
+	f.cat.rowsGate, f.cat.rowsIn = gate, make(chan struct{}, 1)
+	before := len(f.cat.gotLimits)
+	f.cat.mu.Unlock()
+	view := func(done chan<- int) {
+		resp, _ := f.call(t, http.MethodGet, g6col(g6FolderAliceDef)+"/works",
+			"/collections/{collection_id}/works", "", "", nil)
+		done <- resp.StatusCode
+	}
+	done := make(chan int, 2)
+	go view(done)
+	<-f.cat.rowsIn
+	go view(done)
+	time.Sleep(300 * time.Millisecond)
+	close(gate)
+	for range 2 {
+		if code := <-done; code != http.StatusOK {
+			t.Fatalf("status %d", code)
+		}
+	}
+	f.cat.mu.Lock()
+	reads := len(f.cat.gotLimits) - before
+	f.cat.mu.Unlock()
+	if reads != 3 {
+		t.Errorf("catalog row reads %d, want 3: one shared population build and one page read per view", reads)
 	}
 }
