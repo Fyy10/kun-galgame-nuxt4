@@ -1,5 +1,32 @@
 # API v1 changelog
 
+## 2026-09-24 (G7b catalog editing engine)
+
+Breaking for `GET /api/galgame/:id/edit/{bootstrap,diff,revisions,proposals}`, `POST /api/galgame/:id/edit/{proposals,revert}`, `GET /api/galgame-edit/{mine,queue}`, `GET /api/galgame-edit/proposals/:id` and `POST /api/galgame-edit/proposals/:id/{amend,merge,decline,withdraw}`; all thirteen are gone. No App build calls them.
+
+Offered:
+
+- `GET /api/v1/works/{work_id}/edit-form` → `EditForm` (`field_values`, `fields`, `vocabularies`). The schema is the same for every caller.
+- `POST /api/v1/works/{work_id}/edit-proposals` `{patch, note?}`: `Idempotency-Key` required; 201 + `Location`; an auto-merged proposal answers `state: merged` with its `revision`.
+- `GET /api/v1/works/{work_id}/edit-proposals` (optional auth): cursor; `state` defaults to `open`; items carry no patch.
+- `GET /api/v1/works/{work_id}/edit-revisions` (page-number) and `GET …/edit-revisions/diff?from_seq=&to_seq=` → `field_changes`.
+- `POST /api/v1/works/{work_id}/edit-reverts` `{to_seq, note?}`: `Idempotency-Key` required; 201 + `EditRevert`.
+- `GET /api/v1/me/edit-proposals` (`work_id=`, `state=`) and `GET /api/v1/edit-proposals` (the review queue; cookie + `galgame.edit_proposal.review`).
+- `GET /api/v1/edit-proposals/{proposal_id}`: the workbench read, with `patch`, `effective_patch`, `amendments`, `viewer` and an `ETag` header.
+- `POST /api/v1/edit-proposals/{proposal_id}/amendments` `{set?, unset?, note?}` → `EditAmendment`, with the proposal's new `ETag`.
+- `PATCH /api/v1/edit-proposals/{proposal_id}` `{state: merged|declined|withdrawn, note?}`; `declined` needs a non-blank note; the response is read back from catalog.
+- `If-Match` on the amendment and the PATCH is forwarded to catalog, which answers `412 PRECONDITION_FAILED` for a stale one. Without it the write is unconditional.
+
+Fixed:
+
+- A hidden work's proposals, revisions and diffs were readable by anyone; they are `404` now.
+- The review queue's state tabs showed open proposals under every tab: catalog's review queue serves open only, and the other states now come from its public face.
+- A proposal catalog sent without a state was read as `open` and could reappear in the queue; it is dropped with a warning.
+- The review queue opens on the permission `galgame.edit_proposal.review` (moderators by default), not on the role, so `/admin/permission` can grant or revoke it.
+- Proposals that catalog auto-merges no longer lose their revision in the response.
+
+Not carried, because catalog publishes none of them: a proposal's decision note (the decline reason still reaches the proposer as a notification), per-field review capabilities on the edit form, and a revert capability on the revision list.
+
 ## 2026-09-24 (U3c user-content purge)
 
 Breaking for `GET /api/admin/user/:id/content-stats` and `DELETE /api/admin/user/:id/content`; both are gone. No App build calls them, and a Bearer request never holds `user.purge_content`.
