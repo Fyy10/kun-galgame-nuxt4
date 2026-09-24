@@ -76,6 +76,10 @@ type g6User struct {
 	itemsErr    error
 	pubReads    int
 	myReads     int
+	playSweeps  int
+	folderLists int
+	holdReads   int
+	previewRead int
 	ownPatch403 bool
 }
 
@@ -319,8 +323,33 @@ func (u *g6User) MyFoldersContaining(_ context.Context, token string, workID int
 	return out, nil
 }
 
-func (u *g6User) MyFolderHoldings(context.Context, string, []int64) ([]catalogclient.FolderHolding, error) {
-	return nil, nil
+func (u *g6User) MyFolderHoldings(_ context.Context, token string, workIDs []int64) ([]catalogclient.FolderHolding, error) {
+	if err := u.gate(token); err != nil {
+		return nil, err
+	}
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	u.holdReads++
+	uid := u.uid(token)
+	var out []catalogclient.FolderHolding
+	for _, workID := range workIDs {
+		h := catalogclient.FolderHolding{WorkID: workID}
+		for fid, items := range u.items {
+			if f, ok := u.folders[fid]; !ok || f.OwnerUID != uid {
+				continue
+			}
+			for _, it := range items {
+				if it.WorkID == workID {
+					h.FolderIDs = append(h.FolderIDs, fid)
+					break
+				}
+			}
+		}
+		if len(h.FolderIDs) > 0 {
+			out = append(out, h)
+		}
+	}
+	return out, nil
 }
 func (u *g6User) WorkCoversUser(context.Context, string, int64) ([]catalogclient.CoverTally, error) {
 	return u.WorkCoverVotes(context.Background(), 0)
@@ -428,6 +457,7 @@ func (u *g6User) ListMyPlaytime(_ context.Context, token, _ string, _ int) ([]ca
 	}
 	u.mu.Lock()
 	defer u.mu.Unlock()
+	u.playSweeps++
 	var out []catalogclient.PlaytimeRecord
 	for _, row := range u.play[token] {
 		out = append(out, catalogclient.PlaytimeRecord{WorkID: row.WorkID, Minutes: row.Minutes})
@@ -478,6 +508,7 @@ func (u *g6User) MyFolders(_ context.Context, token string) ([]catalogclient.Fol
 	}
 	u.mu.Lock()
 	defer u.mu.Unlock()
+	u.folderLists++
 	uid := u.uid(token)
 	var out []catalogclient.Folder
 	for _, f := range u.folders {
@@ -503,6 +534,7 @@ func (u *g6User) MyFolder(_ context.Context, token string, folderID int64) (*cat
 func (u *g6User) FolderPreviewItems(_ context.Context, token string, folderID int64, n int) ([]catalogclient.FolderItem, error) {
 	u.mu.Lock()
 	defer u.mu.Unlock()
+	u.previewRead++
 	items := u.items[folderID]
 	if len(items) > n {
 		items = items[:n]
