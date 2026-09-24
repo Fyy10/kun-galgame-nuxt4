@@ -52,6 +52,38 @@ func TestReportPlaytime_ForwardsBearerAndBody(t *testing.T) {
 	}
 }
 
+func TestDeleteMyPlaytime_ForwardsBearerAndTreatsMissingAsSuccess(t *testing.T) {
+	var gotPath, gotAuth, gotMethod string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath, gotAuth, gotMethod = r.URL.Path, r.Header.Get("Authorization"), r.Method
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	err := New(Config{BaseURL: srv.URL}).DeleteMyPlaytime(context.Background(), "user-jwt", 7)
+	if err != nil {
+		t.Fatalf("DeleteMyPlaytime: %v", err)
+	}
+	if gotMethod != http.MethodDelete {
+		t.Errorf("method = %s, want DELETE", gotMethod)
+	}
+	if gotPath != "/v2/me/playtimes/7" {
+		t.Errorf("path = %s, want /v2/me/playtimes/7", gotPath)
+	}
+	if gotAuth != "Bearer user-jwt" {
+		t.Errorf("auth = %q, want the user's bearer", gotAuth)
+	}
+
+	missing := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"code":"NOT_FOUND","status":404}`))
+	}))
+	defer missing.Close()
+	if err := New(Config{BaseURL: missing.URL}).DeleteMyPlaytime(context.Background(), "user-jwt", 7); err != nil {
+		t.Fatalf("missing row must be success: %v", err)
+	}
+}
+
 func TestMyPlaytime_NullPayloadIsNotAnError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -223,5 +255,20 @@ func TestMyWorkStates_ParsesItemsAndIgnoresMissing(t *testing.T) {
 	}
 	if _, ok := got[9]; ok {
 		t.Errorf("missing id 9 must not appear, got %+v", got)
+	}
+}
+
+func TestListMyPlaytime_ForbiddenKeepsProblemCode(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/problem+json")
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"code":"USER_IDENTITY_REQUIRED","detail":"the access token is missing a client id."}`))
+	}))
+	defer srv.Close()
+
+	_, _, err := New(Config{BaseURL: srv.URL}).ListMyPlaytime(context.Background(), "user-jwt", "", 100)
+	var api *UserAPIError
+	if !errors.As(err, &api) || api.Status != http.StatusForbidden || api.ProblemCode != "USER_IDENTITY_REQUIRED" {
+		t.Fatalf("err = %#v, want a 403 carrying USER_IDENTITY_REQUIRED", err)
 	}
 }
